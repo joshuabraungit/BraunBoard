@@ -1,0 +1,69 @@
+import { listJobs, type JobFilters } from "@/lib/data";
+import { JobGrid } from "@/components/JobCard";
+import { REMOTE_TYPES, ROLE_FAMILIES, SALES_MOTIONS, SALES_SEGMENTS } from "@/lib/ingest/types";
+
+export const dynamic = "force-dynamic";
+
+type SP = Record<string, string | undefined>;
+
+function toFilters(sp: SP): JobFilters {
+  const pick = <T extends string>(v: string | undefined, allowed: readonly T[]) => (allowed.includes(v as T) ? (v as T) : undefined);
+  const num = (v?: string) => (v && !isNaN(+v) ? +v : undefined);
+  return {
+    q: sp.q || undefined,
+    role: pick(sp.role, ROLE_FAMILIES),
+    segment: pick(sp.segment, SALES_SEGMENTS),
+    motion: pick(sp.motion, SALES_MOTIONS),
+    remote: pick(sp.remote, REMOTE_TYPES),
+    minBase: num(sp.minBase),
+    minOte: num(sp.minOte),
+    postedWithinDays: num(sp.posted),
+  };
+}
+
+function Select({ name, label, options, value }: { name: string; label: string; options: readonly string[]; value?: string }) {
+  return (
+    <select name={name} defaultValue={value ?? ""} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label={label}>
+      <option value="">{label}</option>
+      {options.filter((o) => o !== "Unknown").map((o) => (
+        <option key={o} value={o}>
+          {o}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+export default async function AllJobs({ searchParams }: { searchParams: Promise<SP> }) {
+  const sp = await searchParams;
+  const jobs = await listJobs(toFilters(sp), 120);
+  return (
+    <>
+      <h1 className="text-2xl font-bold tracking-tight">All Jobs</h1>
+      <form className="mb-6 mt-4 flex flex-wrap gap-2" action="/jobs">
+        <input name="q" defaultValue={sp.q} placeholder="Keyword or company" className="min-w-0 flex-1 basis-48 rounded-md border border-line bg-surface px-3 py-1.5 text-sm" />
+        <Select name="role" label="Any role" options={ROLE_FAMILIES} value={sp.role} />
+        <Select name="segment" label="Any segment" options={SALES_SEGMENTS} value={sp.segment} />
+        <Select name="motion" label="Any motion" options={SALES_MOTIONS.filter((m) => m !== "Channel")} value={sp.motion} />
+        <Select name="remote" label="Any workplace" options={REMOTE_TYPES} value={sp.remote} />
+        <select name="minBase" defaultValue={sp.minBase ?? ""} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label="Minimum base">
+          <option value="">Any base</option>
+          {[100, 125, 150, 175, 200].map((k) => <option key={k} value={k * 1000}>${k}K+ base</option>)}
+        </select>
+        <select name="minOte" defaultValue={sp.minOte ?? ""} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label="Minimum OTE">
+          <option value="">Any OTE</option>
+          {[150, 200, 250, 300, 400].map((k) => <option key={k} value={k * 1000}>${k}K+ OTE</option>)}
+        </select>
+        <select name="posted" defaultValue={sp.posted ?? ""} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label="Posted">
+          <option value="">Any time</option>
+          <option value="1">Last 24h</option>
+          <option value="3">Last 3 days</option>
+          <option value="7">Last 7 days</option>
+        </select>
+        <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white">Search</button>
+      </form>
+      <p className="mb-3 text-sm text-ink-3">{jobs.length} jobs</p>
+      <JobGrid jobs={jobs} empty="No jobs match those filters." />
+    </>
+  );
+}

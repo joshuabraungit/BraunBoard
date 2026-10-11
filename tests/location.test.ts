@@ -1,0 +1,34 @@
+import { describe, expect, it } from "vitest";
+import { parseLocation } from "../src/lib/ingest/location";
+
+describe("parseLocation", () => {
+  it.each([
+    ["San Francisco, CA", "CA", "Unknown"],
+    ["New York, New York", "NY", "Unknown"],
+    ["Remote - US", null, "Remote"],
+    ["Remote (United States)", null, "Remote"],
+    ["Hybrid - Austin, TX", "TX", "Hybrid"],
+    ["NYC", "NY", "Unknown"],
+    ["London / New York, NY", "NY", "Unknown"],
+  ])("%s is US", (raw, state, remote) => {
+    const p = parseLocation(raw);
+    expect(p.is_us).toBe(true);
+    expect(p.state).toBe(state);
+    expect(p.remote_type).toBe(remote);
+  });
+
+  it.each(["London, UK", "Toronto, ON", "Remote - EMEA", "Remote (Canada)", "Berlin"])("%s is not US", (raw) => {
+    expect(parseLocation(raw).is_us).toBe(false);
+  });
+
+  it("uses structured hints", () => {
+    const p = parseLocation("HQ", { country: "USA", region: "NY", city: "New York City", workplace: "Hybrid" });
+    expect(p).toMatchObject({ is_us: true, state: "NY", remote_type: "Hybrid" });
+  });
+
+  it("keeps bare Remote but leaves country unknown so it's flagged for review", () => {
+    const p = parseLocation("Remote");
+    expect(p.is_us).toBe(true);
+    expect(p.country).toBeNull();
+  });
+});

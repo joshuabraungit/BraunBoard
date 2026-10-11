@@ -1,0 +1,118 @@
+// Compensation parsing. Trust rule (spec section 8): never invent pay.
+// We only record numbers that are explicitly published, and only label a
+// range as OTE when the posting itself calls it OTE / on-target earnings.
+
+export interface Compensation {
+  salary_min: number | null;
+  salary_max: number | null;
+  ote_min: number | null;
+  ote_max: number | null;
+  currency: string | null;
+}
+
+const EMPTY: Compensation = { salary_min: null, salary_max: null, ote_min: null, ote_max: null, currency: null };
+
+// $150,000 - $175,000 | $150K–$175K | $150k to $175k | USD 150,000 - 175,000
+const RANGE =
+  /(?:USD\s*)?\$?\s?(\d{2,3}(?:,\d{3})+|\d{2,3}(?:\.\d+)?\s?[kK])\s*(?:-|–|—|to)\s*(?:USD\s*)?\$?\s?(\d{2,3}(?:,\d{3})+|\d{2,3}(?:\.\d+)?\s?[kK])/g;
+// Single figure: "$300K OTE"
+const SINGLE = /\$\s?(\d{2,3}(?:,\d{3})+|\d{2,3}(?:\.\d+)?\s?[kK])/g;
+
+const OTE_WORDS = /\b(ote|on[- ]target earnings?|on[- ]target compensation|target total (cash|compensation)|total target compensation)\b/i;
+const BASE_WORDS = /\b(base|base salary|base pay|salary range|annual salary)\b/i;
+
+function toNumber(s: string): number {
+  const t = s.replace(/[\s,$]/g, "").toLowerCase();
+  return t.endsWith("k") ? Math.round(parseFloat(t) * 1000) : parseInt(t, 10);
+}
+
+function lastIndexOf(text: string, re: RegExp): number {
+  let idx = -1;
+  for (const m of text.matchAll(new RegExp(re.source, "gi"))) idx = m.index!;
+  return idx;
+}
+
+function plausible(n: number) {
+  return n >= 20_000 && n <= 2_000_000;
+}
+
+interface Found {
+  min: number;
+  max: number;
+  label: "ote" | "base" | "unlabeled";
+}
+
+/** Finds explicitly labeled pay figures in description text. */
+export function findPayInText(text: string): Found[] {
+  const out: Found[] = [];
+  const seen = new Set<number>();
+  const label = (idx: number, len: number): Found["label"] => {
+    // Look at a small window around the figure for the label.
+    const before = text.slice(Math.max(0, idx - 120), idx);
+    const after = text.slice(idx + len, idx + len + 40);
+    // Label directly after the figure: "$300K OTE", "$150K base"
+    const nearAfter = after.match(/^[\s(]*([a-z -]{0,30})/i)?.[1] ?? "";
+    if (new RegExp("^" + OTE_WORDS.source, "i").test(nearAfter)) return "ote";
+    // The closest label before the number wins
+    const lastOte = lastIndexOf(before, OTE_WORDS);
+    const lastBase = lastIndexOf(before, BASE_WORDS);
+    if (lastOte >= 0 && lastOte > lastBase) return "ote";
+    if (lastBase >= 0) return "base";
+    if (new RegExp("^" + BASE_WORDS.source, "i").test(nearAfter)) return "base";
+    return "unlabeled";
+  };
+
+  for (const m of text.matchAll(RANGE)) {
+    const min = toNumber(m[1]);
+    const max = toNumber(m[2]);
+    if (!plausible(min) || !plausible(max) || max < min) continue;
+    out.push({ min, max, label: label(m.index!, m[0].length) });
+    for (let i = m.index!; i < m.index! + m[0].length; i++) seen.add(i);
+  }
+  for (const m of text.matchAll(SINGLE)) {
+    if (seen.has(m.index!)) continue;
+    const n = toNumber(m[1]);
+    if (!plausible(n)) continue;
+    const l = label(m.index!, m[0].length);
+    // Single figures are only trusted when explicitly labeled OTE.
+    if (l === "ote") out.push({ min: n, max: n, label: "ote" });
+  }
+  return out;
+}
+
+/**
+ * Combine the ATS's structured salary (if any) with labeled figures in the text.
+ * - Structured ranges count as base unless the text labels that same range as OTE.
+ * - Unlabeled text ranges are ignored for sales roles because we can't tell base from OTE.
+ */
+export function resolveCompensation(
+  structured: { min: number | null; max: number | null; currency: string | null },
+  description: string,
+): Compensation {
+  const found = findPayInText(description);
+  const ote = found.find((f) => f.label === "ote");
+  const base = found.find((f) => f.label === "base");
+  const result: Compensation = { ...EMPTY };
+
+  if (structured.min && structured.max) {
+    const sameAsOte = ote && Math.abs(ote.min - structured.min) < 1000 && Math.abs(ote.max - structured.max) < 1000;
+    if (sameAsOte) {
+      result.ote_min = structured.min;
+      result.ote_max = structured.max;
+    } else {
+      result.salary_min = structured.min;
+      result.salary_max = structured.max;
+    }
+    result.currency = structured.currency ?? "USD";
+  }
+  if (result.salary_min == null && base) {
+    result.salary_min = base.min;
+    result.salary_max = base.max;
+  }
+  if (result.ote_min == null && ote) {
+    result.ote_min = ote.min;
+    result.ote_max = ote.max;
+  }
+  if ((result.salary_min ?? result.ote_min) != null && !result.currency) result.currency = "USD";
+  return result;
+}
