@@ -26,44 +26,101 @@ export function detectFromUrl(url: string): Detected | null {
 }
 
 /** Board-token guesses from a company name or domain: "Acme Corp" / acme.com -> acme, acmecorp, acme-corp */
-export function candidateTokens(nameOrDomain: string): string[] {
-  const base = nameOrDomain
-    .toLowerCase()
-    .replace(/^https?:\/\//, "")
-    .replace(/^www\./, "")
-    .replace(/\.(com|io|ai|co|net|org|app|dev|so|tech|us)(\/.*)?$/, "")
-    .replace(/\b(inc|llc|ltd|corp|corporation|co|technologies|technology|labs|hq)\b\.?/g, "")
-    .trim();
-  const words = base.split(/[^a-z0-9]+/).filter(Boolean);
-  return [...new Set([words.join(""), words.join("-"), words[0], words.join("") + "hq"].filter(Boolean))];
+export function candidateTokens(...namesOrDomains: (string | null | undefined)[]): string[] {
+  const out: string[] = [];
+  for (const raw of namesOrDomains) {
+    if (!raw) continue;
+    const base = raw
+      .toLowerCase()
+      .replace(/^https?:\/\//, "")
+      .replace(/^www\./, "")
+      .replace(/\.(com|io|ai|co|net|org|app|dev|so|tech|us|xyz|cloud|inc)(\/.*)?$/, "")
+      .replace(/\b(inc|llc|ltd|corp|corporation|co|technologies|technology|labs|hq)\b\.?/g, "")
+      .trim();
+    const words = base.split(/[^a-z0-9]+/).filter(Boolean);
+    if (!words.length) continue;
+    out.push(words.join(""), words.join("-"), words[0], words.join("") + "hq");
+  }
+  return [...new Set(out.filter(Boolean))];
 }
 
-async function exists(provider: AtsProvider, token: string): Promise<boolean> {
+// ---------------------------------------------------------------------------
+// Verification: a guessed board token might belong to a different company with
+// the same name (Apollo.io vs Apollo GraphQL). Only trust a guess we can confirm.
+// ---------------------------------------------------------------------------
+
+const SUFFIXES = /\b(inc|llc|ltd|corp|corporation|co|company|technologies|technology|labs|hq|careers|jobs|io|ai|app|software|group|the)\b/g;
+
+export function normalizeCompanyName(n: string): string {
+  return n
+    .toLowerCase()
+    .replace(/\.(com|io|ai|co|so|app|dev)\b/g, "")
+    .replace(/[^a-z0-9 ]+/g, " ")
+    .replace(SUFFIXES, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function namesMatch(a: string, b: string): boolean {
+  const x = normalizeCompanyName(a);
+  const y = normalizeCompanyName(b);
+  return !!x && x === y;
+}
+
+/** Postings mention the company: domain once, or the exact capitalized name 3+ times. */
+export function textMentionsCompany(texts: string[], name: string, domain: string | null): boolean {
+  const all = texts.join("\n");
+  if (domain && all.toLowerCase().includes(domain.toLowerCase().replace(/^www\./, ""))) return true;
+  const esc = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const hits = all.match(new RegExp(`(^|[^A-Za-z])${esc}(?![A-Za-z])`, "g"))?.length ?? 0;
+  return hits >= 3;
+}
+
+type Probe = { found: boolean; verified: boolean };
+
+async function probe(provider: AtsProvider, token: string, name: string, domain: string | null): Promise<Probe> {
   const t = encodeURIComponent(token);
-  const url =
-    provider === "greenhouse"
-      ? `https://boards-api.greenhouse.io/v1/boards/${t}`
-      : provider === "lever"
-        ? `https://api.lever.co/v0/postings/${t}?mode=json&limit=1`
-        : `https://api.ashbyhq.com/posting-api/job-board/${t}`;
   try {
-    const data = await getJson<unknown>(url, { retries: 0, timeoutMs: 10_000 });
-    // Lever returns [] for unknown sites rather than 404
-    return provider === "lever" ? Array.isArray(data) && data.length > 0 : true;
+    if (provider === "greenhouse") {
+      const board = await getJson<{ name?: string }>(`https://boards-api.greenhouse.io/v1/boards/${t}`, { retries: 0, timeoutMs: 10_000 });
+      if (board.name && namesMatch(board.name, name)) return { found: true, verified: true };
+      const jobs = await getJson<{ jobs: { content?: string }[] }>(`https://boards-api.greenhouse.io/v1/boards/${t}/jobs?content=true`, { retries: 0, timeoutMs: 20_000 });
+      const texts = (jobs.jobs ?? []).slice(0, 25).map((j) => j.content ?? "");
+      return { found: true, verified: textMentionsCompany(texts, name, domain) };
+    }
+    if (provider === "lever") {
+      const posts = await getJson<{ descriptionPlain?: string; additionalPlain?: string }[]>(`https://api.lever.co/v0/postings/${t}?mode=json&limit=25`, { retries: 0, timeoutMs: 15_000 });
+      if (!Array.isArray(posts) || !posts.length) return { found: false, verified: false };
+      return { found: true, verified: textMentionsCompany(posts.map((p) => `${p.descriptionPlain ?? ""}\n${p.additionalPlain ?? ""}`), name, domain) };
+    }
+    const board = await getJson<{ jobs?: { descriptionPlain?: string }[] }>(`https://api.ashbyhq.com/posting-api/job-board/${t}`, { retries: 0, timeoutMs: 20_000 });
+    const texts = (board.jobs ?? []).slice(0, 25).map((j) => j.descriptionPlain ?? "");
+    return { found: true, verified: textMentionsCompany(texts, name, domain) };
   } catch (err) {
     // 404/401/etc means "no board here". Timeouts and network blips: treat as not found
     // rather than aborting the whole seed run.
-    if (err instanceof HttpError) return false;
-    return false;
+    if (err instanceof HttpError) return { found: false, verified: false };
+    return { found: false, verified: false };
   }
 }
 
-/** Probe the public APIs with guessed tokens. Use when no careers URL is known. */
-export async function detectByProbing(nameOrDomain: string): Promise<Detected | null> {
-  for (const token of candidateTokens(nameOrDomain)) {
+export interface ProbeResult extends Detected {
+  verified: boolean;
+}
+
+/**
+ * Probe the public APIs with guessed tokens. Returns the first VERIFIED board.
+ * If boards were found but none could be verified, returns the first one with verified=false
+ * so the caller can log it; callers should not crawl unverified boards.
+ */
+export async function detectByProbing(name: string, domain: string | null = null): Promise<ProbeResult | null> {
+  let firstUnverified: ProbeResult | null = null;
+  for (const token of candidateTokens(name, domain)) {
     for (const provider of ["greenhouse", "ashby", "lever"] as AtsProvider[]) {
-      if (await exists(provider, token)) return { provider, identifier: token };
+      const p = await probe(provider, token, name, domain);
+      if (p.found && p.verified) return { provider, identifier: token, verified: true };
+      if (p.found && !firstUnverified) firstUnverified = { provider, identifier: token, verified: false };
     }
   }
-  return null;
+  return firstUnverified;
 }

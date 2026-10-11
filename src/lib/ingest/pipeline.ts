@@ -225,7 +225,7 @@ async function insertNewJob(
 /** Crawl every enabled company that hasn't been crawled in `staleAfterHours`. */
 export async function ingestAll(
   db: SupabaseClient,
-  { staleAfterHours = 4, limit = 500, concurrency = 4, reprocess = false } = {},
+  { staleAfterHours = 4, limit = 2000, concurrency = 8, reprocess = false } = {},
 ): Promise<{ companies: number; totals: RunStats }> {
   const cutoff = new Date(Date.now() - staleAfterHours * 3_600_000).toISOString();
   const { data: companies, error } = await db

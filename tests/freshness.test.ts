@@ -37,3 +37,19 @@ describe("ATS detection", () => {
     expect(candidateTokens("datadoghq.com")).toContain("datadoghq");
   });
 });
+
+import { namesMatch, textMentionsCompany } from "../src/lib/ingest/detect-ats";
+
+describe("ATS board verification", () => {
+  it("matches board names loosely but not other companies", () => {
+    expect(namesMatch("Datadog, Inc.", "Datadog")).toBe(true);
+    expect(namesMatch("Apollo.io", "Apollo")).toBe(true);
+    expect(namesMatch("Apollo GraphQL", "Apollo")).toBe(false);
+    expect(namesMatch("Mercury Insurance", "Mercury")).toBe(false);
+  });
+  it("needs real mentions, not generic words", () => {
+    expect(textMentionsCompany(["Help customers ramp up fast. We ramp quickly. ramp"], "Ramp", "ramp.com")).toBe(false);
+    expect(textMentionsCompany(["At Ramp we build. Ramp customers love Ramp."], "Ramp", null)).toBe(true);
+    expect(textMentionsCompany(["Apply at careers.gong.io"], "Gong", "gong.io")).toBe(true);
+  });
+});
