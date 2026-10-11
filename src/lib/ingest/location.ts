@@ -17,7 +17,7 @@ const STATE_NAMES = Object.fromEntries(Object.entries(US_STATES).map(([k, v]) =>
 
 // Bare city names that show up without a state on ATS boards.
 const US_CITIES: Record<string, string> = {
-  "new york": "NY", "nyc": "NY", "san francisco": "CA", "sf": "CA", "los angeles": "CA", "chicago": "IL",
+  "new york": "NY", "nyc": "NY", "washington d.c.": "DC", "bay area": "CA", "sf bay area": "CA", "san francisco": "CA", "sf": "CA", "los angeles": "CA", "chicago": "IL",
   "boston": "MA", "austin": "TX", "seattle": "WA", "denver": "CO", "atlanta": "GA", "miami": "FL",
   "dallas": "TX", "houston": "TX", "washington dc": "DC", "washington, d.c.": "DC", "philadelphia": "PA",
   "phoenix": "AZ", "salt lake city": "UT", "nashville": "TN", "raleigh": "NC", "san diego": "CA",
@@ -41,7 +41,9 @@ function isUsQualifier(q: string): boolean {
   if (US_REGION_WORDS.test(q.trim()) || US_REGION_WORDS.test(t)) return true;
   if (US_STATES[t.toUpperCase()] || STATE_NAMES[t.toLowerCase()]) return true;
   if (US_MARKERS.test(q)) return true;
-  return false;
+  if (/\b(d\.?\s?c\.?|bay area|tri-?state|new england|pacific northwest|pnw|dmv)\b/i.test(q)) return true;
+  // A US city or "City, ST" works too ("Remote - Austin, TX", "Remote - NYC")
+  return !NON_US.test(q) && parsePart(q) != null;
 }
 
 export interface ParsedLocation {

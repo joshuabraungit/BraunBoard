@@ -41,3 +41,9 @@ describe("foreign remote qualifiers (seen in real data)", () => {
     expect(parseLocation(raw).is_us).toBe(true);
   });
 });
+
+describe("US remote qualifiers wrongly dropped in the first reprocess", () => {
+  it.each(["Remote - Washington D.C.", "Remote - SF Bay Area", "Remote - Austin, TX", "Remote - NYC", "Remote - Pacific Northwest"])("%s is US", (raw) => {
+    expect(parseLocation(raw).is_us).toBe(true);
+  });
+});
