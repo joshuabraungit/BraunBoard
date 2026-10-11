@@ -57,7 +57,7 @@ export interface MatchableJob {
 
 export type CheckResult = "pass" | "fail" | "unknown";
 export interface MatchCheck {
-  key: "role" | "compensation" | "remote" | "location" | "segment" | "motion";
+  key: "role" | "compensation" | "remote" | "location" | "segment" | "motion" | "keyword";
   label: string;
   result: CheckResult;
 }
@@ -74,6 +74,7 @@ const WEIGHTS: Record<MatchCheck["key"], number> = {
   location: 10,
   segment: 12,
   motion: 8,
+  keyword: 10,
 };
 
 const SMALL_COMPANY = /^(1-10|2-10|11-50|1-50)$/;
@@ -149,6 +150,15 @@ export function scoreMatch(job: MatchableJob, prefs: WatchPrefs): MatchResult {
       key: "motion",
       label: "Motion",
       result: job.sales_motion === "Unknown" ? "unknown" : ok ? "pass" : "fail",
+    });
+  }
+
+  if (prefs.keywords.length) {
+    const hay = `${job.title_raw} ${job.description_raw ?? ""}`.toLowerCase();
+    checks.push({
+      key: "keyword",
+      label: "Keyword",
+      result: prefs.keywords.some((k) => hay.includes(k.toLowerCase())) ? "pass" : "fail",
     });
   }
 

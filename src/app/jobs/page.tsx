@@ -1,5 +1,7 @@
 import { listJobs, type JobFilters } from "@/lib/data";
 import { JobGrid } from "@/components/JobCard";
+import { getUserState } from "@/lib/session";
+import { watchSearch } from "@/app/actions";
 import { REMOTE_TYPES, ROLE_FAMILIES, SALES_MOTIONS, SALES_SEGMENTS } from "@/lib/ingest/types";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +38,12 @@ function Select({ name, label, options, value }: { name: string; label: string; 
 
 export default async function AllJobs({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
-  const jobs = await listJobs(toFilters(sp), 120);
+  const [jobs, state] = await Promise.all([listJobs(toFilters(sp), 120), getUserState()]);
+  const qs = new URLSearchParams(Object.entries(sp).filter(([, v]) => v) as [string, string][]).toString();
+  const hasFilters = qs.length > 0;
+  const suggestedName = [sp.segment, sp.role === "Account Executive" ? "AE" : sp.role, sp.remote, sp.minOte && `$${Math.round(+sp.minOte / 1000)}K+ OTE`, sp.q]
+    .filter(Boolean)
+    .join(" · ");
   return (
     <>
       <h1 className="text-2xl font-bold tracking-tight">All Jobs</h1>
@@ -62,8 +69,17 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
         </select>
         <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white">Search</button>
       </form>
-      <p className="mb-3 text-sm text-ink-3">{jobs.length} jobs</p>
-      <JobGrid jobs={jobs} empty="No jobs match those filters." />
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-ink-3">{jobs.length} jobs</p>
+        {hasFilters && (
+          <form action={watchSearch} className="flex items-center gap-2">
+            <input type="hidden" name="qs" value={qs} />
+            <input name="name" defaultValue={suggestedName} aria-label="Name this watch" placeholder="Name this watch" className="w-56 rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm" />
+            <button className="whitespace-nowrap rounded-md border border-ink px-3 py-1.5 text-sm font-semibold hover:bg-ink hover:text-white">♡ Watch this search</button>
+          </form>
+        )}
+      </div>
+      <JobGrid jobs={jobs} ctx={{ savedJobIds: state.savedJobIds, back: `/jobs${qs ? `?${qs}` : ""}` }} empty="No jobs match those filters." />
     </>
   );
 }

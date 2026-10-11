@@ -24,8 +24,10 @@ npm test           # classifier, comp parsing, location, match scoring, freshnes
 
 ### Connect real data
 
-1. Create a Supabase project. Run `supabase/migrations/0001_init.sql` in the SQL editor (or `supabase db push`).
-2. Turn on Email and Google providers under Authentication.
+1. Create a Supabase project. Run the files in `supabase/migrations/` in order in the SQL editor (or `supabase db push`).
+2. Authentication setup:
+   - **Providers:** Email is on by default. For Google, create an OAuth client in Google Cloud Console and paste the client ID/secret into Supabase under Authentication > Providers > Google.
+   - **URL Configuration:** set Site URL to your domain and add `http://localhost:3000/auth/callback` and `https://<your-domain>/auth/callback` to Redirect URLs.
 3. `cp .env.example .env.local` and fill in the keys.
 4. Seed companies and detect their ATS:
    ```bash
@@ -66,11 +68,18 @@ Company → detect ATS → adapter → raw jobs → sales classifier → normali
 - [x] 5. Job grid, job cards, company page, job detail page
 - [x] 6. Lever + Ashby adapters
 - [x] 7. Dedupe, first-seen/last-seen, inactive-job handling
-- [ ] 8. Watch creation + preference storage UI (onboarding at `/for-you`), Supabase Auth sign-in pages
-- [x] 9. Match scoring (logic + tests; UI display pending)
+- [x] 8. Watch creation + preference storage: onboarding, "Watch this search", company watches, saved jobs, sign-in (email link + Google)
+- [x] 9. Match scoring, shown on cards and job pages with the per-criterion breakdown
 - [x] 10. Email alert generation + delivery
 - [ ] 11. Admin dashboard (data is there: `crawl_runs`, `needs_review`, `is_disabled`)
 - [ ] 12. Scale from 200–500 test jobs toward ~5,000. Grow `data/seed-companies.csv` toward ~1,500 companies
+
+## How accounts work
+
+- **Browsing** never needs an account.
+- **Onboarding** (`/for-you`) works signed out. Answers are kept in a cookie so For You shows matches right away.
+- **Signing in** (email link or Google) adopts those answers as the user's primary watch, then unlocks saving jobs, watching companies and searches, and email alerts.
+- **Alerts** (`/alerts`): Instant, Daily Digest or Off, per watch. Watched companies go in the daily digest.
 
 ## Notes
 

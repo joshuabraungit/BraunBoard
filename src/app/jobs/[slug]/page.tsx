@@ -5,6 +5,10 @@ import { freshnessLabel } from "@/lib/freshness";
 import { formatComp, formatLocation, money } from "@/lib/format";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { tagsFor } from "@/components/JobCard";
+import { SaveJobButton, WatchCompanyButton } from "@/components/Actions";
+import { MatchBadge } from "@/components/MatchBadge";
+import { getActiveWatch, getUserState } from "@/lib/session";
+import { scoreMatch } from "@/lib/match";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +45,11 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
   const { slug } = await params;
   const job = await getJob(slug);
   if (!job) notFound();
+  const [state, watch] = await Promise.all([getUserState(), getActiveWatch()]);
+  const match = watch ? scoreMatch(job, watch.prefs) : null;
+  const back = `/jobs/${job.slug}`;
+  const saved = state.savedJobIds.has(job.id);
+  const btn = "rounded-lg border border-line-strong bg-surface px-4 py-2.5 text-sm font-semibold aria-pressed:border-fresh aria-pressed:text-fresh";
 
   const notDisclosed = [
     job.salary_min == null && "Base salary",
@@ -68,9 +77,19 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
 
       <div className="mt-4 hidden gap-2 sm:flex">
         <a href={job.apply_url} target="_blank" rel="noopener" className="rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90">Apply on {job.company_name} →</a>
-        <Link href="/login?next=watch" className="rounded-lg border border-line-strong bg-surface px-4 py-2.5 text-sm font-semibold">Watch Company</Link>
-        <Link href="/login?next=save" className="rounded-lg border border-line-strong bg-surface px-4 py-2.5 text-sm font-semibold">Save Job</Link>
+        <WatchCompanyButton companyId={job.company_id} on={state.watchedCompanyIds.has(job.company_id)} back={back} className={btn} />
+        <SaveJobButton jobId={job.id} saved={saved} back={back} className={btn} />
       </div>
+
+      {match && match.score != null && (
+        <div className="mt-6">
+          <p className="mb-2 text-xs uppercase tracking-wide text-ink-3">Against your watch: {watch!.name}</p>
+          <MatchBadge match={match} detailed />
+        </div>
+      )}
+      {match && match.blocked_by && (
+        <p className="mt-6 rounded-lg border border-line bg-surface px-4 py-3 text-sm text-ink-2">This one hits one of your dealbreakers, so it won&apos;t show up in your matches.</p>
+      )}
 
       <div className="mt-6">
         <Block title="The role">
@@ -113,7 +132,7 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
 
       {/* Sticky actions on mobile (spec section 15) */}
       <div className="fixed inset-x-0 bottom-0 z-20 flex gap-2 border-t border-line bg-bg/95 p-3 backdrop-blur sm:hidden">
-        <Link href="/login?next=save" className="flex-1 rounded-lg border border-line-strong bg-surface py-3 text-center text-sm font-semibold">Save</Link>
+        <SaveJobButton jobId={job.id} saved={saved} back={back} compact className="flex-1 rounded-lg border border-line-strong bg-surface py-3 text-center text-sm font-semibold aria-pressed:text-fresh" />
         <a href={job.apply_url} target="_blank" rel="noopener" className="flex-[2] rounded-lg bg-ink py-3 text-center text-sm font-semibold text-white">Apply →</a>
       </div>
     </div>

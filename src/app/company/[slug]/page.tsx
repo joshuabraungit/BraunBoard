@@ -1,8 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCompany } from "@/lib/data";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { JobGrid } from "@/components/JobCard";
+import { WatchCompanyButton } from "@/components/Actions";
+import { getUserState } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,8 @@ export default async function CompanyPage({ params }: { params: Promise<{ slug: 
   const data = await getCompany(slug);
   if (!data) notFound();
   const { company, jobs, added7, added30 } = data;
+  const state = await getUserState();
+  const back = `/company/${company.slug}`;
 
   return (
     <>
@@ -24,7 +27,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ slug: 
             </a>
           )}
         </div>
-        <Link href="/login?next=watch" className="rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white">♡ Watch Company</Link>
+        <WatchCompanyButton companyId={company.id} on={state.watchedCompanyIds.has(company.id)} back={back} className="rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white aria-pressed:bg-surface aria-pressed:text-fresh aria-pressed:ring-1 aria-pressed:ring-fresh" />
       </div>
 
       <dl className="mt-4 grid grid-cols-3 gap-3">
@@ -41,7 +44,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ slug: 
       </dl>
 
       <h2 className="mb-3 mt-8 text-lg font-bold tracking-tight">Current openings</h2>
-      <JobGrid jobs={jobs} empty={`${company.name} has no open sales roles right now. Watch them to hear when that changes.`} />
+      <JobGrid jobs={jobs} ctx={{ savedJobIds: state.savedJobIds, back }} empty={`${company.name} has no open sales roles right now. Watch them to hear when that changes.`} />
     </>
   );
 }

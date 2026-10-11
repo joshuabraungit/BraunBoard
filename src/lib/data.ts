@@ -77,11 +77,11 @@ function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
   );
 }
 
-export async function listJobs(f: JobFilters = {}, limit = 60): Promise<JobView[]> {
+export async function listJobs(f: JobFilters = {}, limit = 60, opts: { withDescription?: boolean } = {}): Promise<JobView[]> {
   if (!isSupabaseConfigured()) return applyFiltersLocal(SAMPLE_JOBS, f).slice(0, limit);
 
   const db = await serverClient();
-  let q = db.from("visible_jobs").select(CARD_COLUMNS).order("first_seen_at", { ascending: false }).limit(limit);
+  let q = db.from("visible_jobs").select(opts.withDescription ? `${CARD_COLUMNS}, description_raw` : CARD_COLUMNS).order("first_seen_at", { ascending: false }).limit(limit);
   if (f.q) q = q.or(`title_raw.ilike.%${f.q.replace(/[%,()]/g, "")}%,company_name.ilike.%${f.q.replace(/[%,()]/g, "")}%`);
   if (f.role) q = q.eq("role_family", f.role);
   if (f.segment) q = q.eq("sales_segment", f.segment);
@@ -121,4 +121,35 @@ export async function getCompany(slug: string): Promise<{ company: CompanyView; 
     added7: jobs.filter((j) => new Date(j.first_seen_at).getTime() >= ago(7)).length,
     added30: jobs.filter((j) => new Date(j.first_seen_at).getTime() >= ago(30)).length,
   };
+}
+
+export interface CompanyListItem extends CompanyView {
+  open_jobs: number;
+  added_7d: number;
+}
+
+/** Companies with at least one open sales job, busiest first. */
+export async function listCompanies(): Promise<CompanyListItem[]> {
+  const jobs = await listJobs({}, 10_000);
+  const weekAgo = Date.now() - 7 * 86_400_000;
+  const by = new Map<string, CompanyListItem>();
+  for (const j of jobs) {
+    const c = by.get(j.company_slug) ?? {
+      id: j.company_id, slug: j.company_slug, name: j.company_name, domain: j.company_domain,
+      logo_url: j.company_logo_url, website_url: null, industry: null, open_jobs: 0, added_7d: 0,
+    };
+    c.open_jobs++;
+    if (new Date(j.first_seen_at).getTime() >= weekAgo) c.added_7d++;
+    by.set(j.company_slug, c);
+  }
+  return [...by.values()].sort((a, b) => b.added_7d - a.added_7d || b.open_jobs - a.open_jobs);
+}
+
+/** Jobs by id, for the saved-jobs list. */
+export async function getJobsByIds(ids: string[]): Promise<JobView[]> {
+  if (!ids.length) return [];
+  if (!isSupabaseConfigured()) return SAMPLE_JOBS.filter((j) => ids.includes(j.id));
+  const db = await serverClient();
+  const { data } = await db.from("visible_jobs").select(CARD_COLUMNS).in("id", ids);
+  return (data ?? []) as unknown as JobView[];
 }

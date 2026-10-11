@@ -3,6 +3,16 @@ import type { JobView } from "@/lib/data";
 import { freshnessLabel, isFresh } from "@/lib/freshness";
 import { formatComp, formatLocation } from "@/lib/format";
 import { CompanyLogo } from "./CompanyLogo";
+import { SaveJobButton, HideJobButton } from "./Actions";
+import { MatchBadge } from "./MatchBadge";
+import type { MatchResult } from "@/lib/match";
+
+export interface CardContext {
+  savedJobIds?: Set<string>;
+  matches?: Map<string, MatchResult>;
+  back: string;
+  allowHide?: boolean;
+}
 
 export function tagsFor(j: Pick<JobView, "sales_segment" | "sales_motion" | "self_sourcing_level">): string[] {
   const t: string[] = [];
@@ -13,8 +23,9 @@ export function tagsFor(j: Pick<JobView, "sales_segment" | "sales_motion" | "sel
   return t;
 }
 
-export function JobCard({ job }: { job: JobView }) {
+export function JobCard({ job, ctx }: { job: JobView; ctx: CardContext }) {
   const comp = formatComp(job);
+  const match = ctx.matches?.get(job.id);
   const fresh = isFresh(job.first_seen_at);
   return (
     <article className="group relative flex flex-col rounded-xl border border-line bg-surface p-4 transition hover:border-line-strong hover:shadow-[0_2px_12px_rgba(22,20,15,0.05)]">
@@ -53,10 +64,17 @@ export function JobCard({ job }: { job: JobView }) {
 
       {job.summary && <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-ink-2">{job.summary}</p>}
 
-      <div className="relative z-10 mt-auto flex items-center justify-between pt-4 text-sm">
-        <Link href="/login?next=watch" className="text-ink-2 hover:text-ink">
-          ♡ Watch
-        </Link>
+      {match && (
+        <div className="mt-3 border-t border-line pt-3">
+          <MatchBadge match={match} />
+        </div>
+      )}
+
+      <div className="relative z-10 mt-auto flex items-center justify-between gap-3 pt-4 text-sm">
+        <div className="flex items-center gap-3">
+          <SaveJobButton jobId={job.id} saved={!!ctx.savedJobIds?.has(job.id)} back={ctx.back} compact className="text-ink-2 hover:text-ink aria-pressed:font-semibold aria-pressed:text-fresh" />
+          {ctx.allowHide && <HideJobButton jobId={job.id} back={ctx.back} />}
+        </div>
         <Link href={`/jobs/${job.slug}`} className="font-semibold hover:underline">
           View Job →
         </Link>
@@ -65,12 +83,12 @@ export function JobCard({ job }: { job: JobView }) {
   );
 }
 
-export function JobGrid({ jobs, empty = "Nothing here yet." }: { jobs: JobView[]; empty?: string }) {
+export function JobGrid({ jobs, ctx, empty = "Nothing here yet." }: { jobs: JobView[]; ctx: CardContext; empty?: string }) {
   if (!jobs.length) return <p className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-ink-3">{empty}</p>;
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {jobs.map((j) => (
-        <JobCard key={j.id} job={j} />
+        <JobCard key={j.id} job={j} ctx={ctx} />
       ))}
     </div>
   );
