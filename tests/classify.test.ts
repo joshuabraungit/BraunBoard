@@ -81,3 +81,12 @@ describe("normalizeTitle", () => {
     expect(normalizeTitle("Senior Enterprise Account Executive - NYC")).toBe("senior enterprise account executive");
   });
 });
+
+describe("exclusions found in real data", () => {
+  it.each(["Technical Account Manager 3", "Future Account Manager Opportunities", "Account Executive - General Application", "Sales Talent Community"])("%s -> excluded", (t) => {
+    expect(classifyTitle(t)).toBeNull();
+  });
+  it("keeps real roles", () => {
+    expect(classifyTitle("Account Executive, Select, Phoenix")?.role_family).toBe("Account Executive");
+  });
+});

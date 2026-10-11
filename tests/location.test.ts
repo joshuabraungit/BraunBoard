@@ -32,3 +32,12 @@ describe("parseLocation", () => {
     expect(p.country).toBeNull();
   });
 });
+
+describe("foreign remote qualifiers (seen in real data)", () => {
+  it.each(["Remote - Colombia", "Remote - China", "Remote (Brazil)", "Remote - LATAM", "Remote - Spain", "Remote, Philippines"])("%s is not US", (raw) => {
+    expect(parseLocation(raw).is_us).toBe(false);
+  });
+  it.each(["Remote - US West", "Remote - US", "Remote (USA)", "Remote - California", "Remote - East Coast", "US DC - Remote", "Remote - Colombia / Remote - US"])("%s is US", (raw) => {
+    expect(parseLocation(raw).is_us).toBe(true);
+  });
+});

@@ -26,6 +26,9 @@ const EXCLUDE = [
   /\bcommission[- ]only\b/i,
   /\b(analyst|data scientist|software engineer|developer|designer|product manager|counsel|attorney|paralegal)\b/i,
   /\b(intern|internship|apprentice)\b/i,
+  /\btechnical account manager\b/i, // post-sales technical support, not a selling role
+  /\b(future|talent (pool|community|network)|general (application|interest)|evergreen|pipeline req)\b/i,
+  /\bopportunities\s*$/i,
   /\b(sales tax|tax)\b/i,
   /\b(compensation|commissions?) (analyst|manager|specialist|administrator)\b/i,
   /\b(sales|solutions) (strategy|planning|programs?)\b/i,

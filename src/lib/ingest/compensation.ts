@@ -85,8 +85,13 @@ export function findPayInText(text: string): Found[] {
  * - Structured ranges count as base unless the text labels that same range as OTE.
  * - Unlabeled text ranges are ignored for sales roles because we can't tell base from OTE.
  */
+/** Ranges like "$14K – $214K" are data-entry noise, not a real band. Don't show them. */
+export function plausibleRange(min: number, max: number): boolean {
+  return min >= 30_000 && max >= min && max / min <= 3;
+}
+
 export function resolveCompensation(
-  structured: { min: number | null; max: number | null; currency: string | null },
+  structured: { min: number | null; max: number | null; currency: string | null; isOte?: boolean },
   description: string,
 ): Compensation {
   const found = findPayInText(description);
@@ -94,9 +99,9 @@ export function resolveCompensation(
   const base = found.find((f) => f.label === "base");
   const result: Compensation = { ...EMPTY };
 
-  if (structured.min && structured.max) {
+  if (structured.min && structured.max && plausibleRange(structured.min, structured.max)) {
     const sameAsOte = ote && Math.abs(ote.min - structured.min) < 1000 && Math.abs(ote.max - structured.max) < 1000;
-    if (sameAsOte) {
+    if (structured.isOte || sameAsOte) {
       result.ote_min = structured.min;
       result.ote_max = structured.max;
     } else {

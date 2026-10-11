@@ -53,6 +53,8 @@ export interface RawJob {
   salary_min: number | null;
   salary_max: number | null;
   currency: string | null;
+  /** The ATS itself labels the structured range as OTE (e.g. Ashby "OTE $310K – $407K"). */
+  structured_is_ote?: boolean;
   apply_url: string;
   source_url: string;
   // Optional hints some ATSs give us directly

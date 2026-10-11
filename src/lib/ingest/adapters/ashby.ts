@@ -26,7 +26,11 @@ interface AshbyJob {
   applyUrl: string;
   address?: { postalAddress?: { addressCountry?: string; addressRegion?: string; addressLocality?: string } };
   secondaryLocations?: { location: string }[];
-  compensation?: { summaryComponents?: AshbyComponent[] };
+  compensation?: {
+    compensationTierSummary?: string | null;
+    summaryComponents?: AshbyComponent[];
+    compensationTiers?: { tierSummary?: string | null; components?: (AshbyComponent & { summary?: string | null })[] }[];
+  };
 }
 
 function workplace(j: AshbyJob): RemoteType | undefined {
@@ -50,6 +54,12 @@ export const ashby: Adapter = {
         const salary = j.compensation?.summaryComponents?.find(
           (c) => c.compensationType === "Salary" && c.interval === "1 YEAR",
         );
+        // Ashby files OTE under "Salary" but says so in the human-readable summary.
+        const labels = [
+          j.compensation?.compensationTierSummary,
+          ...(j.compensation?.compensationTiers ?? []).flatMap((t) => [t.tierSummary, ...(t.components ?? []).map((c) => c.summary)]),
+        ].filter(Boolean).join(" | ");
+        const isOte = /\b(OTE|on[- ]target)\b/i.test(labels);
         const addr = j.address?.postalAddress;
         return {
           source_provider: "ashby",
@@ -61,6 +71,7 @@ export const ashby: Adapter = {
           salary_min: salary?.minValue ?? null,
           salary_max: salary?.maxValue ?? null,
           currency: salary?.currencyCode ?? null,
+          structured_is_ote: isOte,
           apply_url: j.applyUrl,
           source_url: j.jobUrl,
           workplace_type: workplace(j),

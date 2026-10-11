@@ -5,6 +5,11 @@ on:
     - cron: "7 */4 * * *"   # every 4 hours (spec: refresh cadence)
     - cron: "3 12 * * *"    # daily digest, 8am ET
   workflow_dispatch:
+    inputs:
+      reprocess:
+        description: "Re-apply current classification / location / pay rules to stored jobs"
+        type: boolean
+        default: false
 
 jobs:
   run:
@@ -26,7 +31,7 @@ jobs:
       - run: npm ci
       - name: Ingest + instant alerts
         if: github.event.schedule != '3 12 * * *'
-        run: npm run ingest
+        run: npm run ingest -- ${{ inputs.reprocess && '--reprocess' || '' }}
       - name: Daily digest
         if: github.event.schedule == '3 12 * * *'
         run: npm run digest

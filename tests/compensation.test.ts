@@ -51,3 +51,16 @@ describe("labeled pay", () => {
     expect(c.salary_min).toBeNull();
   });
 });
+
+describe("ATS OTE labels + plausibility (seen in real data)", () => {
+  it("Ashby/Greenhouse ranges labeled OTE become OTE", () => {
+    const c = resolveCompensation({ min: 310000, max: 407000, currency: "USD", isOte: true }, "");
+    expect(c.ote_min).toBe(310000);
+    expect(c.salary_min).toBeNull();
+  });
+  it("drops nonsense ranges like $14K-$214K", () => {
+    const c = resolveCompensation({ min: 14000, max: 214000, currency: "USD" }, "");
+    expect(c.salary_min).toBeNull();
+    expect(c.ote_min).toBeNull();
+  });
+});

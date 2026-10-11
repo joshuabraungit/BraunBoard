@@ -29,7 +29,12 @@ export interface RunStats {
   error?: string;
 }
 
-export async function ingestCompany(db: SupabaseClient, company: CompanyRow): Promise<RunStats> {
+export interface IngestOptions {
+  /** Re-apply current classification, location and pay rules to jobs already stored. */
+  reprocess?: boolean;
+}
+
+export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opts: IngestOptions = {}): Promise<RunStats> {
   const { data: run } = await db.from("crawl_runs").insert({ company_id: company.id }).select("id").single();
   const stats: RunStats = { seen: 0, kept: 0, new: 0, removed: 0 };
 
@@ -39,7 +44,7 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow): Pr
 
     const { data: existingRows, error: exErr } = await db
       .from("jobs")
-      .select("id, source_job_id, is_active, missed_checks")
+      .select("id, source_job_id, is_active, missed_checks, classification_overridden")
       .eq("company_id", company.id);
     if (exErr) throw exErr;
     const existing = new Map((existingRows ?? []).map((r) => [r.source_job_id as string, r]));
@@ -48,26 +53,47 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow): Pr
     const now = new Date().toISOString();
 
     for (const job of raw) {
+      const prior = existing.get(job.source_job_id);
       const cls = classifyTitle(job.title);
-      if (!cls) continue;
       const loc = parseLocation(job.location, {
         country: job.country_hint,
         region: job.region_hint,
         city: job.city_hint,
         workplace: job.workplace_type,
       });
-      if (!loc.is_us) continue;
+
+      if (!cls || !loc.is_us) {
+        // No longer in scope under current rules: hide it now when reprocessing,
+        // otherwise it ages out after missed checks like any vanished job.
+        if (prior && opts.reprocess && prior.is_active) {
+          await db.from("jobs").update({ is_active: false, removed_at: now }).eq("id", prior.id);
+          seenIds.add(job.source_job_id);
+          stats.removed++;
+        }
+        continue;
+      }
 
       stats.kept++;
       seenIds.add(job.source_job_id);
-      const prior = existing.get(job.source_job_id);
 
       if (prior) {
         // Seen again: refresh last_seen_at. If it had been marked removed, bring it back.
-        await db
-          .from("jobs")
-          .update({ last_seen_at: now, missed_checks: 0, is_active: true, removed_at: null })
-          .eq("id", prior.id);
+        const refresh: Record<string, unknown> = { last_seen_at: now, missed_checks: 0, is_active: true, removed_at: null };
+        if (opts.reprocess && !prior.classification_overridden) {
+          const comp = resolveCompensation(await structuredPay(company, job), job.description);
+          Object.assign(refresh, comp, {
+            role_family: cls.role_family,
+            seniority: cls.seniority,
+            title_normalized: cls.title_normalized,
+            ...(cls.sales_segment !== "Unknown" ? { sales_segment: cls.sales_segment } : {}),
+            city: loc.city,
+            state: loc.state,
+            country: loc.country,
+            remote_type: loc.remote_type,
+            needs_review: loc.country == null,
+          });
+        }
+        await db.from("jobs").update(refresh).eq("id", prior.id);
         continue;
       }
 
@@ -112,15 +138,9 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow): Pr
   return stats;
 }
 
-async function insertNewJob(
-  db: SupabaseClient,
-  company: CompanyRow,
-  job: RawJob,
-  cls: NonNullable<ReturnType<typeof classifyTitle>>,
-  loc: ReturnType<typeof parseLocation>,
-): Promise<string | null> {
-  // Greenhouse only exposes structured pay per job, so fetch it just for kept jobs.
-  let structured = { min: job.salary_min, max: job.salary_max, currency: job.currency };
+/** Structured pay from the ATS. Greenhouse only exposes it per job, so it's fetched just for kept jobs. */
+async function structuredPay(company: CompanyRow, job: RawJob) {
+  let structured = { min: job.salary_min, max: job.salary_max, currency: job.currency, isOte: !!job.structured_is_ote };
   if (job.source_provider === "greenhouse") {
     try {
       const pay = await fetchGreenhousePayRange(company.ats_identifier, job.source_job_id);
@@ -129,7 +149,17 @@ async function insertNewJob(
       /* pay is optional */
     }
   }
-  const comp = resolveCompensation(structured, job.description);
+  return structured;
+}
+
+async function insertNewJob(
+  db: SupabaseClient,
+  company: CompanyRow,
+  job: RawJob,
+  cls: NonNullable<ReturnType<typeof classifyTitle>>,
+  loc: ReturnType<typeof parseLocation>,
+): Promise<string | null> {
+  const comp = resolveCompensation(await structuredPay(company, job), job.description);
   const attrs = await extractAttributes(job.title, job.description, cls);
   const locKey = normalizeLocationKey(loc.city, loc.state, loc.remote_type);
   const key = dedupeKey(company.id, cls.title_normalized, locKey);
@@ -195,7 +225,7 @@ async function insertNewJob(
 /** Crawl every enabled company that hasn't been crawled in `staleAfterHours`. */
 export async function ingestAll(
   db: SupabaseClient,
-  { staleAfterHours = 4, limit = 500, concurrency = 4 } = {},
+  { staleAfterHours = 4, limit = 500, concurrency = 4, reprocess = false } = {},
 ): Promise<{ companies: number; totals: RunStats }> {
   const cutoff = new Date(Date.now() - staleAfterHours * 3_600_000).toISOString();
   const { data: companies, error } = await db
@@ -212,7 +242,7 @@ export async function ingestAll(
   const queue = [...((companies ?? []) as CompanyRow[])];
   const worker = async () => {
     for (let c = queue.shift(); c; c = queue.shift()) {
-      const s = await ingestCompany(db, c);
+      const s = await ingestCompany(db, c, { reprocess });
       totals.seen += s.seen;
       totals.kept += s.kept;
       totals.new += s.new;

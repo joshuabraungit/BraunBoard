@@ -55,7 +55,7 @@ export const greenhouse: Adapter = {
 export async function fetchGreenhousePayRange(
   boardToken: string,
   jobId: string,
-): Promise<{ min: number; max: number; currency: string } | null> {
+): Promise<{ min: number; max: number; currency: string; isOte: boolean } | null> {
   const data = await getJson<{ pay_input_ranges?: GhPayRange[] }>(
     `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(boardToken)}/jobs/${jobId}?pay_transparency=true`,
   );
@@ -63,5 +63,10 @@ export async function fetchGreenhousePayRange(
   // Prefer a US range if several are listed (they're often per-zone).
   const r = ranges.find((x) => /\b(us|united states|usa)\b/i.test(x.title ?? "")) ?? ranges[0];
   if (!r?.min_cents || !r?.max_cents) return null;
-  return { min: Math.round(r.min_cents / 100), max: Math.round(r.max_cents / 100), currency: r.currency_type ?? "USD" };
+  return {
+    min: Math.round(r.min_cents / 100),
+    max: Math.round(r.max_cents / 100),
+    currency: r.currency_type ?? "USD",
+    isOte: /\b(OTE|on[- ]target)\b/i.test(`${r.title ?? ""} ${(r as { blurb?: string }).blurb ?? ""}`),
+  };
 }

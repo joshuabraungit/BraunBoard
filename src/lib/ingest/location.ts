@@ -25,8 +25,24 @@ const US_CITIES: Record<string, string> = {
   "portland": "OR", "pittsburgh": "PA", "detroit": "MI", "columbus": "OH", "charlotte": "NC",
 };
 
-const NON_US = /\b(canada|toronto|vancouver|montreal|uk|united kingdom|london|ireland|dublin|germany|berlin|munich|france|paris|netherlands|amsterdam|spain|madrid|india|bangalore|bengaluru|singapore|australia|sydney|melbourne|japan|tokyo|brazil|são paulo|sao paulo|mexico|emea|apac|latam|israel|tel aviv|poland|sweden|stockholm|switzerland|zurich)\b/i;
+const NON_US = /\b(canada|toronto|vancouver, (bc|british columbia)|montreal|ontario|quebec|uk|u\.k\.|united kingdom|england|scotland|london|ireland|dublin|uk&i|germany|berlin|munich|france|paris|netherlands|amsterdam|belgium|spain|madrid|barcelona|portugal|lisbon|italy|milan|denmark|copenhagen|norway|oslo|sweden|stockholm|finland|helsinki|switzerland|zurich|austria|vienna|poland|warsaw|czech|prague|romania|ukraine|turkey|istanbul|israel|tel aviv|uae|dubai|abu dhabi|saudi|riyadh|qatar|egypt|south africa|nigeria|kenya|india|bangalore|bengaluru|hyderabad|pune|mumbai|delhi|gurgaon|gurugram|noida|chennai|pakistan|singapore|malaysia|indonesia|jakarta|thailand|bangkok|vietnam|philippines|manila|hong kong|china|beijing|shanghai|shenzhen|taiwan|taipei|korea|seoul|japan|tokyo|australia|sydney|melbourne|new zealand|auckland|anz|brazil|são paulo|sao paulo|mexico|mexico city|colombia|bogot[aá]|argentina|buenos aires|chile|santiago|peru|lima|costa rica|latam|latin america|emea|apac|asia|europe|nordics|dach|benelux)\b/i;
 const US_MARKERS = /\b(united states|usa|u\.s\.a?\.?|us|north america|americas|nationwide)\b/i;
+
+const US_REGION_WORDS = /^(us|usa|u\.s\.a?\.?|united states|north america|americas|anywhere in (the )?us|(us[ -])?(east|west|central|midwest|mid-?west|northeast|north east|southeast|south east|southwest|south west|northwest|north west|pacific|mountain|east coast|west coast|south|north)( coast| region| time ?zones?)?|(eastern|central|pacific|mountain) time( ?zone)?|est|cst|pst|mst|et|ct|pt|mt)$/i;
+
+/** "Remote - Colombia" -> "Colombia". Null when there's no qualifier. */
+function remoteQualifier(part: string): string | null {
+  const m = part.match(/\bremote\b\s*(?:[-–—:,|]\s*|\()\s*([^)]+?)\)?\s*$/i) ?? part.match(/^\s*([^-–(]+?)\s*[-–(]\s*remote\b/i);
+  return m ? m[1].trim() : null;
+}
+
+function isUsQualifier(q: string): boolean {
+  const t = q.replace(/^(us|usa)\s*[-–]\s*/i, "").trim();
+  if (US_REGION_WORDS.test(q.trim()) || US_REGION_WORDS.test(t)) return true;
+  if (US_STATES[t.toUpperCase()] || STATE_NAMES[t.toLowerCase()]) return true;
+  if (US_MARKERS.test(q)) return true;
+  return false;
+}
 
 export interface ParsedLocation {
   city: string | null;
@@ -59,11 +75,18 @@ export function parseLocation(
   }
 
   // Multi-location strings ("NYC / London"): US if any part is US.
-  const parts = text.split(/\s*(?:\/|;|\bor\b|\|)\s*/i).filter(Boolean);
+  const parts = text.split(/\s*(?:\/|;|\bor\b|\||•)\s*/i).filter(Boolean);
+  let foreignQualifier = false;
   for (const part of parts.length ? parts : [text]) {
+    const q = remoteQualifier(part);
+    if (q && !isUsQualifier(q)) {
+      foreignQualifier = true;
+      continue;
+    }
     const p = parsePart(part);
     if (p) return { ...p, remote_type, is_us: true };
   }
+  if (foreignQualifier) return { city: null, state: null, country: null, remote_type, is_us: false };
 
   if (NON_US.test(text)) return { city: null, state: null, country: null, remote_type, is_us: false };
   if (hintCountry) return { city: null, state: null, country: hints.country ?? null, remote_type, is_us: false };
