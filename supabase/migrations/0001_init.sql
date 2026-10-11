@@ -1,8 +1,8 @@
 -- Braun Board V1 schema
 -- Spec: docs/SPEC.md sections 7, 9, 10, 13, 16
 
-create extension if not exists "pgcrypto";
-create extension if not exists "pg_trgm";
+-- gen_random_uuid() is built in since Postgres 13. Extensions live in Supabase's "extensions" schema.
+create extension if not exists pg_trgm with schema extensions;
 
 -- ---------------------------------------------------------------------------
 -- Enums (allowed values come straight from the spec; "Unknown" is always valid)
@@ -114,7 +114,7 @@ create index jobs_visible_idx on jobs (first_seen_at desc)
 create index jobs_company_idx on jobs (company_id);
 create index jobs_dedupe_idx on jobs (dedupe_key);
 create index jobs_role_segment_idx on jobs (role_family, sales_segment);
-create index jobs_title_trgm_idx on jobs using gin (title_raw gin_trgm_ops);
+create index jobs_title_trgm_idx on jobs using gin (title_raw extensions.gin_trgm_ops);
 
 -- What browse/search should read from. Inactive, disabled and duplicate rows never show.
 create view visible_jobs with (security_invoker = true) as
@@ -211,7 +211,7 @@ create index crawl_runs_errors_idx on crawl_runs (started_at desc) where error i
 -- ---------------------------------------------------------------------------
 -- updated_at triggers
 -- ---------------------------------------------------------------------------
-create or replace function set_updated_at() returns trigger language plpgsql as $$
+create or replace function set_updated_at() returns trigger language plpgsql set search_path = '' as $$
 begin new.updated_at = now(); return new; end $$;
 
 create trigger companies_updated_at before update on companies for each row execute function set_updated_at();
@@ -219,9 +219,9 @@ create trigger jobs_updated_at before update on jobs for each row execute functi
 create trigger watches_updated_at before update on watches for each row execute function set_updated_at();
 
 -- Create a profile row on signup
-create or replace function handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$
+create or replace function handle_new_user() returns trigger language plpgsql security definer set search_path = '' as $$
 begin
-  insert into profiles (id, email) values (new.id, new.email) on conflict do nothing;
+  insert into public.profiles (id, email) values (new.id, new.email) on conflict do nothing;
   return new;
 end $$;
 create trigger on_auth_user_created after insert on auth.users for each row execute function handle_new_user();
