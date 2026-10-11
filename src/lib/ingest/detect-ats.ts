@@ -51,8 +51,10 @@ async function exists(provider: AtsProvider, token: string): Promise<boolean> {
     // Lever returns [] for unknown sites rather than 404
     return provider === "lever" ? Array.isArray(data) && data.length > 0 : true;
   } catch (err) {
+    // 404/401/etc means "no board here". Timeouts and network blips: treat as not found
+    // rather than aborting the whole seed run.
     if (err instanceof HttpError) return false;
-    throw err;
+    return false;
   }
 }
 

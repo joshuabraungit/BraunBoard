@@ -5,17 +5,16 @@
 import { adminClient } from "../src/lib/supabase/admin";
 import { ingestAll } from "../src/lib/ingest/pipeline";
 import { sendPendingAlerts } from "../src/lib/alerts/send";
+import { fail, notice, requireEnv } from "./report";
 
 async function main() {
+  requireEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY");
   const db = adminClient();
   const all = process.argv.includes("--all");
   const { companies, totals } = await ingestAll(db, { staleAfterHours: all ? 0 : 4 });
-  console.log(`\nCrawled ${companies} companies: ${totals.kept} sales jobs seen, ${totals.new} new, ${totals.removed} removed`);
+  notice(`Ingest: crawled ${companies} companies, ${totals.kept} US sales jobs seen, ${totals.new} new, ${totals.removed} removed`);
   const sent = await sendPendingAlerts(db, "instant");
   console.log(`Sent ${sent} instant alert emails`);
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main().catch(fail);
