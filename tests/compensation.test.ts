@@ -64,3 +64,18 @@ describe("ATS OTE labels + plausibility (seen in real data)", () => {
     expect(c.ote_min).toBeNull();
   });
 });
+
+describe("OTE described as 'base + commission' (Verkada wording)", () => {
+  const text =
+    "Below is the annual on-target earnings (OTE) range for full-time employees for this position, comprised of base compensation and commissions (if applicable). Estimated Annual Pay Range $280,000-$320,000 USD";
+  it("labels it OTE, never base", () => {
+    const c = resolveCompensation({ min: 280000, max: 320000, currency: "USD" }, text);
+    expect(c.ote_min).toBe(280000);
+    expect(c.salary_min).toBeNull();
+  });
+  it("never shows the same range as both base and OTE", () => {
+    const c = resolveCompensation({ min: 150000, max: 200000, currency: "USD" }, "Base salary: $150,000 - $200,000. OTE: $150,000 - $200,000.");
+    expect(c.salary_min).toBeNull();
+    expect(c.ote_min).toBe(150000);
+  });
+});

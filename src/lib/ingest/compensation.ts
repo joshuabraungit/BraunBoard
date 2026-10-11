@@ -28,7 +28,12 @@ function toNumber(s: string): number {
 
 function lastIndexOf(text: string, re: RegExp): number {
   let idx = -1;
-  for (const m of text.matchAll(new RegExp(re.source, "gi"))) idx = m.index!;
+  for (const m of text.matchAll(new RegExp(re.source, "gi"))) {
+    // "comprised of base compensation and commissions" describes OTE, it isn't a base label.
+    const after = text.slice(m.index! + m[0].length, m.index! + m[0].length + 40);
+    if (re === BASE_WORDS && /^\s*(salary|pay|compensation)?\s*(and|plus|\+|&)\s*(variable|commission|incentive|bonus)/i.test(after)) continue;
+    idx = m.index!;
+  }
   return idx;
 }
 
@@ -48,7 +53,7 @@ export function findPayInText(text: string): Found[] {
   const seen = new Set<number>();
   const label = (idx: number, len: number): Found["label"] => {
     // Look at a small window around the figure for the label.
-    const before = text.slice(Math.max(0, idx - 120), idx);
+    const before = text.slice(Math.max(0, idx - 300), idx);
     const after = text.slice(idx + len, idx + len + 40);
     // Label directly after the figure: "$300K OTE", "$150K base"
     const nearAfter = after.match(/^[\s(]*([a-z -]{0,30})/i)?.[1] ?? "";
@@ -117,6 +122,11 @@ export function resolveCompensation(
   if (result.ote_min == null && ote) {
     result.ote_min = ote.min;
     result.ote_max = ote.max;
+  }
+  // Same numbers labeled both ways means the posting called it OTE somewhere: show it once, as OTE.
+  if (result.salary_min != null && result.salary_min === result.ote_min && result.salary_max === result.ote_max) {
+    result.salary_min = null;
+    result.salary_max = null;
   }
   if ((result.salary_min ?? result.ote_min) != null && !result.currency) result.currency = "USD";
   return result;
