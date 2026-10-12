@@ -17,7 +17,7 @@ export interface ItemContent {
 }
 
 /** Mailing address required in commercial email footers (CAN-SPAM). */
-const POSTAL_ADDRESS = "";
+const POSTAL_ADDRESS = "Braun Board, 5566 Marbella Dr., Boca Raton, FL 33433";
 export const postalAddress = () => process.env.PICKS_POSTAL_ADDRESS?.trim() || POSTAL_ADDRESS;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
