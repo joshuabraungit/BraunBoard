@@ -1,18 +1,23 @@
 name: Seed companies
 
-# Run once by hand (Actions tab > Seed companies > Run workflow) to load
-# data/seed-companies.csv, detect each company's ATS, then pull the first jobs.
+# Run by hand (Actions tab > Seed companies > Run workflow) to load a company CSV,
+# detect each company's ATS, then pull jobs for anything not crawled recently.
 on:
   workflow_dispatch:
+    inputs:
+      file:
+        description: "Company CSV to load"
+        default: data/seed-companies.csv
 
 jobs:
   seed:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,5 +25,5 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run seed -- data/seed-companies.csv
-      - run: npm run ingest -- --all
+      - run: npm run seed -- ${{ inputs.file }}
+      - run: npm run ingest

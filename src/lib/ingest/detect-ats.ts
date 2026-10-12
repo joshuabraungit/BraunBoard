@@ -2,7 +2,9 @@
 // figure out which supported ATS hosts the company's public job board.
 
 import type { AtsProvider } from "./types";
-import { getJson, HttpError } from "./http";
+import { getJson, HttpError, postJson } from "./http";
+import { listWorkday, parseWorkdayId, workdayIdFromUrl } from "./adapters/workday";
+import { listSmartRecruiters } from "./adapters/smartrecruiters";
 
 export interface Detected {
   provider: AtsProvider;
@@ -14,10 +16,14 @@ const URL_PATTERNS: { provider: AtsProvider; re: RegExp }[] = [
   { provider: "greenhouse", re: /boards-api\.greenhouse\.io\/v1\/boards\/([a-z0-9_-]+)/i },
   { provider: "lever", re: /jobs\.(?:eu\.)?lever\.co\/([a-z0-9_.-]+)/i },
   { provider: "ashby", re: /jobs\.ashbyhq\.com\/([a-z0-9_.%-]+)/i },
+  { provider: "smartrecruiters", re: /(?:jobs|careers)\.smartrecruiters\.com\/([A-Za-z0-9_.-]+)/i },
+  { provider: "smartrecruiters", re: /api\.smartrecruiters\.com\/v1\/companies\/([A-Za-z0-9_.-]+)/i },
 ];
 
 /** Pure URL sniffing, no network. */
 export function detectFromUrl(url: string): Detected | null {
+  const wd = workdayIdFromUrl(url);
+  if (wd) return { provider: "workday", identifier: wd };
   for (const { provider, re } of URL_PATTERNS) {
     const m = url.match(re);
     if (m) return { provider, identifier: decodeURIComponent(m[1]) };
@@ -123,4 +129,68 @@ export async function detectByProbing(name: string, domain: string | null = null
     }
   }
   return firstUnverified;
+}
+
+// ---------------------------------------------------------------------------
+// Workday and SmartRecruiters: verify a pinned board actually lists jobs and
+// (for SmartRecruiters, where identifiers are shared names) belongs to the company.
+// ---------------------------------------------------------------------------
+
+export interface BoardCheck {
+  ok: boolean;
+  total: number;
+  reason?: string;
+}
+
+export async function verifyBoard(d: Detected, name: string): Promise<BoardCheck> {
+  try {
+    if (d.provider === "workday") {
+      const b = parseWorkdayId(d.identifier);
+      if (!b) return { ok: false, total: 0, reason: "bad Workday URL" };
+      const { total } = await listWorkday(b, 20);
+      return total > 0 ? { ok: true, total } : { ok: false, total, reason: "board lists no US jobs" };
+    }
+    if (d.provider === "smartrecruiters") {
+      const { total, listings } = await listSmartRecruiters(d.identifier, { usOnly: false, max: 100 });
+      if (!total) return { ok: false, total, reason: "no postings" };
+      const owner = listings.find((l) => l.company?.name)?.company?.name ?? "";
+      const same = namesMatch(owner, name) || normalizeCompanyName(owner).includes(normalizeCompanyName(name)) || normalizeCompanyName(name).includes(normalizeCompanyName(owner));
+      return same ? { ok: true, total } : { ok: false, total, reason: `board belongs to "${owner}"` };
+    }
+    return { ok: true, total: -1 };
+  } catch (e) {
+    return { ok: false, total: 0, reason: e instanceof HttpError ? `HTTP ${e.status}` : (e as Error).message };
+  }
+}
+
+/** Guess a SmartRecruiters company id ("Visa", "ServiceNow", "BoschGroup") from a name. */
+export function smartRecruitersCandidates(name: string): string[] {
+  const words = name.replace(/[^A-Za-z0-9 ]+/g, " ").split(/\s+/).filter(Boolean);
+  const camel = words.map((w) => w[0]!.toUpperCase() + w.slice(1)).join("");
+  return [...new Set([words.join(""), camel, camel.toLowerCase(), `${camel}Inc`, `${camel}Group`])];
+}
+
+/** Workday tenants hide behind wdN host numbers and arbitrary site names; try the common ones. */
+export async function probeWorkday(name: string, domain: string | null): Promise<Detected | null> {
+  const tenants = candidateTokens(name, domain).filter((t) => !t.includes("-")).slice(0, 2);
+  const words = name.replace(/[^A-Za-z0-9 ]+/g, " ").split(/\s+/).filter(Boolean);
+  const camel = words.map((w) => w[0]!.toUpperCase() + w.slice(1)).join("");
+  const sites = [...new Set(["External", "Careers", "careers", "External_Careers", "ExternalCareers", "jobs", "Search", "ExternalCareerSite", `${camel}Careers`, `${camel}_Careers`, camel])];
+  for (const tenant of tenants) {
+    for (const wd of [1, 5, 3, 12, 103, 10, 108]) {
+      for (const site of sites) {
+        try {
+          const res = await postJson<{ total?: number }>(
+            `https://${tenant}.wd${wd}.myworkdayjobs.com/wday/cxs/${tenant}/${site}/jobs`,
+            { appliedFacets: {}, limit: 1, offset: 0, searchText: "" },
+            { retries: 0, timeoutMs: 8_000 },
+          );
+          if ((res.total ?? 0) > 0) return { provider: "workday", identifier: `${tenant}.wd${wd}.myworkdayjobs.com/${site}` };
+        } catch {
+          // keep trying
+        }
+      }
+    }
+  }
+  return null;
 }

@@ -71,7 +71,7 @@ export function parseLocation(
 
   // Structured hints win when the ATS gives them (Ashby, sometimes Lever).
   const hintCountry = hints.country?.toLowerCase();
-  if (hintCountry && /^(us|usa|united states)$/.test(hintCountry)) {
+  if (hintCountry && /^(us|usa|u\.s\.a?\.?|united states( of america)?)$/.test(hintCountry)) {
     const st = hints.region ? (US_STATES[hints.region.toUpperCase()] ? hints.region.toUpperCase() : STATE_NAMES[hints.region.toLowerCase()] ?? null) : null;
     const city = hints.city && !/^(remote|hybrid|anywhere|)$/i.test(hints.city.trim()) ? hints.city : null;
     return { city, state: st, country: "US", remote_type, is_us: true };

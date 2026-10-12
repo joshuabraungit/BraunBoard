@@ -11,19 +11,42 @@ export class HttpError extends Error {
   }
 }
 
-export async function getJson<T>(url: string, { retries = 2, timeoutMs = 20_000 } = {}): Promise<T> {
+export async function getJson<T>(url: string, opts: { retries?: number; timeoutMs?: number } = {}): Promise<T> {
+  return requestJson<T>(url, { method: "GET" }, opts);
+}
+
+export async function postJson<T>(url: string, body: unknown, opts: { retries?: number; timeoutMs?: number } = {}): Promise<T> {
+  return requestJson<T>(url, { method: "POST", body: JSON.stringify(body) }, opts);
+}
+
+async function requestJson<T>(
+  url: string,
+  init: { method: "GET" | "POST"; body?: string },
+  { retries = 2, timeoutMs = 20_000 } = {},
+): Promise<T> {
   let lastErr: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
-      const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "application/json" }, signal: ctrl.signal });
-      if (res.status === 404) throw new HttpError(404, url); // board doesn't exist, don't retry
+      const res = await fetch(url, {
+        method: init.method,
+        body: init.body,
+        headers: {
+          "User-Agent": UA,
+          Accept: "application/json",
+          "Accept-Language": "en-US",
+          ...(init.body ? { "Content-Type": "application/json" } : {}),
+        },
+        signal: ctrl.signal,
+      });
+      // Board doesn't exist (or the request is malformed): retrying won't help.
+      if (res.status === 404 || res.status === 400 || res.status === 422) throw new HttpError(res.status, url);
       if (!res.ok) throw new HttpError(res.status, url);
       return (await res.json()) as T;
     } catch (err) {
       lastErr = err;
-      if (err instanceof HttpError && err.status === 404) throw err;
+      if (err instanceof HttpError && [400, 404, 422].includes(err.status)) throw err;
       await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
     } finally {
       clearTimeout(timer);

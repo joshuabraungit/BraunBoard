@@ -1,6 +1,6 @@
 // Shared types for the ingestion pipeline. Spec section 6 + 8.
 
-export type AtsProvider = "greenhouse" | "lever" | "ashby";
+export type AtsProvider = "greenhouse" | "lever" | "ashby" | "workday" | "smartrecruiters";
 
 export const ROLE_FAMILIES = [
   "SDR/BDR",
@@ -76,7 +76,16 @@ export interface SalesAttributes {
   customer_segment: SalesSegment;
 }
 
+export interface FetchOptions {
+  /**
+   * Source ids we already store. Adapters that need one request per job for details
+   * (Workday, SmartRecruiters) skip the detail call for these and return the job
+   * with an empty description, which the pipeline only needs for new jobs.
+   */
+  known?: Set<string>;
+}
+
 export interface Adapter {
   provider: AtsProvider;
-  fetchJobs(company: CompanyRef): Promise<RawJob[]>;
+  fetchJobs(company: CompanyRef, opts?: FetchOptions): Promise<RawJob[]>;
 }

@@ -1,0 +1,149 @@
+name,domain,careers_url,industry,employee_range,ats
+Salesforce,salesforce.com,https://salesforce.wd12.myworkdayjobs.com/External_Career_Site,CRM,10001+,workday
+Adobe,adobe.com,https://adobe.wd5.myworkdayjobs.com/external_experienced,Software,10001+,workday
+Workday,workday.com,https://workday.wd5.myworkdayjobs.com/Workday,HR Software,10001+,workday
+NVIDIA,nvidia.com,https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite,Semiconductors,10001+,workday
+Intel,intel.com,https://intel.wd1.myworkdayjobs.com/External,Semiconductors,10001+,workday
+Dell Technologies,dell.com,https://dell.wd1.myworkdayjobs.com/External,Hardware,10001+,workday
+HP,hp.com,https://hp.wd5.myworkdayjobs.com/ExternalCareerSite,Hardware,10001+,workday
+Hewlett Packard Enterprise,hpe.com,https://hpe.wd5.myworkdayjobs.com/Jobsathpe,Infrastructure,10001+,workday
+Autodesk,autodesk.com,https://autodesk.wd1.myworkdayjobs.com/Ext,Software,10001+,workday
+CrowdStrike,crowdstrike.com,https://crowdstrike.wd5.myworkdayjobs.com/crowdstrikecareers,Security,5001-10000,workday
+Zoom,zoom.us,https://zoom.wd5.myworkdayjobs.com/Zoom,Communications,5001-10000,workday
+Broadcom,broadcom.com,https://broadcom.wd1.myworkdayjobs.com/External_Career,Infrastructure Software,10001+,workday
+Mastercard,mastercard.com,https://mastercard.wd1.myworkdayjobs.com/CorporateCareers,Payments,10001+,workday
+PayPal,paypal.com,https://paypal.wd1.myworkdayjobs.com/jobs,Payments,10001+,workday
+Red Hat,redhat.com,https://redhat.wd5.myworkdayjobs.com/jobs,Open Source Software,10001+,workday
+Motorola Solutions,motorolasolutions.com,https://motorolasolutions.wd5.myworkdayjobs.com/Careers,Public Safety Tech,10001+,workday
+Medtronic,medtronic.com,https://medtronic.wd1.myworkdayjobs.com/MedtronicCareers,Medical Devices,10001+,workday
+Thermo Fisher Scientific,thermofisher.com,https://thermofisher.wd5.myworkdayjobs.com/ThermoFisherCareers,Life Sciences,10001+,workday
+NetApp,netapp.com,https://netapp.wd1.myworkdayjobs.com/NetAppCareers,Storage,10001+,workday
+Nutanix,nutanix.com,https://nutanix.wd1.myworkdayjobs.com/Nutanix_Careers,Infrastructure,5001-10000,workday
+F5,f5.com,https://ffive.wd5.myworkdayjobs.com/f5jobs,Networking,5001-10000,workday
+Akamai,akamai.com,https://akamai.wd1.myworkdayjobs.com/akamai_careers,Cloud,5001-10000,workday
+Trimble,trimble.com,https://trimble.wd1.myworkdayjobs.com/TrimbleCareers,Construction Tech,10001+,workday
+PTC,ptc.com,https://ptc.wd1.myworkdayjobs.com/PTC,Industrial Software,5001-10000,workday
+Workiva,workiva.com,https://workiva.wd1.myworkdayjobs.com/careers,Reporting Software,1001-5000,workday
+Blackbaud,blackbaud.com,https://blackbaud.wd1.myworkdayjobs.com/ExternalCareers,Nonprofit Software,1001-5000,workday
+Paychex,paychex.com,https://paychex.wd5.myworkdayjobs.com/External,HR & Payroll,10001+,workday
+Equifax,equifax.com,https://equifax.wd5.myworkdayjobs.com/External,Data & Analytics,10001+,workday
+TransUnion,transunion.com,https://transunion.wd5.myworkdayjobs.com/TransUnion,Data & Analytics,10001+,workday
+S&P Global,spglobal.com,https://spgi.wd5.myworkdayjobs.com/SPGI_Careers,Financial Data,10001+,workday
+Fiserv,fiserv.com,https://fiserv.wd5.myworkdayjobs.com/EXT,Fintech,10001+,workday
+FIS,fisglobal.com,https://fis.wd5.myworkdayjobs.com/SearchJobs,Fintech,10001+,workday
+Global Payments,globalpayments.com,https://tsys.wd1.myworkdayjobs.com/TSYS,Payments,10001+,workday
+Zebra Technologies,zebra.com,https://zebra.wd1.myworkdayjobs.com/Zebra_Careers,Hardware,5001-10000,workday
+GE HealthCare,gehealthcare.com,https://gehc.wd5.myworkdayjobs.com/GEHC_ExternalSite,Medical Technology,10001+,workday
+Philips,philips.com,https://philips.wd3.myworkdayjobs.com/jobs-and-careers,Health Technology,10001+,workday
+Stryker,stryker.com,https://stryker.wd1.myworkdayjobs.com/StrykerCareers,Medical Devices,10001+,workday
+Cardinal Health,cardinalhealth.com,https://cardinalhealth.wd1.myworkdayjobs.com/EXT,Healthcare,10001+,workday
+3M,3m.com,https://3m.wd1.myworkdayjobs.com/Search,Industrial,10001+,workday
+Johnson Controls,johnsoncontrols.com,https://jci.wd5.myworkdayjobs.com/JCI,Building Technology,10001+,workday
+Comcast,comcast.com,https://comcast.wd5.myworkdayjobs.com/Comcast_Careers,Telecom,10001+,workday
+Equinix,equinix.com,https://equinix.wd1.myworkdayjobs.com/External,Data Centers,10001+,workday
+Kyndryl,kyndryl.com,https://kyndryl.wd5.myworkdayjobs.com/KyndrylProfessionalCareers,IT Services,10001+,workday
+Expedia Group,expediagroup.com,https://expedia.wd5.myworkdayjobs.com/search,Travel Tech,10001+,workday
+DocuSign,docusign.com,,Software,5001-10000,workday
+Box,box.com,,Software,1001-5000,workday
+Okta,okta.com,,Security,5001-10000,workday
+Snowflake,snowflake.com,,Data Cloud,5001-10000,workday
+Palo Alto Networks,paloaltonetworks.com,,Security,10001+,workday
+Fortinet,fortinet.com,,Security,10001+,workday
+Check Point Software,checkpoint.com,,Security,5001-10000,workday
+Citrix,citrix.com,,Software,5001-10000,workday
+Splunk,splunk.com,,Observability,5001-10000,workday
+VMware,vmware.com,,Infrastructure Software,10001+,workday
+Teradata,teradata.com,,Data,5001-10000,workday
+Informatica,informatica.com,,Data Management,5001-10000,workday
+Rapid7,rapid7.com,,Security,1001-5000,workday
+Qualys,qualys.com,,Security,1001-5000,workday
+Tenable,tenable.com,,Security,1001-5000,workday
+SentinelOne,sentinelone.com,,Security,1001-5000,workday
+Zscaler,zscaler.com,,Security,5001-10000,workday
+Proofpoint,proofpoint.com,,Security,1001-5000,workday
+Genesys,genesys.com,,Contact Center,5001-10000,workday
+NICE,nice.com,,Contact Center,5001-10000,workday
+Five9,five9.com,,Contact Center,1001-5000,workday
+RingCentral,ringcentral.com,,Communications,5001-10000,workday
+Avaya,avaya.com,,Communications,5001-10000,workday
+Verint,verint.com,,Customer Engagement,1001-5000,workday
+Unity,unity.com,,Software,5001-10000,workday
+Cadence Design Systems,cadence.com,,EDA Software,10001+,workday
+Synopsys,synopsys.com,,EDA Software,10001+,workday
+Ansys,ansys.com,,Simulation Software,5001-10000,workday
+Bentley Systems,bentley.com,,Infrastructure Software,1001-5000,workday
+Guidewire,guidewire.com,,Insurance Software,1001-5000,workday
+nCino,ncino.com,,Banking Software,1001-5000,workday
+Q2,q2.com,,Banking Software,1001-5000,workday
+Jack Henry,jackhenry.com,,Banking Software,5001-10000,workday
+Broadridge,broadridge.com,,Fintech,10001+,workday
+SS&C Technologies,ssctech.com,,Fintech,10001+,workday
+Envestnet,envestnet.com,,Wealth Tech,1001-5000,workday
+Wolters Kluwer,wolterskluwer.com,,Information Services,10001+,workday
+Thomson Reuters,thomsonreuters.com,,Information Services,10001+,workday
+LexisNexis,lexisnexis.com,,Information Services,10001+,workday
+Gartner,gartner.com,,Research,10001+,workday
+Iron Mountain,ironmountain.com,,Information Management,10001+,workday
+Veeva Systems,veeva.com,,Life Sciences Software,5001-10000,workday
+IQVIA,iqvia.com,,Life Sciences Data,10001+,workday
+Cerner,oracle.com,,Health IT,10001+,workday
+Change Healthcare,changehealthcare.com,,Health IT,10001+,workday
+athenahealth,athenahealth.com,,Health IT,5001-10000,workday
+Epic Systems,epic.com,,Health IT,10001+,workday
+Visa,visa.com,https://jobs.smartrecruiters.com/Visa,Payments,10001+,smartrecruiters
+ServiceNow,servicenow.com,https://jobs.smartrecruiters.com/ServiceNow,Software,10001+,smartrecruiters
+Bosch,bosch.com,https://jobs.smartrecruiters.com/BoschGroup,Industrial,10001+,smartrecruiters
+Experian,experian.com,https://jobs.smartrecruiters.com/Experian,Data & Analytics,10001+,smartrecruiters
+NielsenIQ,nielseniq.com,https://jobs.smartrecruiters.com/NielsenIQ,Market Research,10001+,smartrecruiters
+Freshworks,freshworks.com,https://jobs.smartrecruiters.com/Freshworks,Software,5001-10000,smartrecruiters
+Publicis Groupe,publicisgroupe.com,https://jobs.smartrecruiters.com/PublicisGroupe,Marketing Services,10001+,smartrecruiters
+Avery Dennison,averydennison.com,https://jobs.smartrecruiters.com/AveryDennison,Materials,10001+,smartrecruiters
+Western Digital,westerndigital.com,https://jobs.smartrecruiters.com/WesternDigital,Storage,10001+,smartrecruiters
+Wix,wix.com,https://jobs.smartrecruiters.com/Wix2,Software,5001-10000,smartrecruiters
+Sinch,sinch.com,https://jobs.smartrecruiters.com/Sinch,Communications,1001-5000,smartrecruiters
+Infobip,infobip.com,https://jobs.smartrecruiters.com/Infobip,Communications,1001-5000,smartrecruiters
+Endava,endava.com,https://jobs.smartrecruiters.com/Endava,IT Services,10001+,smartrecruiters
+Atlassian,atlassian.com,,Software,10001+,smartrecruiters
+Square,squareup.com,,Fintech,10001+,smartrecruiters
+LinkedIn,linkedin.com,,Software,10001+,smartrecruiters
+Ubiquiti,ui.com,,Networking,1001-5000,smartrecruiters
+Skechers,skechers.com,,Retail,10001+,smartrecruiters
+Sodexo,sodexo.com,,Facilities Services,10001+,smartrecruiters
+Canva,canva.com,,Software,5001-10000,smartrecruiters
+Ciena,ciena.com,,Networking,5001-10000,workday
+Arista Networks,arista.com,,Networking,1001-5000,workday
+Extreme Networks,extremenetworks.com,,Networking,1001-5000,workday
+Juniper Networks,juniper.net,,Networking,10001+,workday
+Commvault,commvault.com,,Data Protection,1001-5000,workday
+Veritas,veritas.com,,Data Protection,1001-5000,workday
+OpenText,opentext.com,,Information Management,10001+,workday
+Hyland,hyland.com,,Content Services,1001-5000,workday
+Infor,infor.com,,ERP Software,10001+,workday
+Epicor,epicor.com,,ERP Software,5001-10000,workday
+Sage,sage.com,,Accounting Software,10001+,workday
+Intuit,intuit.com,,Fintech,10001+,workday
+Kronos UKG,ukg.com,,HR Software,10001+,workday
+Ceridian Dayforce,dayforce.com,,HR Software,5001-10000,workday
+Cornerstone OnDemand,cornerstoneondemand.com,,HR Software,1001-5000,workday
+Coupa,coupa.com,,Spend Management,1001-5000,workday
+Zuora,zuora.com,,Billing Software,1001-5000,workday
+Pegasystems,pega.com,,Software,5001-10000,workday
+Appian,appian.com,,Software,1001-5000,workday
+Dynatrace,dynatrace.com,,Observability,1001-5000,workday
+New Relic,newrelic.com,,Observability,1001-5000,workday
+Sprinklr,sprinklr.com,,Customer Experience,1001-5000,workday
+Medallia,medallia.com,,Customer Experience,1001-5000,workday
+Qlik,qlik.com,,Analytics,1001-5000,workday
+Alteryx,alteryx.com,,Analytics,1001-5000,workday
+MicroStrategy,microstrategy.com,,Analytics,1001-5000,workday
+Cognizant,cognizant.com,,IT Services,10001+,workday
+EPAM Systems,epam.com,,IT Services,10001+,workday
+Gen Digital,gendigital.com,,Security,1001-5000,workday
+McAfee,mcafee.com,,Security,1001-5000,workday
+Trellix,trellix.com,,Security,1001-5000,workday
+Imprivata,imprivata.com,,Security,1001-5000,workday
+Ping Identity,pingidentity.com,,Security,1001-5000,workday
+SailPoint,sailpoint.com,,Security,1001-5000,workday
+CyberArk,cyberark.com,,Security,1001-5000,workday
+Mimecast,mimecast.com,,Security,1001-5000,workday
+Barracuda Networks,barracuda.com,,Security,1001-5000,workday

@@ -1,13 +1,14 @@
 // Import companies from a CSV and detect their ATS.
 // Usage: npm run seed -- data/seed-companies.csv
-// Columns: name,domain,careers_url,industry,employee_range (careers_url optional)
+// Columns: name,domain,careers_url,industry,employee_range[,ats] (careers_url and ats optional)
+// ats = workday | smartrecruiters means "look there" when there's no careers_url (or it fails).
 //
 // A careers_url pins the ATS exactly. Without one we guess board names and only
 // keep a guess we can verify belongs to this company (see detect-ats.ts).
 
 import { readFileSync } from "node:fs";
 import { adminClient } from "../src/lib/supabase/admin";
-import { detectByProbing, detectFromUrl, type ProbeResult } from "../src/lib/ingest/detect-ats";
+import { detectByProbing, detectFromUrl, probeWorkday, smartRecruitersCandidates, verifyBoard, type ProbeResult } from "../src/lib/ingest/detect-ats";
 import { slugify } from "../src/lib/slug";
 import { fail, notice, requireEnv, warn } from "./report";
 
@@ -38,14 +39,44 @@ async function main() {
   const failures: string[] = [];
   const seenBoards = new Set<string>();
 
+  // Companies that already have a working board keep it unless the CSV pins a new URL.
+  const { data: existingCos } = await db.from("companies").select("slug, ats_provider").not("ats_provider", "is", null);
+  const hasBoard = new Set((existingCos ?? []).map((c) => c.slug as string));
+  const kept: string[] = [];
+
   const queue = [...rows];
   const worker = async () => {
     for (let r = queue.shift(); r; r = queue.shift()) {
       const domain = r.domain || null;
+      if (!r.careers_url && hasBoard.has(slugify(r.name))) {
+        kept.push(r.name);
+        continue;
+      }
       let found: ProbeResult | null = null;
       try {
         const pinned = r.careers_url ? detectFromUrl(r.careers_url) : null;
-        found = pinned ? { ...pinned, verified: true } : await detectByProbing(r.name, domain);
+        const hint = r.ats?.toLowerCase();
+        if (pinned && (pinned.provider === "workday" || pinned.provider === "smartrecruiters")) {
+          const check = await verifyBoard(pinned, r.name);
+          found = { ...pinned, verified: check.ok };
+          if (!check.ok) console.log(`${r.name}: pinned ${pinned.provider}/${pinned.identifier} failed (${check.reason})`);
+        } else if (pinned) {
+          found = { ...pinned, verified: true };
+        }
+        if (!found?.verified && hint === "workday") {
+          const guess = await probeWorkday(r.name, domain);
+          if (guess) found = { ...guess, verified: (await verifyBoard(guess, r.name)).ok };
+        }
+        if (!found?.verified && hint === "smartrecruiters") {
+          for (const id of smartRecruitersCandidates(r.name)) {
+            const check = await verifyBoard({ provider: "smartrecruiters", identifier: id }, r.name);
+            if (check.ok) {
+              found = { provider: "smartrecruiters", identifier: id, verified: true };
+              break;
+            }
+          }
+        }
+        if (!found?.verified && !hint) found = await detectByProbing(r.name, domain);
       } catch (e) {
         warn(`${r.name}: ATS detection failed (${(e as Error).message})`);
       }
@@ -90,7 +121,7 @@ async function main() {
   };
   await Promise.all(Array.from({ length: 6 }, worker));
 
-  notice(`Seed: ${matched.length}/${rows.length} companies verified on Greenhouse, Lever or Ashby`);
+  notice(`Seed: ${matched.length}/${rows.length} companies verified${kept.length ? `, ${kept.length} kept their existing board` : ""}`);
   if (unverified.length) notice(`Boards found but not confirmed as the same company (skipped): ${unverified.join(", ")}`);
   if (missing.length) notice(`No supported ATS found: ${missing.join(", ")}`);
   if (failures.length) fail(new Error(`${failures.length} companies failed to save. First: ${failures[0]}`));

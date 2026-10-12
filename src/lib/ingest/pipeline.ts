@@ -39,21 +39,38 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
   const stats: RunStats = { seen: 0, kept: 0, new: 0, removed: 0 };
 
   try {
-    const raw = await adapters[company.ats_provider].fetchJobs(company);
-    stats.seen = raw.length;
-
     const { data: existingRows, error: exErr } = await db
       .from("jobs")
       .select("id, source_job_id, is_active, missed_checks, classification_overridden")
       .eq("company_id", company.id);
     if (exErr) throw exErr;
     const existing = new Map((existingRows ?? []).map((r) => [r.source_job_id as string, r]));
+
+    // Active jobs we already store don't need their details re-fetched. Reprocessing re-reads
+    // every description, and inactive ones must be re-judged before they come back.
+    const known = opts.reprocess
+      ? undefined
+      : new Set((existingRows ?? []).filter((r) => r.is_active).map((r) => r.source_job_id as string));
+    const raw = await adapters[company.ats_provider].fetchJobs(company, { known });
+    stats.seen = raw.length;
     const seenIds = new Set<string>();
     const newJobIds: string[] = [];
     const now = new Date().toISOString();
 
     for (const job of raw) {
       const prior = existing.get(job.source_job_id);
+
+      // Active, seen again, not reprocessing: it passed our rules when stored, so just confirm it's still up.
+      // (Some adapters return known jobs without details, so don't re-judge them here.)
+      if (prior && prior.is_active && !opts.reprocess) {
+        stats.kept++;
+        seenIds.add(job.source_job_id);
+        const refresh: Record<string, unknown> = { last_seen_at: now, missed_checks: 0, is_active: true, removed_at: null };
+        if (job.posted_at) refresh.source_posted_at = job.posted_at;
+        await db.from("jobs").update(refresh).eq("id", prior.id);
+        continue;
+      }
+
       const cls = classifyTitle(job.title);
       const loc = parseLocation(job.location, {
         country: job.country_hint,
