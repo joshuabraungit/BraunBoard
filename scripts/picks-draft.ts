@@ -6,9 +6,16 @@ import { renderPicks, type ItemContent } from "../src/lib/picks-email";
 import { sendEmail } from "../src/lib/alerts/email";
 import { adminEmails } from "../src/lib/admin-emails";
 import { fail, notice, requireEnv, warn } from "./report";
+import { nyNow } from "../src/lib/schedule";
 
 async function main() {
   requireEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY");
+  if (process.argv.includes("--if-due")) {
+    // Hourly runner: build Monday from 2pm ET, or early Tuesday if Monday's runs were all skipped.
+    const ny = nyNow();
+    const due = (ny.weekday === "Mon" && ny.hour >= 14) || (ny.weekday === "Tue" && ny.hour < 7);
+    if (!due) return console.log("Picks draft: not due.");
+  }
   const db = adminClient();
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.braunboard.com";
   const r = await createDraft(db, new Date(), { rebuildUntouched: process.argv.includes("--rebuild") });

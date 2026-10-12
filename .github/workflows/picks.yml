@@ -1,9 +1,8 @@
-name: Braun's Picks
+name: Braun's Picks (manual)
+
+# Scheduled runs live in hourly.yml. Use this to build, rebuild or send by hand.
 
 on:
-  schedule:
-    - cron: "0 18 * * 1"      # Monday ~2pm ET: build Tuesday's issue, email Josh a preview
-    - cron: "5 12,13 * * 2"   # Tuesday 8am ET (12:05 UTC in summer, 13:05 in winter): send if due
   workflow_dispatch:
     inputs:
       step:
@@ -32,11 +31,11 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Build next issue + preview
-        if: github.event.schedule == '0 18 * * 1' || inputs.step == 'draft'
+        if: inputs.step == 'draft'
         run: npm run picks:draft
       - name: Rebuild unedited draft
         if: inputs.step == 'rebuild'
         run: npm run picks:draft -- --rebuild
       - name: Send due issues
-        if: github.event.schedule == '5 12,13 * * 2' || inputs.step == 'send'
+        if: inputs.step == 'send'
         run: npm run picks:send

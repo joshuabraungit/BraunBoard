@@ -1,9 +1,6 @@
 name: Ingest jobs
 
 on:
-  schedule:
-    - cron: "7 */4 * * *"   # every 4 hours (spec: refresh cadence)
-    - cron: "3 12 * * *"    # daily digest, 8am ET
   workflow_dispatch:
     inputs:
       reprocess:
@@ -29,9 +26,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Scheduled runs live in hourly.yml. This one is for manual runs (e.g. reprocess).
       - name: Ingest + instant alerts
-        if: github.event.schedule != '3 12 * * *'
         run: npm run ingest -- ${{ inputs.reprocess && '--reprocess' || '' }}
-      - name: Daily digest
-        if: github.event.schedule == '3 12 * * *'
-        run: npm run digest

@@ -2,6 +2,7 @@
 // Usage: npm run ingest                 (companies not crawled in 4h)
 //        npm run ingest -- --all        (ignore staleness, crawl everything)
 //        npm run ingest -- --reprocess  (crawl everything AND re-apply current rules to stored jobs)
+//        npm run ingest -- --stale 3.5  (only companies not crawled in 3.5h; used by the hourly runner)
 
 import { adminClient } from "../src/lib/supabase/admin";
 import { ingestAll } from "../src/lib/ingest/pipeline";
@@ -14,7 +15,9 @@ async function main() {
   const db = adminClient();
   const all = process.argv.includes("--all");
   const reprocess = process.argv.includes("--reprocess");
-  const { companies, totals } = await ingestAll(db, { staleAfterHours: all || reprocess ? 0 : 4, reprocess });
+  const staleArg = process.argv.indexOf("--stale");
+  const stale = staleArg > 0 ? Number(process.argv[staleArg + 1]) : 4;
+  const { companies, totals } = await ingestAll(db, { staleAfterHours: all || reprocess ? 0 : stale, reprocess });
   notice(`Ingest: crawled ${companies} companies, ${totals.kept} US sales jobs seen, ${totals.new} new, ${totals.removed} removed`);
   const f = await recomputeFlags(db);
   notice(`Flags: ${f.changed} of ${f.checked} jobs updated`);

@@ -75,7 +75,8 @@ describe("copy", () => {
 describe("schedule", () => {
   it("targets the next Tuesday in New York", () => {
     expect(nextIssueDate(new Date(NOW))).toBe("2026-10-13");
-    expect(nextIssueDate(new Date(Date.UTC(2026, 9, 13, 15)))).toBe("2026-10-20"); // a Tuesday -> next week
+    expect(nextIssueDate(new Date(Date.UTC(2026, 9, 13, 15)))).toBe("2026-10-20"); // Tuesday 11am ET -> next week
+    expect(nextIssueDate(new Date(Date.UTC(2026, 9, 13, 9)))).toBe("2026-10-13"); // Tuesday 5am ET -> today
   });
   it("sends at 8am New York time across daylight saving", () => {
     expect(sendAtFor("2026-10-13")).toBe("2026-10-13T12:00:00.000Z"); // EDT

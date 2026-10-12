@@ -1,0 +1,45 @@
+name: Hourly
+
+# One runner for everything on a schedule. GitHub sometimes delays or skips scheduled
+# runs, so this fires every hour and each step only does what's due:
+#  - crawl companies not checked in ~4 hours (+ instant alerts)
+#  - the daily alert digest, once a day, first run after 8am ET
+#  - build Braun's Picks Monday afternoon, send it Tuesday at 8am ET
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: hourly
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      ALERTS_FROM: ${{ secrets.ALERTS_FROM }}
+      NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Crawl what's due + instant alerts
+        run: npm run ingest -- --stale 3.5
+      - name: Daily digest (if due)
+        if: always()
+        run: npm run digest -- --if-due
+      - name: Build Braun's Picks (if due)
+        if: always()
+        run: npm run picks:draft -- --if-due
+      - name: Send Braun's Picks (if due)
+        if: always()
+        run: npm run picks:send

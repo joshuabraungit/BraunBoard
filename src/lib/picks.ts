@@ -175,7 +175,8 @@ export function nextIssueDate(now = new Date()): string {
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const p = nyParts(now);
   let add = (2 - days.indexOf(p.wd) + 7) % 7;
-  if (add === 0) add = 7;
+  // Tuesday before the 8am send still means today's issue; after that, next week's.
+  if (add === 0 && p.h >= 8) add = 7;
   const d = new Date(Date.UTC(p.y, p.m - 1, p.d + add));
   return d.toISOString().slice(0, 10);
 }
