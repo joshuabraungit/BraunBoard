@@ -128,6 +128,10 @@ export function resolveCompensation(
     result.salary_min = null;
     result.salary_max = null;
   }
+  // OTE can never be below base. If it is, the labels got crossed ("$260K OTE ($130K base...)"): swap.
+  if (result.salary_min != null && result.ote_max != null && result.ote_max < result.salary_min) {
+    [result.salary_min, result.salary_max, result.ote_min, result.ote_max] = [result.ote_min, result.ote_max, result.salary_min, result.salary_max];
+  }
   if ((result.salary_min ?? result.ote_min) != null && !result.currency) result.currency = "USD";
   return result;
 }

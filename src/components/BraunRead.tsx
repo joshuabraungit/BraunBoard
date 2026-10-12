@@ -53,7 +53,7 @@ export function BraunReadPanel({ read }: { read: Read }) {
         {read.checks.map((c) => (
           <div key={c.label} className="flex gap-3 px-4 py-2.5">
             <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${GRADE[c.grade].dot}`} aria-label={GRADE[c.grade].label} />
-            <dt className="w-32 shrink-0 text-sm font-semibold">{c.label}</dt>
+            <dt className="w-28 shrink-0 sm:w-32 text-sm font-semibold">{c.label}</dt>
             <dd className="text-sm text-ink-2">{c.detail}</dd>
           </div>
         ))}

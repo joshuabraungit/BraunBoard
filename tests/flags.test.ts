@@ -90,3 +90,10 @@ describe("dial quotas", () => {
     expect(codes({ description_raw: "Generate pipeline through high-volume outbound prospecting" })).not.toContain("dial_quotas");
   });
 });
+
+describe("pipeline support", () => {
+  it("doesn't call a self-sourced role supported", () => {
+    expect(codes({ self_sourcing_level: "High", description_raw: "Follow up on inbound leads and prospect" })).not.toContain("pipeline_support");
+    expect(codes({ self_sourcing_level: "Medium", description_raw: "supported by an SDR" })).toContain("pipeline_support");
+  });
+});

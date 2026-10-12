@@ -79,3 +79,13 @@ describe("OTE described as 'base + commission' (Verkada wording)", () => {
     expect(c.ote_min).toBe(150000);
   });
 });
+
+describe("crossed labels", () => {
+  it("swaps base and OTE when OTE comes out lower than base", () => {
+    const r = resolveCompensation(
+      { min: 260000, max: 320000, currency: "USD" },
+      "Salary Range: $260K-320k potential total on target earnings ($130K-$160k base + $130K-$160k commission), per year",
+    );
+    expect([r.salary_min, r.salary_max, r.ote_min, r.ote_max]).toEqual([130000, 160000, 260000, 320000]);
+  });
+});

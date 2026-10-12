@@ -6,7 +6,7 @@ import { CompanyLogo } from "./CompanyLogo";
 import { SaveJobButton, HideJobButton } from "./Actions";
 import { MatchBadge } from "./MatchBadge";
 import { FlagChips } from "./BraunRead";
-import { flagsFromCodes } from "@/lib/flags";
+import { cardFlags, flagsFromCodes } from "@/lib/flags";
 import type { MatchResult } from "@/lib/match";
 
 export interface CardContext {
@@ -64,7 +64,7 @@ export function JobCard({ job, ctx }: { job: JobView; ctx: CardContext }) {
         </div>
       )}
 
-      <FlagChips flags={flagsFromCodes(job.flags)} max={2} />
+      <FlagChips flags={cardFlags(flagsFromCodes(job.flags))} max={2} />
 
       {job.summary && <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-ink-2">{job.summary}</p>}
 

@@ -118,7 +118,9 @@ const RULES: Rule[] = [
     tone: "green",
     label: "SDR or inbound support",
     why: "You won't be building all of your own pipeline from zero.",
-    test: (t, j) => j.self_sourcing_level === "Low" || /\b(sdr|bdr) (support|team will|partner)|supported by (an? )?(sdr|bdr)|inbound leads?\b/.test(t),
+    test: (t, j) =>
+      j.self_sourcing_level === "Low" ||
+      (j.self_sourcing_level !== "High" && /\b(sdr|bdr) (support|team will|partner)|supported by (an? )?(sdr|bdr)|inbound leads?\b/.test(t)),
   },
   {
     code: "ramp_support",
@@ -148,6 +150,9 @@ export function computeFlags(j: FlagInput): Flag[] {
 }
 
 /** Stored codes back to full flags (cards only have the codes). Red first. */
+/** Flags worth a chip on a card. "Publishes OTE" is already obvious from the pay line. */
+export const cardFlags = (flags: Flag[]) => flags.filter((f) => f.code !== "publishes_ote");
+
 export function flagsFromCodes(codes: string[] | null | undefined): Flag[] {
   return (codes ?? [])
     .map((c) => FLAG_RULES[c])
@@ -174,6 +179,8 @@ export interface BraunRead {
 
 export interface ReadInput extends FlagInput {
   first_seen_at: string;
+  /** Stored flag codes, used when the description isn't loaded. */
+  flags?: string[];
   /** Other open sales roles at the same company right now. */
   companyOpenRoles?: number;
 }
@@ -181,11 +188,11 @@ export interface ReadInput extends FlagInput {
 const DISCLOSURE_KEYS: (keyof Disclosures)[] = ["quota_size", "quota_attainment", "average_deal_size", "territory", "sales_cycle"];
 
 export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
-  const flags = computeFlags(j);
+  const flags = j.description_raw == null && j.flags?.length ? flagsFromCodes(j.flags) : computeFlags(j);
   const checks: Check[] = [];
 
   // Pay
-  if (j.ote_min != null && j.salary_min != null) {
+  if (j.ote_min != null && j.salary_min != null && j.ote_min >= j.salary_min) {
     const basePct = Math.round((j.salary_min / j.ote_min) * 100);
     checks.push({
       label: "Pay",
@@ -257,7 +264,7 @@ export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
 
   let verdict: BraunRead["verdict"];
   let line: string;
-  if (reds >= 2 || score <= -2 || (reds === 1 && score < 3)) {
+  if (reds >= 2 || score <= -2 || (reds === 1 && score < 1)) {
     verdict = "Proceed with caution";
     line = "A few things here deserve a hard look before you spend time on it.";
   } else if (score >= 6 && reds === 0 && grade("Pay") === "good" && grade("Transparency") === "good") {
