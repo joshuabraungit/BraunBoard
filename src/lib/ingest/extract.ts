@@ -73,7 +73,7 @@ export async function extractAttributes(
       },
       body: JSON.stringify({
         model: process.env.EXTRACTION_MODEL ?? "claude-haiku-5-5",
-        max_tokens: 500,
+        max_tokens: 1200,
         system: SYSTEM,
         messages: [
           {
@@ -84,10 +84,17 @@ export async function extractAttributes(
       }),
     });
     if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
-    const data = (await res.json()) as { content: { type: string; text: string }[] };
-    const text = data.content.map((c) => c.text ?? "").join("");
+    const data = (await res.json()) as { content: { type: string; text?: string }[]; stop_reason?: string; model?: string };
+    const text = data.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("");
     // Take the JSON object out of the reply, ignoring any stray text or code fences around it.
-    const json = text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1);
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start < 0 || end <= start) {
+      throw new Error(
+        `No JSON in reply (model=${data.model}, stop=${data.stop_reason}, blocks=${data.content.map((c) => c.type).join(",")}): ${text.slice(0, 200)}`,
+      );
+    }
+    const json = text.slice(start, end + 1);
     const parsed = Extraction.parse(JSON.parse(json));
     return {
       ...base,
