@@ -115,7 +115,8 @@ export async function aiTake(c: PickCandidate, description: string | null): Prom
       headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
       body: JSON.stringify({
         model: process.env.EXTRACTION_MODEL ?? "claude-haiku-5-5",
-        max_tokens: 300,
+        // The model may think before answering; leave room for that plus the take.
+        max_tokens: 1500,
         system: TAKE_SYSTEM,
         messages: [{ role: "user", content: JSON.stringify(facts, null, 1) }],
       }),
