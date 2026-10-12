@@ -83,3 +83,10 @@ describe("braunRead", () => {
     expect(r.checks.find((c) => c.label === "Company hiring")?.detail).toMatch(/churn/);
   });
 });
+
+describe("dial quotas", () => {
+  it("only fires on an explicit daily number", () => {
+    expect(codes({ description_raw: "Make 50-80 calls per day" })).toContain("dial_quotas");
+    expect(codes({ description_raw: "Generate pipeline through high-volume outbound prospecting" })).not.toContain("dial_quotas");
+  });
+});

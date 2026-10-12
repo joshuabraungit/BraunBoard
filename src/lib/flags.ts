@@ -60,7 +60,7 @@ const RULES: Rule[] = [
     tone: "red",
     label: "Heavy call quotas",
     why: "It sets a daily dial or activity number. Expect to be managed on activity, not outcomes.",
-    test: (t) => /\b(\d{2,3}\+?\s*(cold )?(calls|dials)\s*(a|per|each)\s*day|high[- ]volume (of )?(cold )?(calls|dials|outbound))\b/.test(t),
+    test: (t) => /\b\d{2,3}\+?\s*(cold )?(calls|dials)\s*(a|per|each)\s*day\b/.test(t),
   },
   {
     code: "clawbacks",
@@ -136,21 +136,23 @@ const RULES: Rule[] = [
   },
 ];
 
-export const FLAG_RULES: Readonly<Record<string, Omit<Rule, "test">>> = Object.fromEntries(
-  RULES.map(({ test: _t, ...r }) => [r.code, r]),
+const info = (r: Rule): Flag => ({ code: r.code, tone: r.tone, label: r.label, why: r.why });
+
+export const FLAG_RULES: Readonly<Record<string, Flag>> = Object.fromEntries(
+  RULES.map((r) => [r.code, info(r)]),
 );
 
 export function computeFlags(j: FlagInput): Flag[] {
   const t = (j.description_raw ?? "").toLowerCase().replace(/\s+/g, " ");
-  return RULES.filter((r) => r.test(t, j)).map(({ test: _t, ...r }) => r);
+  return RULES.filter((r) => r.test(t, j)).map(info);
 }
 
 /** Stored codes back to full flags (cards only have the codes). Red first. */
 export function flagsFromCodes(codes: string[] | null | undefined): Flag[] {
   return (codes ?? [])
     .map((c) => FLAG_RULES[c])
-    .filter(Boolean)
-    .sort((a, b) => (a.tone === b.tone ? 0 : a.tone === "red" ? -1 : 1)) as Flag[];
+    .filter((f): f is Flag => !!f)
+    .sort((a, b) => (a.tone === b.tone ? 0 : a.tone === "red" ? -1 : 1));
 }
 
 // ---------------------------------------------------------------------------
