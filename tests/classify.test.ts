@@ -90,3 +90,15 @@ describe("exclusions found in real data", () => {
     expect(classifyTitle("Account Executive, Select, Phoenix")?.role_family).toBe("Account Executive");
   });
 });
+
+describe("more exclusions + VP variants (seen in real data)", () => {
+  it.each(["Engineering Manager, Growth Expansion", "Senior Software Engineer, Sales Tools", "Staff Engineer, Revenue Platform"])("%s -> excluded", (t) => {
+    expect(classifyTitle(t)).toBeNull();
+  });
+  it.each(["Solutions Engineer", "Senior Legal Solutions Engineer", "Sales Engineer 2 (Customer Success)", "Value Engineer"])("%s still included", (t) => {
+    expect(classifyTitle(t)?.role_family).toBe("Sales Engineer");
+  });
+  it("RVP is VP Sales", () => {
+    expect(classifyTitle("RVP, Enterprise Sales - Northeast")?.role_family).toBe("VP Sales");
+  });
+});

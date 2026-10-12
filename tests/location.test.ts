@@ -47,3 +47,10 @@ describe("US remote qualifiers wrongly dropped in the first reprocess", () => {
     expect(parseLocation(raw).is_us).toBe(true);
   });
 });
+
+describe("city cleanup", () => {
+  it("never uses 'Remote' as a city", () => {
+    expect(parseLocation("Remote-Texas").city).toBeNull();
+    expect(parseLocation("x", { country: "US", region: "TX", city: "Remote" }).city).toBeNull();
+  });
+});

@@ -26,7 +26,10 @@ const EXCLUDE = [
   /\bcommission[- ]only\b/i,
   /\b(analyst|data scientist|software engineer|developer|designer|product manager|counsel|attorney|paralegal)\b/i,
   /\b(intern|internship|apprentice)\b/i,
-  /\btechnical account manager\b/i, // post-sales technical support, not a selling role
+  /\btechnical account manager\b/i,
+  // Engineers who don't sell: anything "engineer(ing)" that isn't a sales / solutions / presales / value engineer
+  /\bengineering (manager|director|lead)\b/i,
+  /\b(software|data|backend|back-end|frontend|front-end|full[- ]stack|platform|infrastructure|site reliability|ml|machine learning|security|qa|test|devops|mobile|ios|android|staff|principal) engineer/i, // post-sales technical support, not a selling role
   /\b(future|talent (pool|community|network)|general (application|interest)|evergreen|pipeline req)\b/i,
   /\bopportunities\s*$/i,
   /\b(sales tax|tax)\b/i,
@@ -37,7 +40,7 @@ const EXCLUDE = [
 // Order matters: first match wins, so more specific families come first.
 const FAMILIES: { family: RoleFamily; re: RegExp }[] = [
   { family: "CRO", re: /\b(chief revenue officer|cro|chief sales officer|cso)\b/i },
-  { family: "VP Sales", re: /\b(vp|vice president|svp|evp|head)\b.*\b(sales|revenue|business development)\b/i },
+  { family: "VP Sales", re: /\b(vp|rvp|avp|gvp|vice president|svp|evp|head)\b.*\b(sales|revenue|business development)\b/i },
   { family: "Sales Director", re: /\b(director|sr\.? director|senior director)\b.*\b(sales|account executives?|business development|solutions engineering|sales engineering|account management)\b/i },
   { family: "Sales Director", re: /\b(sales|regional|area) director\b/i },
   { family: "Sales Engineer", re: /\b(sales engineer|solutions? engineer|solutions? consultant|pre-?sales|solutions? architect.*(sales|pre-?sales)|value engineer)\b/i },

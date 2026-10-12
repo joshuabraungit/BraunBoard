@@ -72,9 +72,9 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-ink-3">{jobs.length} jobs</p>
         {hasFilters && (
-          <form action={watchSearch} className="flex items-center gap-2">
+          <form action={watchSearch} className="flex w-full items-center gap-2 sm:w-auto">
             <input type="hidden" name="qs" value={qs} />
-            <input name="name" defaultValue={suggestedName} aria-label="Name this watch" placeholder="Name this watch" className="w-56 rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm" />
+            <input name="name" defaultValue={suggestedName} aria-label="Name this watch" placeholder="Name this watch" className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm sm:w-56 sm:flex-none" />
             <button className="whitespace-nowrap rounded-md border border-ink px-3 py-1.5 text-sm font-semibold hover:bg-ink hover:text-white">♡ Watch this search</button>
           </form>
         )}

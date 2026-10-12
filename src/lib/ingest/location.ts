@@ -73,7 +73,8 @@ export function parseLocation(
   const hintCountry = hints.country?.toLowerCase();
   if (hintCountry && /^(us|usa|united states)$/.test(hintCountry)) {
     const st = hints.region ? (US_STATES[hints.region.toUpperCase()] ? hints.region.toUpperCase() : STATE_NAMES[hints.region.toLowerCase()] ?? null) : null;
-    return { city: hints.city ?? null, state: st, country: "US", remote_type, is_us: true };
+    const city = hints.city && !/^(remote|hybrid|anywhere|)$/i.test(hints.city.trim()) ? hints.city : null;
+    return { city, state: st, country: "US", remote_type, is_us: true };
   }
 
   // Multi-location strings ("NYC / London"): US if any part is US.
@@ -104,7 +105,7 @@ function parsePart(part: string): Omit<ParsedLocation, "remote_type" | "is_us"> 
   // "City, ST" or "City, State"
   const m = part.match(/([A-Za-z .'-]+),\s*([A-Za-z .]+?)(?:,\s*(US|USA|United States))?\s*(?:\(|$|-)/);
   if (m) {
-    const city = m[1].replace(/^(remote|hybrid)\s*[-–:]?\s*/i, "").trim();
+    const city = m[1].replace(/^(remote|hybrid)\s*[-–:]?\s*/i, "").replace(/^(remote|hybrid|flexible|anywhere)$/i, "").trim();
     const st = m[2].trim();
     const code = US_STATES[st.toUpperCase()] ? st.toUpperCase() : STATE_NAMES[st.toLowerCase()];
     if (code) return { city: city || null, state: code, country: "US" };

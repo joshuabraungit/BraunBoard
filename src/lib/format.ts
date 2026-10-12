@@ -20,7 +20,8 @@ export function formatComp(j: { salary_min: number | null; salary_max: number | 
 
 export function formatLocation(j: { remote_type: string; city: string | null; state: string | null; location_raw?: string | null }): string {
   const place = [j.city, j.state].filter(Boolean).join(", ");
-  if (j.remote_type === "Remote") return place ? `Remote · US (${place})` : "Remote · US";
+  // For remote roles a single city from the ATS is usually just the HQ or a placeholder. Don't imply it's required.
+  if (j.remote_type === "Remote") return "Remote · US";
   if (j.remote_type === "Hybrid") return place ? `Hybrid · ${place}` : "Hybrid";
   return place || j.location_raw || "United States";
 }

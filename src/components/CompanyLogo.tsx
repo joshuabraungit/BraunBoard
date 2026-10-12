@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { initials } from "@/lib/format";
 import { logoCandidates } from "@/lib/logo";
 
@@ -17,8 +17,16 @@ export function CompanyLogo({
 }) {
   const candidates = logoCandidates({ logo_url: logoUrl, domain });
   const [i, setI] = useState(0);
+  const img = useRef<HTMLImageElement>(null);
   const src = candidates[i];
   const box = { width: size, height: size };
+
+  // An image that fails before React hydrates never fires onError, which would leave a
+  // broken-image icon on screen. Catch that case once we're mounted.
+  useEffect(() => {
+    const el = img.current;
+    if (el && el.complete && el.naturalWidth === 0) setI((n) => n + 1);
+  }, [i]);
 
   if (!src) {
     return (
@@ -34,6 +42,7 @@ export function CompanyLogo({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
+      ref={img}
       src={src}
       alt=""
       style={box}
