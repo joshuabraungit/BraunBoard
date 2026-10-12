@@ -56,7 +56,7 @@ export async function sendEmail(to: string, msg: { subject: string; html: string
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: process.env.ALERTS_FROM ?? "Braun Board <alerts@joshbraun.com>", to, ...msg }),
+    body: JSON.stringify({ from: process.env.ALERTS_FROM ?? "Braun Board <alerts@braunboard.com>", to, ...msg }),
   });
   if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);
 }
