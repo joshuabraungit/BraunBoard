@@ -16,14 +16,19 @@ export const Disclosures = z.object({
 });
 export type Disclosures = z.infer<typeof Disclosures>;
 
+// Lenient on purpose: an out-of-list value becomes Unknown and a long summary gets trimmed,
+// instead of throwing away the whole extraction.
 const Extraction = z.object({
-  sales_segment: z.enum(SALES_SEGMENTS),
-  sales_motion: z.enum(SALES_MOTIONS),
-  self_sourcing_level: z.enum(SELF_SOURCING_LEVELS),
-  customer_segment: z.enum(SALES_SEGMENTS),
-  summary: z.string().max(280),
-  disclosures: Disclosures,
+  sales_segment: z.enum(SALES_SEGMENTS).catch("Unknown"),
+  sales_motion: z.enum(SALES_MOTIONS).catch("Unknown"),
+  self_sourcing_level: z.enum(SELF_SOURCING_LEVELS).catch("Unknown"),
+  customer_segment: z.enum(SALES_SEGMENTS).catch("Unknown"),
+  summary: z.string().transform((v) => (v.length > 280 ? v.slice(0, 277).trimEnd() + "..." : v)),
+  disclosures: Disclosures.catch({ quota_size: false, quota_attainment: false, average_deal_size: false, territory: false, sales_cycle: false }),
 });
+
+/** Last extraction error, so batch jobs can report why AI calls are failing. */
+export let lastExtractionError = "";
 
 export interface Extracted extends SalesAttributes {
   summary: string | null;
@@ -95,6 +100,7 @@ export async function extractAttributes(
       disclosures: parsed.disclosures,
     };
   } catch (err) {
+    lastExtractionError = (err as Error).message;
     console.warn(`[extract] falling back to heuristics for "${title}":`, (err as Error).message);
     return { ...base, ...heuristics(description, cls), summary: null };
   }

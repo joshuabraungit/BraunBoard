@@ -4,7 +4,7 @@
 
 import { adminClient } from "../src/lib/supabase/admin";
 import { classifyTitle } from "../src/lib/ingest/classify";
-import { extractAttributes } from "../src/lib/ingest/extract";
+import { extractAttributes, lastExtractionError } from "../src/lib/ingest/extract";
 import { fail, notice, requireEnv } from "./report";
 
 async function main() {
@@ -36,7 +36,7 @@ async function main() {
       if (!a.summary) {
         failed++;
         // Bail early if nothing works (bad key, wrong model name, no credits)
-        if (done === 0 && failed >= 5) fail(new Error("AI extraction failed on the first 5 jobs. Check the ANTHROPIC_API_KEY secret and that the account has credits."));
+        if (done === 0 && failed >= 5) fail(new Error(`AI extraction failed on the first 5 jobs. Last error: ${lastExtractionError}`));
         continue;
       }
       const update: Record<string, unknown> = {
