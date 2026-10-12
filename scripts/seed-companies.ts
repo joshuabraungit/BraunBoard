@@ -38,6 +38,7 @@ async function main() {
   const unverified: string[] = [];
   const missing: string[] = [];
   const failures: string[] = [];
+  const duplicates: string[] = [];
   const seenBoards = new Set<string>();
 
   // Companies that already have a working board keep it unless the CSV pins a new URL.
@@ -114,6 +115,11 @@ async function main() {
         .select("id")
         .single();
       if (error) {
+        // Same job board as a company we already track (e.g. "Lightspeed" vs "Lightspeed Commerce"): not a failure.
+        if (/ats_provider_ats_identifier/.test(error.message)) {
+          duplicates.push(`${r.name} (${boardKey})`);
+          continue;
+        }
         failures.push(`${r.name}: ${error.message}`);
         continue;
       }
@@ -132,6 +138,7 @@ async function main() {
   notice(`Seed: ${matched.length}/${rows.length} companies verified${kept.length ? `, ${kept.length} kept their existing board` : ""}`);
   if (unverified.length) notice(`Boards found but not confirmed as the same company (skipped): ${unverified.join(", ")}`);
   if (missing.length) notice(`No supported ATS found: ${missing.join(", ")}`);
+  if (duplicates.length) notice(`Already tracked under another name (skipped): ${duplicates.join(", ")}`);
   if (failures.length) fail(new Error(`${failures.length} companies failed to save. First: ${failures[0]}`));
 }
 
