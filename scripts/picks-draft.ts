@@ -11,7 +11,7 @@ async function main() {
   requireEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY");
   const db = adminClient();
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.braunboard.com";
-  const r = await createDraft(db);
+  const r = await createDraft(db, new Date(), { rebuildUntouched: process.argv.includes("--rebuild") });
   if (!r.created) return notice(`Picks for ${r.issueDate} already exist (${r.picks} picks). Left as is.`);
   if (lastTakeError) warn(`Some takes used the plain template because the AI call failed: ${lastTakeError}`);
   if (r.picks < 3) warn(`Only ${r.picks} jobs qualified for Picks this week.`);

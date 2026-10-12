@@ -156,10 +156,17 @@ export interface DraftResult {
 }
 
 /** Build next Tuesday's issue unless it already exists (never overwrites Josh's edits). */
-export async function createDraft(db: SupabaseClient, now = new Date()): Promise<DraftResult> {
+export async function createDraft(db: SupabaseClient, now = new Date(), { rebuildUntouched = false } = {}): Promise<DraftResult> {
   const issueDate = nextIssueDate(now);
-  const { data: existing } = await db.from("picks_issues").select("id").eq("issue_date", issueDate).maybeSingle();
-  if (existing) {
+  const { data: existing } = await db.from("picks_issues").select("id, status, created_at, updated_at").eq("issue_date", issueDate).maybeSingle();
+  // A rebuild only replaces a draft nobody has touched (no saved edits, pauses or sends).
+  const { count: itemEdits } = existing
+    ? await db.from("picks_items").select("id", { count: "exact", head: true }).eq("issue_id", existing.id).gt("created_at", existing.created_at as string)
+    : { count: 0 };
+  const untouched = existing && existing.status === "scheduled" && existing.updated_at === existing.created_at && !itemEdits;
+  if (existing && rebuildUntouched && untouched) {
+    await db.from("picks_issues").delete().eq("id", existing.id);
+  } else if (existing) {
     const { count } = await db.from("picks_items").select("id", { count: "exact", head: true }).eq("issue_id", existing.id).eq("kind", "pick");
     const { count: skips } = await db.from("picks_items").select("id", { count: "exact", head: true }).eq("issue_id", existing.id).eq("kind", "skip");
     return { issueId: existing.id as string, issueDate, created: false, picks: count ?? 0, hasSkip: !!skips };

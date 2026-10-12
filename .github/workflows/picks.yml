@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       step:
-        description: "draft or send"
+        description: "draft, rebuild (replace an unedited draft) or send"
         type: choice
-        options: [draft, send]
+        options: [draft, rebuild, send]
         default: draft
 
 jobs:
@@ -34,6 +34,9 @@ jobs:
       - name: Build next issue + preview
         if: github.event.schedule == '0 18 * * 1' || inputs.step == 'draft'
         run: npm run picks:draft
+      - name: Rebuild unedited draft
+        if: inputs.step == 'rebuild'
+        run: npm run picks:draft -- --rebuild
       - name: Send due issues
         if: github.event.schedule == '5 12,13 * * 2' || inputs.step == 'send'
         run: npm run picks:send
