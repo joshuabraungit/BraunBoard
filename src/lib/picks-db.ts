@@ -159,9 +159,10 @@ export interface DraftResult {
 export async function createDraft(db: SupabaseClient, now = new Date(), { rebuildUntouched = false } = {}): Promise<DraftResult> {
   const issueDate = nextIssueDate(now);
   const { data: existing } = await db.from("picks_issues").select("id, status, created_at, updated_at").eq("issue_date", issueDate).maybeSingle();
-  // A rebuild only replaces a draft nobody has touched (no saved edits, pauses or sends).
+  // A rebuild only replaces a draft nobody has touched: no saved edits, pauses or sends, and no
+  // picks added after it was built (the original items are inserted within seconds of the issue).
   const { count: itemEdits } = existing
-    ? await db.from("picks_items").select("id", { count: "exact", head: true }).eq("issue_id", existing.id).gt("created_at", existing.created_at as string)
+    ? await db.from("picks_items").select("id", { count: "exact", head: true }).eq("issue_id", existing.id).gt("created_at", new Date(new Date(existing.created_at as string).getTime() + 5 * 60_000).toISOString())
     : { count: 0 };
   const untouched = existing && existing.status === "scheduled" && existing.updated_at === existing.created_at && !itemEdits;
   if (existing && rebuildUntouched && untouched) {
