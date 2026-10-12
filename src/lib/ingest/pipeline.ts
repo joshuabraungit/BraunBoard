@@ -241,6 +241,13 @@ async function insertNewJob(
   return duplicateOf ? null : (data.id as string);
 }
 
+/**
+ * Boards we crawl. Workday and SmartRecruiters adapters exist but are switched off
+ * pending a legal review: Workday has no official public API, and SmartRecruiters'
+ * robots.txt disallows crawlers. Add them back here only once that's settled.
+ */
+export const ENABLED_PROVIDERS: AtsProvider[] = ["greenhouse", "lever", "ashby"];
+
 /** Crawl every enabled company that hasn't been crawled in `staleAfterHours`. */
 export async function ingestAll(
   db: SupabaseClient,
@@ -251,7 +258,7 @@ export async function ingestAll(
     .from("companies")
     .select("id, slug, name, ats_provider, ats_identifier")
     .eq("is_disabled", false)
-    .not("ats_provider", "is", null)
+    .in("ats_provider", ENABLED_PROVIDERS)
     .or(`last_crawled_at.is.null,last_crawled_at.lt.${cutoff}`)
     .order("last_crawled_at", { ascending: true, nullsFirst: true })
     .limit(limit);

@@ -10,6 +10,7 @@ import { readFileSync } from "node:fs";
 import { adminClient } from "../src/lib/supabase/admin";
 import { detectByProbing, detectFromUrl, probeWorkday, smartRecruitersCandidates, verifyBoard, type ProbeResult } from "../src/lib/ingest/detect-ats";
 import { slugify } from "../src/lib/slug";
+import { ENABLED_PROVIDERS } from "../src/lib/ingest/pipeline";
 import { fail, notice, requireEnv, warn } from "./report";
 
 function parseCsv(text: string): Record<string, string>[] {
@@ -50,6 +51,13 @@ async function main() {
       const domain = r.domain || null;
       if (!r.careers_url && hasBoard.has(slugify(r.name))) {
         kept.push(r.name);
+        continue;
+      }
+      // Workday / SmartRecruiters are off pending legal review: don't even contact them.
+      const pinnedProvider = r.careers_url ? detectFromUrl(r.careers_url)?.provider : undefined;
+      const wanted = (pinnedProvider ?? r.ats?.toLowerCase()) as string | undefined;
+      if (wanted && !ENABLED_PROVIDERS.includes(wanted as never)) {
+        console.log(`${r.name.padEnd(28)} skipped (${wanted} is switched off)`);
         continue;
       }
       let found: ProbeResult | null = null;
