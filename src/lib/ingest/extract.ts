@@ -75,14 +75,15 @@ export async function extractAttributes(
             role: "user",
             content: `Title: ${title}\n\nPosting:\n${description.slice(0, 12_000)}`,
           },
-          { role: "assistant", content: "{" },
         ],
       }),
     });
-    if (!res.ok) throw new Error(`Anthropic ${res.status}`);
+    if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
     const data = (await res.json()) as { content: { type: string; text: string }[] };
-    const text = "{" + data.content.map((c) => c.text).join("");
-    const parsed = Extraction.parse(JSON.parse(text.slice(0, text.lastIndexOf("}") + 1)));
+    const text = data.content.map((c) => c.text ?? "").join("");
+    // Take the JSON object out of the reply, ignoring any stray text or code fences around it.
+    const json = text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1);
+    const parsed = Extraction.parse(JSON.parse(json));
     return {
       ...base,
       // A segment in the title beats the model's read of the description.
