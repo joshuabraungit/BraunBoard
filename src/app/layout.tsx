@@ -23,6 +23,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </div>
         </header>
         <main className="mx-auto max-w-6xl px-4 pb-24 pt-6">{children}</main>
+        <footer className="border-t border-line py-6 text-center text-xs text-ink-3">
+          <Link href="/privacy" className="hover:text-ink">Privacy</Link>
+          <span className="mx-2">·</span>
+          <Link href="/terms" className="hover:text-ink">Terms</Link>
+        </footer>
       </body>
     </html>
   );
