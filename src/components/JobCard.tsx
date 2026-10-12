@@ -104,7 +104,7 @@ export function JobGrid({ jobs, ctx, empty = "Nothing here yet." }: { jobs: JobV
   );
 }
 
-export function Section({ title, href, children }: { title: string; href?: string; children: React.ReactNode }) {
+export function Section({ title, href, note, children }: { title: string; href?: string; note?: string; children: React.ReactNode }) {
   return (
     <section className="mt-10 first:mt-0">
       <div className="mb-3 flex items-baseline justify-between">
@@ -115,6 +115,7 @@ export function Section({ title, href, children }: { title: string; href?: strin
           </Link>
         )}
       </div>
+      {note && <p className="-mt-1 mb-3 text-sm text-ink-2">{note}</p>}
       {children}
     </section>
   );

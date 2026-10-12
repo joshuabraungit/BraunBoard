@@ -6,6 +6,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { JobGrid, Section } from "@/components/JobCard";
 import { getActiveWatch, getUserState } from "@/lib/session";
 import { rankForWatch } from "@/lib/matching";
+import { freshnessLabel } from "@/lib/freshness";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   const rampingUp = companies.filter((c) => c.trend === "ramping").sort(byHiringFastest).slice(0, 6);
   const ctx = { savedJobIds: state.savedJobIds, back: "/" };
   const forYou = watch ? rankForWatch(await listJobs({}, 1000, { withDescription: true }), watch.prefs, state.hiddenJobIds) : null;
+  const newestMatch = forYou?.jobs.reduce<string | null>((max, j) => (!max || j.first_seen_at > max ? j.first_seen_at : max), null);
 
   return (
     <>
@@ -32,7 +34,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
       )}
 
       {forYou ? (
-        <Section title={`For You · ${watch!.name}`} href="/for-you">
+        <Section title={`For You · ${watch!.name}`} href="/for-you" note={newestMatch ? `Newest match: ${freshnessLabel(newestMatch)}` : undefined}>
           <JobGrid jobs={forYou.jobs.slice(0, 3)} ctx={{ ...ctx, matches: forYou.matches }} empty="No matches yet. We'll tell you when one shows up." />
         </Section>
       ) : (
