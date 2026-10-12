@@ -89,3 +89,24 @@ describe("crossed labels", () => {
     expect([r.salary_min, r.salary_max, r.ote_min, r.ote_max]).toEqual([130000, 160000, 260000, 320000]);
   });
 });
+
+describe("OTE phrasings seen in the wild", () => {
+  const label = (t: string) => findPayInText(t)[0]?.label;
+  it("reads total target cash after the range", () => {
+    expect(label("Salary range: $74,000 - $112,000 total target cash (inclusive of bonus or commission)")).toBe("ote");
+    expect(label("Salary Range: $240K-$300K potential total on target earnings (base + commission), per year")).toBe("ote");
+  });
+  it("reads OTE labels that also mention base or salary", () => {
+    expect(label("The OTE salary range for candidates within the Greater Chicago Area is $208,170-$248,650")).toBe("ote");
+    expect(label("the estimated range for total on target earnings (including base salary and on target incentive pay) for this role is $306,000 - $390,000 per year")).toBe("ote");
+    expect(label("The OTE (base + variable) salary range for this position is $275,000 - $350,000 per year.")).toBe("ote");
+  });
+  it("reads a total-targeted-cash note far above per-zone ranges", () => {
+    const t = "The estimated Total Targeted Cash compensation range for this role is listed below. Total Targeted Cash for this role includes base salary, commission, and bonus (if eligible). This role qualifies for uncapped commissions. The starting salary will be determined based on skills, experience, and geographic location. In addition to cash compensation, our total rewards components include benefits and equity (if eligible). You can learn more about how we align pay with local labor markets in our Geographic Pay Zone Philosophy.\n\nZone A\n$148,000-$237,000 USD";
+    expect(label(t)).toBe("ote");
+  });
+  it("still reads plain base ranges as base", () => {
+    expect(label("The salary range for this position is $120,000- $155,000 per year, and is eligible for on-target-earnings (OTE).")).toBe("base");
+    expect(label("Base salary: $83,000-105,000; uncapped accelerators")).toBe("base");
+  });
+});

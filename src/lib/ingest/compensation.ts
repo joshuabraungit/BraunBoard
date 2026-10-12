@@ -18,7 +18,7 @@ const RANGE =
 // Single figure: "$300K OTE"
 const SINGLE = /\$\s?(\d{2,3}(?:,\d{3})+|\d{2,3}(?:\.\d+)?\s?[kK])/g;
 
-const OTE_WORDS = /\b(ote|on[- ]target earnings?|on[- ]target compensation|target total (cash|compensation)|total target compensation)\b/i;
+const OTE_WORDS = /\b(ote|on[- ]target[- ]earnings?|on[- ]target compensation|target(ed)? total (cash|compensation)|total target(ed)? (cash|compensation))\b/i;
 const BASE_WORDS = /\b(base|base salary|base pay|salary range|annual salary)\b/i;
 
 function toNumber(s: string): number {
@@ -31,7 +31,12 @@ function lastIndexOf(text: string, re: RegExp): number {
   for (const m of text.matchAll(new RegExp(re.source, "gi"))) {
     // "comprised of base compensation and commissions" describes OTE, it isn't a base label.
     const after = text.slice(m.index! + m[0].length, m.index! + m[0].length + 40);
-    if (re === BASE_WORDS && /^\s*(salary|pay|compensation)?\s*(and|plus|\+|&)\s*(variable|commission|incentive|bonus)/i.test(after)) continue;
+    if (re === BASE_WORDS) {
+      // "base + variable", "base salary and on target incentive pay": describes what OTE is made of.
+      if (/^\s*(salary|pay|compensation)?\s*(,|and\b|plus\b|\+|&)/i.test(after)) continue;
+      // "The OTE salary range is ...": the base-ish word is part of an OTE label.
+      if (OTE_WORDS.test(text.slice(Math.max(0, m.index! - 25), m.index!))) continue;
+    }
     idx = m.index!;
   }
   return idx;
@@ -54,16 +59,23 @@ export function findPayInText(text: string): Found[] {
   const label = (idx: number, len: number): Found["label"] => {
     // Look at a small window around the figure for the label.
     const before = text.slice(Math.max(0, idx - 300), idx);
-    const after = text.slice(idx + len, idx + len + 40);
+    const after = text.slice(idx + len, idx + len + 60);
     // Label directly after the figure: "$300K OTE", "$150K base"
-    const nearAfter = after.match(/^[\s(]*([a-z -]{0,30})/i)?.[1] ?? "";
+    const nearAfter = after.match(/^[\s(]*([a-z -]{0,50})/i)?.[1] ?? "";
     if (new RegExp("^" + OTE_WORDS.source, "i").test(nearAfter)) return "ote";
+    // "$74K - $112K total target cash", "$240K-$300K potential total on target earnings"
+    if (new RegExp("^(potential |estimated |annual )?(total )?" + OTE_WORDS.source, "i").test(nearAfter)) return "ote";
+    // "$130K-$160K base" right after the number beats any label further back.
+    if (new RegExp("^" + BASE_WORDS.source, "i").test(nearAfter)) return "base";
     // The closest label before the number wins
     const lastOte = lastIndexOf(before, OTE_WORDS);
     const lastBase = lastIndexOf(before, BASE_WORDS);
     if (lastOte >= 0 && lastOte > lastBase) return "ote";
     if (lastBase >= 0) return "base";
-    if (new RegExp("^" + BASE_WORDS.source, "i").test(nearAfter)) return "base";
+    // Some postings explain once, well above per-zone ranges, that the ranges are total target cash.
+    const wide = text.slice(Math.max(0, idx - 900), idx);
+    const farOte = lastIndexOf(wide, OTE_WORDS);
+    if (farOte >= 0 && farOte > lastIndexOf(wide, BASE_WORDS)) return "ote";
     return "unlabeled";
   };
 
