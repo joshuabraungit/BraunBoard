@@ -89,6 +89,9 @@ Rules:
 - If something is unknown, you may suggest a question to ask on the first call.
 - Plain text only.`;
 
+/** Why the last AI take fell back to the template, for the job log. */
+export let lastTakeError = "";
+
 export async function aiTake(c: PickCandidate, description: string | null): Promise<string> {
   const fallback = templateTake(c);
   const key = process.env.ANTHROPIC_API_KEY;
@@ -117,7 +120,10 @@ export async function aiTake(c: PickCandidate, description: string | null): Prom
         messages: [{ role: "user", content: JSON.stringify(facts, null, 1) }],
       }),
     });
-    if (!res.ok) return fallback;
+    if (!res.ok) {
+      lastTakeError = `Anthropic ${res.status}: ${(await res.text()).slice(0, 200)}`;
+      return fallback;
+    }
     const data = (await res.json()) as { content: { type: string; text?: string }[] };
     const text = data.content
       .filter((b) => b.type === "text")
@@ -128,8 +134,11 @@ export async function aiTake(c: PickCandidate, description: string | null): Prom
       .replace(/^["']|["']$/g, "")
       .trim();
     const words = text.split(/\s+/).length;
-    return words >= 8 && words <= 45 ? text : fallback;
-  } catch {
+    if (words >= 8 && words <= 45) return text;
+    lastTakeError = `unusable reply (${words} words, blocks: ${data.content.map((b) => b.type).join(",")}): ${text.slice(0, 120)}`;
+    return fallback;
+  } catch (e) {
+    lastTakeError = (e as Error).message;
     return fallback;
   }
 }

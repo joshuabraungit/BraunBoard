@@ -98,7 +98,11 @@ const GREEN_LINES: Record<string, string> = {
   accelerators: "Accelerators past quota, so overperformance actually pays.",
   states_deal_size: "Deal size is spelled out, so you know what kind of selling this is.",
   pipeline_support: "You get SDR or inbound help, not a blank territory.",
-  publishes_ote: "OTE is right there in the posting.",
+};
+
+const firstSentence = (s: string) => {
+  const m = s.match(/^.*?[.!?](\s|$)/);
+  return (m ? m[0] : s).trim();
 };
 
 export function templateTake(j: PickCandidate): string {
@@ -110,6 +114,7 @@ export function templateTake(j: PickCandidate): string {
     if (b >= 50) lines.push(`A ${b}/${100 - b} split, so the base carries real weight.`);
   }
   if (j.company?.trend === "ramping" && lines.length < 2) lines.push(`They're hiring fast: ${j.company.new_30d} sales roles in 30 days.`);
+  if (lines.length < 2 && j.summary) lines.unshift(firstSentence(j.summary));
   if (!lines.length) lines.push("Pay is published and the posting is straight about the job. Worth a first call.");
   return lines.join(" ");
 }

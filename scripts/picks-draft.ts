@@ -1,7 +1,7 @@
 // Monday: build Tuesday's Braun's Picks and email Josh a preview.
 // Never overwrites an issue that already exists (so manual edits are safe).
 import { adminClient } from "../src/lib/supabase/admin";
-import { createDraft } from "../src/lib/picks-db";
+import { createDraft, lastTakeError } from "../src/lib/picks-db";
 import { renderPicks, type ItemContent } from "../src/lib/picks-email";
 import { sendEmail } from "../src/lib/alerts/email";
 import { adminEmails } from "../src/lib/admin-emails";
@@ -13,6 +13,7 @@ async function main() {
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.braunboard.com";
   const r = await createDraft(db);
   if (!r.created) return notice(`Picks for ${r.issueDate} already exist (${r.picks} picks). Left as is.`);
+  if (lastTakeError) warn(`Some takes used the plain template because the AI call failed: ${lastTakeError}`);
   if (r.picks < 3) warn(`Only ${r.picks} jobs qualified for Picks this week.`);
 
   const { data: issue } = await db.from("picks_issues").select("subject, intro, stat_line, issue_date, send_at").eq("id", r.issueId).single();
