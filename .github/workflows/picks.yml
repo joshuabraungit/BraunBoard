@@ -1,0 +1,39 @@
+name: Braun's Picks
+
+on:
+  schedule:
+    - cron: "0 18 * * 1"      # Monday ~2pm ET: build Tuesday's issue, email Josh a preview
+    - cron: "5 12,13 * * 2"   # Tuesday 8am ET (12:05 UTC in summer, 13:05 in winter): send if due
+  workflow_dispatch:
+    inputs:
+      step:
+        description: "draft or send"
+        type: choice
+        options: [draft, send]
+        default: draft
+
+jobs:
+  picks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      ALERTS_FROM: ${{ secrets.ALERTS_FROM }}
+      NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+      PICKS_POSTAL_ADDRESS: ${{ secrets.PICKS_POSTAL_ADDRESS }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build next issue + preview
+        if: github.event.schedule == '0 18 * * 1' || inputs.step == 'draft'
+        run: npm run picks:draft
+      - name: Send due issues
+        if: github.event.schedule == '5 12,13 * * 2' || inputs.step == 'send'
+        run: npm run picks:send

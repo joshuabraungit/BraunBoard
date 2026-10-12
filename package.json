@@ -12,7 +12,9 @@
     "seed": "tsx --env-file-if-exists=.env.local scripts/seed-companies.ts",
     "ingest": "tsx --env-file-if-exists=.env.local scripts/ingest.ts",
     "digest": "tsx --env-file-if-exists=.env.local scripts/send-digest.ts",
-    "backfill": "tsx --env-file-if-exists=.env.local scripts/backfill-summaries.ts"
+    "backfill": "tsx --env-file-if-exists=.env.local scripts/backfill-summaries.ts",
+    "picks:draft": "tsx --env-file-if-exists=.env.local scripts/picks-draft.ts",
+    "picks:send": "tsx --env-file-if-exists=.env.local scripts/picks-send.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

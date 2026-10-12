@@ -3,13 +3,9 @@
 import { notFound } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { getUser } from "./session";
+import { adminEmails } from "./admin-emails";
 
-export function adminEmails(): string[] {
-  return (process.env.ADMIN_EMAILS ?? "josh@joshbraun.com")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-}
+export { adminEmails };
 
 export const isAdmin = (user: Pick<User, "email"> | null) => !!user?.email && adminEmails().includes(user.email.toLowerCase());
 

@@ -4,7 +4,7 @@ const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.braunboard.com";
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/admin", "/auth/", "/r/", "/watchlist", "/alerts", "/login"] },
+    rules: { userAgent: "*", allow: "/", disallow: ["/admin", "/p/", "/api/", "/picks/unsubscribe", "/auth/", "/r/", "/watchlist", "/alerts", "/login"] },
     sitemap: `${SITE}/sitemap.xml`,
   };
 }

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getPayRows } from "@/lib/salary-data";
 import { allSalaryPages, findSalaryPage, k, oteMid, baseMid, rowsFor, salaryStats, type SalaryPage, type SalaryStats } from "@/lib/salaries";
 import { OteHistogram, Stat } from "@/components/SalaryBits";
+import { PicksSignup } from "@/components/PicksSignup";
 
 export const dynamic = "force-dynamic";
 
@@ -54,8 +55,9 @@ function takeaways(p: SalaryPage, s: SalaryStats, total: number): string[] {
   return out;
 }
 
-export default async function SalaryReport({ params }: { params: Promise<{ slug: string }> }) {
+export default async function SalaryReport({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ picks?: string }> }) {
   const { slug } = await params;
+  const { picks } = await searchParams;
   const p = findSalaryPage(slug);
   if (!p) notFound();
   const { rows, loadedAt } = await getPayRows();
@@ -199,6 +201,10 @@ export default async function SalaryReport({ params }: { params: Promise<{ slug:
           </div>
         </nav>
       )}
+
+      <div className="mt-10">
+        <PicksSignup back={`/salaries/${p.slug}`} source={`salary-${p.slug}`} status={picks} compact />
+      </div>
 
       <section className="mt-10 rounded-xl border border-line bg-surface p-5 text-sm leading-relaxed text-ink-2">
         <h2 className="mb-1.5 font-bold text-ink">How we got these numbers</h2>

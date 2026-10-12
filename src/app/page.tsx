@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { byHiringFastest, listCompanies, listJobs } from "@/lib/data";
 import { HiringRow } from "@/components/Hiring";
+import { PicksSignup } from "@/components/PicksSignup";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { JobGrid, Section } from "@/components/JobCard";
 import { getActiveWatch, getUserState } from "@/lib/session";
@@ -8,7 +9,8 @@ import { rankForWatch } from "@/lib/matching";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ picks?: string }> }) {
+  const { picks } = await searchParams;
   const [newToday, highOte, remoteEnt, state, watch, companies] = await Promise.all([
     listJobs({ postedWithinDays: 1 }, 6),
     listJobs({ minOte: 250_000 }, 6),
@@ -58,6 +60,9 @@ export default async function Home() {
           </div>
         </Section>
       )}
+      <div className="mt-10">
+        <PicksSignup back="/" source="home" status={picks} compact />
+      </div>
       <Section title="High OTE · $250K+" href="/jobs?minOte=250000">
         <JobGrid jobs={highOte} ctx={ctx} />
       </Section>

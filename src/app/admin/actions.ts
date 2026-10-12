@@ -94,3 +94,77 @@ export async function deleteUser(formData: FormData) {
   revalidatePath("/admin/users");
   back("/admin/users", `Deleted ${email} and all their watches, saves and alert history.`);
 }
+
+// ---------------------------------------------------------------------------
+// Braun's Picks
+// ---------------------------------------------------------------------------
+
+async function editableIssue(issueId: string) {
+  const { data } = await adminClient().from("picks_issues").select("id, status").eq("id", issueId).maybeSingle();
+  if (!data) back("/admin/picks", "That issue doesn't exist.", false);
+  if (data!.status === "sent" || data!.status === "sending") back(`/admin/picks/${issueId}`, "This issue already went out, so it can't be changed.", false);
+}
+
+export async function buildNextIssue() {
+  await requireAdmin();
+  const { createDraft } = await import("@/lib/picks-db");
+  const r = await createDraft(adminClient());
+  back(`/admin/picks/${r.issueId}`, r.created ? `Built the ${r.issueDate} issue with ${r.picks} picks. It's scheduled; change anything you like.` : "That issue already exists. Here it is.");
+}
+
+export async function saveIssueText(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  await editableIssue(id);
+  const subject = String(formData.get("subject") ?? "").trim();
+  const intro = String(formData.get("intro") ?? "").trim();
+  const stat = String(formData.get("stat_line") ?? "").trim();
+  if (!subject || !intro) back(`/admin/picks/${id}`, "Subject and intro can't be empty.", false);
+  await adminClient().from("picks_issues").update({ subject, intro, stat_line: stat || null }).eq("id", id);
+  back(`/admin/picks/${id}`, "Saved.");
+}
+
+export async function savePickTake(formData: FormData) {
+  await requireAdmin();
+  const issueId = String(formData.get("issue_id"));
+  await editableIssue(issueId);
+  const take = String(formData.get("take") ?? "").trim();
+  if (!take) back(`/admin/picks/${issueId}`, "A take can't be empty.", false);
+  await adminClient().from("picks_items").update({ take }).eq("id", String(formData.get("id"))).eq("issue_id", issueId);
+  back(`/admin/picks/${issueId}`, "Take saved.");
+}
+
+export async function removePick(formData: FormData) {
+  await requireAdmin();
+  const issueId = String(formData.get("issue_id"));
+  await editableIssue(issueId);
+  const db = adminClient();
+  await db.from("picks_items").delete().eq("id", String(formData.get("id"))).eq("issue_id", issueId);
+  // Renumber the remaining picks 1..n.
+  const { data } = await db.from("picks_items").select("id").eq("issue_id", issueId).eq("kind", "pick").order("position");
+  await Promise.all((data ?? []).map((r, i) => db.from("picks_items").update({ position: i + 1 }).eq("id", r.id)));
+  back(`/admin/picks/${issueId}`, "Removed.");
+}
+
+export async function addPick(formData: FormData) {
+  await requireAdmin();
+  const issueId = String(formData.get("issue_id"));
+  await editableIssue(issueId);
+  const jobId = String(formData.get("job_id"));
+  const { loadCandidates, itemFromCandidate } = await import("@/lib/picks-db");
+  const db = adminClient();
+  const cand = (await loadCandidates(db)).find((c) => c.id === jobId);
+  if (!cand) back(`/admin/picks/${issueId}`, "That job isn't available anymore.", false);
+  const { count } = await db.from("picks_items").select("id", { count: "exact", head: true }).eq("issue_id", issueId).eq("kind", "pick");
+  await db.from("picks_items").insert({ issue_id: issueId, kind: "pick", position: (count ?? 0) + 1, ...itemFromCandidate(cand!) });
+  back(`/admin/picks/${issueId}`, `Added ${cand!.title_raw} at ${cand!.company_name}. Its take is a starting draft; edit it below.`);
+}
+
+export async function setIssuePaused(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  await editableIssue(id);
+  const pause = formData.get("pause") === "1";
+  await adminClient().from("picks_issues").update({ status: pause ? "paused" : "scheduled" }).eq("id", id);
+  back(`/admin/picks/${id}`, pause ? "Paused. This issue won't go out unless you resume it." : "Back on schedule.");
+}
