@@ -1,0 +1,123 @@
+import Link from "next/link";
+import { adminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/admin";
+
+interface Overview {
+  jobs_live: number;
+  jobs_new_1d: number;
+  jobs_new_7d: number;
+  jobs_with_pay: number;
+  companies_hiring: number;
+  companies_total: number;
+  companies_no_board: number;
+  companies_disabled: number;
+  users: number;
+  users_7d: number;
+  watches: number;
+  company_watches: number;
+  alerts_sent_30d: number;
+  alerts_clicked_30d: number;
+  alerts_pending: number;
+  last_crawl_at: string | null;
+  crawls_24h: number;
+  crawl_errors_24h: number;
+  jobs_new_24h_found: number;
+  recent_errors: { name: string; slug: string; error: string; started_at: string }[];
+}
+
+function ago(iso: string | null) {
+  if (!iso) return "never";
+  const m = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (m < 60) return `${m} min ago`;
+  const h = Math.round(m / 60);
+  return h < 48 ? `${h} hr ago` : `${Math.round(h / 24)} days ago`;
+}
+
+function Tile({ label, value, sub, tone }: { label: string; value: string | number; sub?: string; tone?: "good" | "bad" }) {
+  return (
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <p className="text-xs uppercase tracking-wide text-ink-3">{label}</p>
+      <p className={`mt-1 text-2xl font-bold tracking-tight ${tone === "good" ? "text-accent" : tone === "bad" ? "text-red" : ""}`}>
+        {typeof value === "number" ? value.toLocaleString() : value}
+      </p>
+      {sub && <p className="mt-0.5 text-xs text-ink-3">{sub}</p>}
+    </div>
+  );
+}
+
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="mt-8 first:mt-0">
+      <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-2">{title}</h2>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{children}</div>
+    </section>
+  );
+}
+
+export default async function AdminDashboard() {
+  await requireAdmin();
+  const { data, error } = await adminClient().rpc("admin_overview");
+  if (error || !data) return <p className="text-red">Couldn&apos;t load the dashboard: {error?.message}</p>;
+  const o = data as Overview;
+  const clickRate = o.alerts_sent_30d ? Math.round((o.alerts_clicked_30d / o.alerts_sent_30d) * 100) : null;
+  const crawlStale = !o.last_crawl_at || Date.now() - new Date(o.last_crawl_at).getTime() > 6 * 3_600_000;
+
+  return (
+    <>
+      <h1 className="mb-6 text-2xl font-bold tracking-tight">Dashboard</h1>
+
+      <Group title="Jobs">
+        <Tile label="Live jobs" value={o.jobs_live} />
+        <Tile label="Posted today" value={o.jobs_new_1d} sub={`${o.jobs_new_7d} this week`} />
+        <Tile label="Publish pay" value={`${o.jobs_live ? Math.round((o.jobs_with_pay / o.jobs_live) * 100) : 0}%`} sub={`${o.jobs_with_pay.toLocaleString()} jobs`} />
+        <Tile label="Companies hiring" value={o.companies_hiring} sub={`of ${o.companies_total} tracked`} />
+      </Group>
+
+      <Group title="People">
+        <Tile label="Signups" value={o.users} sub={`${o.users_7d} this week`} />
+        <Tile label="Job watches" value={o.watches} />
+        <Tile label="Company watches" value={o.company_watches} />
+        <Tile label="Alerts waiting to send" value={o.alerts_pending} sub="Go out with the next instant run or daily digest" />
+      </Group>
+
+      <Group title="Alerts (last 30 days)">
+        <Tile label="Alert emails sent" value={o.alerts_sent_30d} />
+        <Tile label="Clicked" value={o.alerts_clicked_30d} />
+        <Tile
+          label="Click rate"
+          value={clickRate == null ? "n/a" : `${clickRate}%`}
+          sub="The main V1 success number"
+          tone={clickRate == null ? undefined : clickRate >= 20 ? "good" : clickRate < 5 ? "bad" : undefined}
+        />
+      </Group>
+
+      <Group title="Crawler (last 24 hours)">
+        <Tile label="Last crawl" value={ago(o.last_crawl_at)} tone={crawlStale ? "bad" : "good"} sub={crawlStale ? "Should run every 4 hours" : "Running on schedule"} />
+        <Tile label="Company crawls" value={o.crawls_24h} />
+        <Tile label="New jobs found" value={o.jobs_new_24h_found} />
+        <Tile label="Crawl errors" value={o.crawl_errors_24h} tone={o.crawl_errors_24h ? "bad" : "good"} />
+      </Group>
+
+      {o.recent_errors.length > 0 && (
+        <section className="mt-6">
+          <h3 className="mb-2 text-sm font-semibold">Companies that errored</h3>
+          <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface text-sm">
+            {o.recent_errors.map((e) => (
+              <li key={e.slug} className="flex flex-wrap gap-x-3 px-4 py-2">
+                <Link href={`/admin/companies?q=${encodeURIComponent(e.name)}`} className="font-medium hover:underline">{e.name}</Link>
+                <span className="text-ink-3">{ago(e.started_at)}</span>
+                <span className="w-full truncate text-xs text-ink-2">{e.error}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1.5 text-xs text-ink-3">A one-off error usually clears on the next crawl. The same company erroring every time usually means its job board moved.</p>
+        </section>
+      )}
+
+      <p className="mt-8 text-sm text-ink-3">
+        {o.companies_no_board} companies have no supported job board yet. {o.companies_disabled ? `${o.companies_disabled} are switched off.` : ""}{" "}
+        <Link href="/admin/companies?show=no-board" className="underline">See them</Link>
+      </p>
+    </>
+  );
+}

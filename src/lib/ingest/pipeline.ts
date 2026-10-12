@@ -11,6 +11,7 @@ import { resolveCompensation } from "./compensation";
 import { extractAttributes } from "./extract";
 import { dedupeKey, descriptionSimilarity, DUPLICATE_THRESHOLD, normalizeLocationKey } from "./dedupe";
 import type { AtsProvider, CompanyRef, RawJob } from "./types";
+import { ENABLED_PROVIDERS } from "./providers";
 import { jobSlug } from "../slug";
 import { matchNewJobs } from "../alerts/match-new-jobs";
 
@@ -241,12 +242,7 @@ async function insertNewJob(
   return duplicateOf ? null : (data.id as string);
 }
 
-/**
- * Boards we crawl. Workday and SmartRecruiters adapters exist but are switched off
- * pending a legal review: Workday has no official public API, and SmartRecruiters'
- * robots.txt disallows crawlers. Add them back here only once that's settled.
- */
-export const ENABLED_PROVIDERS: AtsProvider[] = ["greenhouse", "lever", "ashby"];
+export { ENABLED_PROVIDERS };
 
 /** Crawl every enabled company that hasn't been crawled in `staleAfterHours`. */
 export async function ingestAll(
