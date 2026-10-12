@@ -12,16 +12,23 @@ async function main() {
   const limit = Number(process.argv[2]) || 3000;
   const db = adminClient();
 
-  const { data: jobs, error } = await db
-    .from("jobs")
-    .select("id, title_raw, description_raw, sales_segment, classification_overridden")
-    .is("summary", null)
-    .eq("is_active", true)
-    .is("duplicate_of", null)
-    .order("first_seen_at", { ascending: false })
-    .limit(limit);
-  if (error) fail(error);
-  if (!jobs?.length) return notice("Backfill: nothing to do, every active job has a summary");
+  // Supabase returns at most 1000 rows per request, so page through.
+  const jobs: { id: string; title_raw: string; description_raw: string | null; sales_segment: string; classification_overridden: boolean }[] = [];
+  for (let from = 0; jobs.length < limit; from += 1000) {
+    const { data, error } = await db
+      .from("jobs")
+      .select("id, title_raw, description_raw, sales_segment, classification_overridden")
+      .is("summary", null)
+      .eq("is_active", true)
+      .is("duplicate_of", null)
+      .order("first_seen_at", { ascending: false })
+      .order("id")
+      .range(from, Math.min(from + 999, limit - 1));
+    if (error) fail(error);
+    jobs.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
+  if (!jobs.length) return notice("Backfill: nothing to do, every active job has a summary");
 
   let done = 0;
   let failed = 0;
