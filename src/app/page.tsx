@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { listJobs } from "@/lib/data";
+import { byHiringFastest, listCompanies, listJobs } from "@/lib/data";
+import { HiringRow } from "@/components/Hiring";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { JobGrid, Section } from "@/components/JobCard";
 import { getActiveWatch, getUserState } from "@/lib/session";
@@ -8,13 +9,15 @@ import { rankForWatch } from "@/lib/matching";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [newToday, highOte, remoteEnt, state, watch] = await Promise.all([
+  const [newToday, highOte, remoteEnt, state, watch, companies] = await Promise.all([
     listJobs({ postedWithinDays: 1 }, 6),
     listJobs({ minOte: 250_000 }, 6),
     listJobs({ role: "Account Executive", segment: "Enterprise", remote: "Remote" }, 6),
     getUserState(),
     getActiveWatch(),
+    listCompanies(),
   ]);
+  const rampingUp = companies.filter((c) => c.trend === "ramping").sort(byHiringFastest).slice(0, 6);
   const ctx = { savedJobIds: state.savedJobIds, back: "/" };
   const forYou = watch ? rankForWatch(await listJobs({}, 1000, { withDescription: true }), watch.prefs, state.hiddenJobIds) : null;
 
@@ -45,6 +48,16 @@ export default async function Home() {
       <Section title="New Today" href="/new">
         <JobGrid jobs={newToday} ctx={ctx} empty="No new sales jobs in the last 24 hours yet." />
       </Section>
+      {rampingUp.length > 0 && (
+        <Section title="Hiring fastest" href="/companies">
+          <p className="-mt-1 mb-3 text-sm text-ink-2">Companies posting the most new sales roles in the last 30 days.</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {rampingUp.map((c) => (
+              <HiringRow key={c.id} c={c} />
+            ))}
+          </div>
+        </Section>
+      )}
       <Section title="High OTE · $250K+" href="/jobs?minOte=250000">
         <JobGrid jobs={highOte} ctx={ctx} />
       </Section>

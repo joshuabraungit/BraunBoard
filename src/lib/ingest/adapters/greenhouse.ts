@@ -5,6 +5,7 @@
 import type { Adapter, CompanyRef, RawJob } from "../types";
 import { getJson } from "../http";
 import { htmlToText } from "../html";
+import { validDate } from "../dates";
 
 interface GhJob {
   id: number;
@@ -44,6 +45,7 @@ export const greenhouse: Adapter = {
       currency: null,
       apply_url: j.absolute_url,
       source_url: j.absolute_url,
+      posted_at: validDate(j.first_published),
     }));
   },
 };

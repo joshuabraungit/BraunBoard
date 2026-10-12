@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { freshnessLabel } from "../src/lib/freshness";
+import { validDate } from "../src/lib/ingest/dates";
 import { descriptionSimilarity } from "../src/lib/ingest/dedupe";
 import { detectFromUrl, candidateTokens } from "../src/lib/ingest/detect-ats";
 
@@ -51,5 +52,16 @@ describe("ATS board verification", () => {
     expect(textMentionsCompany(["Help customers ramp up fast. We ramp quickly. ramp"], "Ramp", "ramp.com")).toBe(false);
     expect(textMentionsCompany(["At Ramp we build. Ramp customers love Ramp."], "Ramp", null)).toBe(true);
     expect(textMentionsCompany(["Apply at careers.gong.io"], "Gong", "gong.io")).toBe(true);
+  });
+});
+
+describe("validDate", () => {
+  it("accepts ISO strings and epoch ms, rejects junk and future dates", () => {
+    expect(validDate("2026-09-01T12:00:00Z")).toBe("2026-09-01T12:00:00.000Z");
+    expect(validDate(Date.UTC(2026, 8, 1))).toBe("2026-09-01T00:00:00.000Z");
+    expect(validDate("nope")).toBeNull();
+    expect(validDate(0)).toBeNull();
+    expect(validDate(Date.now() + 10 * 86_400_000)).toBeNull();
+    expect(validDate(undefined)).toBeNull();
   });
 });

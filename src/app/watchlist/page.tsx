@@ -68,7 +68,7 @@ export default async function Watchlist({ searchParams }: { searchParams: Promis
               <CompanyLogo name={c.name} logoUrl={c.logo_url} domain={c.domain} size={32} />
               <Link href={`/company/${c.slug}`} className="min-w-0 flex-1">
                 <span className="block truncate font-semibold">{c.name}</span>
-                <span className="text-xs text-ink-3">{c.open_jobs} open · {c.added_7d} new this week</span>
+                <span className="text-xs text-ink-3">{c.open_roles} open · {c.new_7d} new this week</span>
               </Link>
               <WatchCompanyButton companyId={c.id} on back="/watchlist" className="text-xs text-ink-3 hover:text-ink" />
             </li>

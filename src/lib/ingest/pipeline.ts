@@ -79,6 +79,7 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
       if (prior) {
         // Seen again: refresh last_seen_at. If it had been marked removed, bring it back.
         const refresh: Record<string, unknown> = { last_seen_at: now, missed_checks: 0, is_active: true, removed_at: null };
+        if (job.posted_at) refresh.source_posted_at = job.posted_at;
         if (opts.reprocess && !prior.classification_overridden) {
           const comp = resolveCompensation(await structuredPay(company, job), job.description);
           Object.assign(refresh, comp, {
@@ -202,6 +203,7 @@ async function insertNewJob(
       employment_type: job.employment_type ?? null,
       ...comp,
       description_raw: job.description,
+      source_posted_at: job.posted_at ?? null,
       summary: attrs.summary,
       disclosures: attrs.disclosures,
       sales_motion: attrs.sales_motion,

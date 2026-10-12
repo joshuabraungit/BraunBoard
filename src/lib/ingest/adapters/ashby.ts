@@ -4,6 +4,7 @@
 
 import type { Adapter, CompanyRef, RawJob, RemoteType } from "../types";
 import { getJson } from "../http";
+import { validDate } from "../dates";
 
 interface AshbyComponent {
   compensationType: string; // "Salary" | "Commission" | "EquityPercentage" | "Bonus" ...
@@ -23,6 +24,7 @@ interface AshbyJob {
   employmentType?: string;
   descriptionPlain?: string;
   jobUrl: string;
+  publishedAt?: string;
   applyUrl: string;
   address?: { postalAddress?: { addressCountry?: string; addressRegion?: string; addressLocality?: string } };
   secondaryLocations?: { location: string }[];
@@ -79,6 +81,7 @@ export const ashby: Adapter = {
           country_hint: addr?.addressCountry ?? null,
           region_hint: addr?.addressRegion ?? null,
           city_hint: addr?.addressLocality ?? null,
+          posted_at: validDate(j.publishedAt),
         };
       });
   },

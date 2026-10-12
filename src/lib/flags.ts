@@ -181,8 +181,8 @@ export interface ReadInput extends FlagInput {
   first_seen_at: string;
   /** Stored flag codes, used when the description isn't loaded. */
   flags?: string[];
-  /** Other open sales roles at the same company right now. */
-  companyOpenRoles?: number;
+  /** Company hiring velocity, when known. */
+  company?: { open_roles: number; new_30d: number; closed_30d: number; trend: "ramping" | "steady" | "pulling_back" } | null;
 }
 
 const DISCLOSURE_KEYS: (keyof Disclosures)[] = ["quota_size", "quota_attainment", "average_deal_size", "territory", "sales_cycle"];
@@ -238,18 +238,16 @@ export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
   });
 
   // Company hiring
-  if (j.companyOpenRoles != null) {
-    const n = j.companyOpenRoles;
-    checks.push({
-      label: "Company hiring",
-      grade: n >= 25 ? "ok" : "good",
-      detail:
-        n === 0
-          ? "This is their only open sales role."
-          : n >= 25
-            ? `${n} other open sales roles. Could be big growth, could be churn. Ask how many reps they hired last year and how many are still there.`
-            : `${n} other open sales role${n === 1 ? "" : "s"}.`,
-    });
+  if (j.company) {
+    const { open_roles: n, new_30d, closed_30d, trend } = j.company;
+    const roles = (k: number) => `${k} sales role${k === 1 ? "" : "s"}`;
+    checks.push(
+      trend === "pulling_back"
+        ? { label: "Company hiring", grade: "bad", detail: `Pulling back: closed ${roles(closed_30d)} in 30 days and posted ${new_30d}. Ask what changed.` }
+        : trend === "ramping"
+          ? { label: "Company hiring", grade: n >= 25 ? "ok" : "good", detail: `Ramping up: posted ${roles(new_30d)} in the last 30 days.${n >= 25 ? " That many open roles can also mean churn. Ask how many reps are still there from last year." : ""}` }
+          : { label: "Company hiring", grade: n >= 25 ? "ok" : "good", detail: n <= 1 ? "This is their only open sales role." : `${roles(n)} open, hiring at a steady pace.${n >= 25 ? " Ask how many reps they hired last year and how many are still there." : ""}` },
+    );
   }
 
   // Verdict. Pay, transparency and pipeline earn points; time on market and hiring

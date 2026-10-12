@@ -4,6 +4,7 @@
 
 import type { Adapter, CompanyRef, RawJob, RemoteType } from "../types";
 import { getJson } from "../http";
+import { validDate } from "../dates";
 
 interface LeverPosting {
   id: string;
@@ -17,6 +18,7 @@ interface LeverPosting {
   lists?: { text: string; content: string }[];
   additionalPlain?: string;
   salaryRange?: { min?: number; max?: number; currency?: string; interval?: string };
+  createdAt?: number;
 }
 
 const WORKPLACE: Record<string, RemoteType> = {
@@ -54,6 +56,7 @@ export const lever: Adapter = {
         workplace_type: WORKPLACE[p.workplaceType ?? ""] ?? undefined,
         employment_type: p.categories?.commitment ?? null,
         country_hint: p.country ?? null,
+        posted_at: validDate(p.createdAt),
       };
     });
   },

@@ -63,6 +63,8 @@ export interface RawJob {
   country_hint?: string | null;
   region_hint?: string | null;
   city_hint?: string | null;
+  /** When the employer first published the posting, if the ATS says. */
+  posted_at?: string | null;
 }
 
 export interface SalesAttributes {

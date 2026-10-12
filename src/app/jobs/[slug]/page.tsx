@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { countOtherOpenRoles, getJob } from "@/lib/data";
+import { getCompanyStats, getJob } from "@/lib/data";
 import { braunRead } from "@/lib/flags";
 import { BraunReadPanel } from "@/components/BraunRead";
 import { freshnessLabel } from "@/lib/freshness";
@@ -47,8 +47,8 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
   const { slug } = await params;
   const job = await getJob(slug);
   if (!job) notFound();
-  const [state, watch, openRoles] = await Promise.all([getUserState(), getActiveWatch(), countOtherOpenRoles(job.company_id, job.id)]);
-  const read = braunRead({ ...job, companyOpenRoles: openRoles });
+  const [state, watch, stats] = await Promise.all([getUserState(), getActiveWatch(), getCompanyStats(job.company_id)]);
+  const read = braunRead({ ...job, company: stats });
   const match = watch ? scoreMatch(job, watch.prefs) : null;
   const back = `/jobs/${job.slug}`;
   const saved = state.savedJobIds.has(job.id);

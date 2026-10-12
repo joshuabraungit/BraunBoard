@@ -105,14 +105,6 @@ export async function getJob(slug: string): Promise<JobView | null> {
   return (data as unknown as JobView) ?? null;
 }
 
-/** How many other sales roles the company has open right now. */
-export async function countOtherOpenRoles(companyId: string, exceptJobId: string): Promise<number | undefined> {
-  if (!isSupabaseConfigured()) return SAMPLE_JOBS.filter((j) => j.company_id === companyId && j.id !== exceptJobId).length;
-  const db = await serverClient();
-  const { count } = await db.from("visible_jobs").select("id", { count: "exact", head: true }).eq("company_id", companyId).neq("id", exceptJobId);
-  return count ?? undefined;
-}
-
 export async function getCompany(slug: string): Promise<{ company: CompanyView; jobs: JobView[]; added7: number; added30: number } | null> {
   let company: CompanyView | null;
   if (!isSupabaseConfigured()) {
@@ -133,27 +125,62 @@ export async function getCompany(slug: string): Promise<{ company: CompanyView; 
   };
 }
 
-export interface CompanyListItem extends CompanyView {
-  open_jobs: number;
-  added_7d: number;
+export type HiringTrend = "ramping" | "steady" | "pulling_back";
+
+export interface CompanyStats {
+  open_roles: number;
+  new_7d: number;
+  new_30d: number;
+  new_prev_30d: number;
+  closed_30d: number;
+  median_days_open: number | null;
+  open_roles_30d_ago: number | null;
+  trend: HiringTrend;
 }
 
-/** Companies with at least one open sales job, busiest first. */
-export async function listCompanies(): Promise<CompanyListItem[]> {
-  const jobs = await listJobs({}, 10_000);
-  const weekAgo = Date.now() - 7 * 86_400_000;
-  const by = new Map<string, CompanyListItem>();
-  for (const j of jobs) {
-    const c = by.get(j.company_slug) ?? {
-      id: j.company_id, slug: j.company_slug, name: j.company_name, domain: j.company_domain,
-      logo_url: j.company_logo_url, website_url: null, industry: null, open_jobs: 0, added_7d: 0,
-    };
-    c.open_jobs++;
-    if (new Date(j.first_seen_at).getTime() >= weekAgo) c.added_7d++;
-    by.set(j.company_slug, c);
-  }
-  return [...by.values()].sort((a, b) => b.added_7d - a.added_7d || b.open_jobs - a.open_jobs);
+export interface CompanyListItem extends CompanyView, CompanyStats {}
+
+const STATS_COLUMNS = "open_roles, new_7d, new_30d, new_prev_30d, closed_30d, median_days_open, open_roles_30d_ago, trend";
+
+export async function getCompanyStats(companyId: string): Promise<CompanyStats | null> {
+  if (!isSupabaseConfigured()) return null;
+  const db = await serverClient();
+  const { data } = await db.from("company_stats").select(STATS_COLUMNS).eq("company_id", companyId).maybeSingle();
+  return (data as CompanyStats | null) ?? null;
 }
+
+/** Companies with open sales roles, with hiring velocity. Sorted by the caller. */
+export async function listCompanies(): Promise<CompanyListItem[]> {
+  if (!isSupabaseConfigured()) {
+    const by = new Map<string, CompanyListItem>();
+    for (const j of SAMPLE_JOBS) {
+      const c = by.get(j.company_slug) ?? {
+        id: j.company_id, slug: j.company_slug, name: j.company_name, domain: j.company_domain, logo_url: j.company_logo_url,
+        website_url: null, industry: null, open_roles: 0, new_7d: 0, new_30d: 0, new_prev_30d: 0, closed_30d: 0,
+        median_days_open: null, open_roles_30d_ago: null, trend: "steady" as HiringTrend,
+      };
+      c.open_roles++;
+      by.set(j.company_slug, c);
+    }
+    return [...by.values()];
+  }
+  const db = await serverClient();
+  const { data } = await db
+    .from("company_stats")
+    .select(`${STATS_COLUMNS}, companies!inner(id, slug, name, domain, logo_url, website_url, industry, is_disabled)`)
+    .gt("open_roles", 0)
+    .eq("companies.is_disabled", false)
+    .limit(2000);
+  type Row = CompanyStats & { companies: CompanyView };
+  return ((data ?? []) as unknown as Row[]).map(({ companies, ...stats }) => ({ ...companies, ...stats }));
+}
+
+const TREND_RANK: Record<HiringTrend, number> = { ramping: 0, steady: 1, pulling_back: 2 };
+export const byHiringFastest = (a: CompanyListItem, b: CompanyListItem) =>
+  TREND_RANK[a.trend] - TREND_RANK[b.trend] || b.new_30d - a.new_30d || b.open_roles - a.open_roles;
+export const byMostOpen = (a: CompanyListItem, b: CompanyListItem) => b.open_roles - a.open_roles || b.new_30d - a.new_30d;
+export const byPullingBack = (a: CompanyListItem, b: CompanyListItem) =>
+  TREND_RANK[b.trend] - TREND_RANK[a.trend] || b.closed_30d - a.closed_30d;
 
 /** Jobs by id, for the saved-jobs list. */
 export async function getJobsByIds(ids: string[]): Promise<JobView[]> {

@@ -18,6 +18,8 @@ async function main() {
   notice(`Ingest: crawled ${companies} companies, ${totals.kept} US sales jobs seen, ${totals.new} new, ${totals.removed} removed`);
   const f = await recomputeFlags(db);
   notice(`Flags: ${f.changed} of ${f.checked} jobs updated`);
+  const { error: statsErr } = await db.rpc("refresh_company_stats");
+  if (statsErr) console.warn(`Company stats refresh failed: ${statsErr.message}`);
   const sent = await sendPendingAlerts(db, "instant");
   console.log(`Sent ${sent} instant alert emails`);
 }

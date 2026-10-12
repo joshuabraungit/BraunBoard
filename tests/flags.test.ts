@@ -62,7 +62,7 @@ describe("braunRead", () => {
       ote_min: 280000,
       self_sourcing_level: "Medium",
       disclosures: { quota_attainment: true, territory: true },
-      companyOpenRoles: 3,
+      company: { open_roles: 3, new_30d: 1, closed_30d: 0, trend: "steady" },
     });
     expect(r.verdict).toBe("Strong posting");
   });
@@ -78,9 +78,16 @@ describe("braunRead", () => {
 
   it("notes stale postings and heavy hiring", () => {
     const old = new Date(Date.now() - 60 * 86_400_000).toISOString();
-    const r = braunRead({ ...base, first_seen_at: old, companyOpenRoles: 40 });
+    const r = braunRead({ ...base, first_seen_at: old, company: { open_roles: 40, new_30d: 20, closed_30d: 2, trend: "ramping" } });
     expect(r.checks.find((c) => c.label === "Time on market")?.grade).toBe("bad");
     expect(r.checks.find((c) => c.label === "Company hiring")?.detail).toMatch(/churn/);
+  });
+
+  it("marks a company that's pulling back", () => {
+    const r = braunRead({ ...base, company: { open_roles: 4, new_30d: 0, closed_30d: 9, trend: "pulling_back" } });
+    const c = r.checks.find((x) => x.label === "Company hiring");
+    expect(c?.grade).toBe("bad");
+    expect(c?.detail).toMatch(/Pulling back/);
   });
 });
 
