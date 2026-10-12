@@ -5,8 +5,8 @@ import { formatComp, formatLocation } from "@/lib/format";
 import { CompanyLogo } from "./CompanyLogo";
 import { SaveJobButton, HideJobButton } from "./Actions";
 import { MatchBadge } from "./MatchBadge";
-import { FlagChips } from "./BraunRead";
-import { cardFlags, flagsFromCodes } from "@/lib/flags";
+import { FlagChips, VerdictPill } from "./BraunRead";
+import { braunRead, cardFlags, flagsFromCodes } from "@/lib/flags";
 import type { MatchResult } from "@/lib/match";
 
 export interface CardContext {
@@ -29,6 +29,7 @@ export function JobCard({ job, ctx }: { job: JobView; ctx: CardContext }) {
   const comp = formatComp(job);
   const match = ctx.matches?.get(job.id);
   const fresh = isFresh(job.first_seen_at);
+  const read = braunRead({ ...job, description_raw: null });
   return (
     <article className="group relative flex flex-col rounded-xl border border-line bg-surface p-4 transition hover:border-line-strong hover:shadow-[0_2px_12px_rgba(22,20,15,0.05)]">
       <div className="flex items-start justify-between gap-3">
@@ -52,6 +53,11 @@ export function JobCard({ job, ctx }: { job: JobView; ctx: CardContext }) {
       <div className="mt-3 flex items-center gap-2">
         <CompanyLogo name={job.company_name} logoUrl={job.company_logo_url} domain={job.company_domain} size={24} />
         <span className="text-sm font-medium">{job.company_name}</span>
+      </div>
+
+      <div className="mt-3">
+        <span className="mr-1.5 text-xs text-ink-3">Braun Read:</span>
+        <VerdictPill verdict={read.verdict} />
       </div>
 
       {tagsFor(job).length > 0 && (

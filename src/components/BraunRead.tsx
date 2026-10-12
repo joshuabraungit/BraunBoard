@@ -37,6 +37,11 @@ const GRADE: Record<Grade, { dot: string; label: string }> = {
   unknown: { dot: "bg-line-strong", label: "Unknown" },
 };
 
+/** Small verdict pill for cards. */
+export function VerdictPill({ verdict }: { verdict: Read["verdict"] }) {
+  return <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${VERDICT_STYLE[verdict]}`}>{verdict}</span>;
+}
+
 /** "The Braun Read" panel on the job page. */
 export function BraunReadPanel({ read }: { read: Read }) {
   const reds = read.flags.filter((f) => f.tone === "red");
