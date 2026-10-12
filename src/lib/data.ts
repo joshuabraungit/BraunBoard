@@ -30,6 +30,7 @@ export interface JobView {
   /** Red / green flag codes, see lib/flags.ts */
   flags?: string[];
   apply_url: string;
+  /** When the employer posted it (falls back to when we first saw it). */
   first_seen_at: string;
   company_id: string;
   company_name: string;
@@ -61,7 +62,7 @@ export interface JobFilters {
 }
 
 const CARD_COLUMNS =
-  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags";
+  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags";
 
 function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
   const since = f.postedWithinDays ? Date.now() - f.postedWithinDays * 86_400_000 : 0;
@@ -83,7 +84,7 @@ export async function listJobs(f: JobFilters = {}, limit = 60, opts: { withDescr
   if (!isSupabaseConfigured()) return applyFiltersLocal(SAMPLE_JOBS, f).slice(0, limit);
 
   const db = await serverClient();
-  let q = db.from("visible_jobs").select(opts.withDescription ? `${CARD_COLUMNS}, description_raw` : CARD_COLUMNS).order("first_seen_at", { ascending: false }).limit(limit);
+  let q = db.from("visible_jobs").select(opts.withDescription ? `${CARD_COLUMNS}, description_raw` : CARD_COLUMNS).order("posted_at", { ascending: false }).limit(limit);
   if (f.q) q = q.or(`title_raw.ilike.%${f.q.replace(/[%,()]/g, "")}%,company_name.ilike.%${f.q.replace(/[%,()]/g, "")}%`);
   if (f.role) q = q.eq("role_family", f.role);
   if (f.segment) q = q.eq("sales_segment", f.segment);
@@ -92,7 +93,7 @@ export async function listJobs(f: JobFilters = {}, limit = 60, opts: { withDescr
   if (f.minBase) q = q.gte("salary_max", f.minBase);
   if (f.minOte) q = q.gte("ote_max", f.minOte);
   if (f.companySlug) q = q.eq("company_slug", f.companySlug);
-  if (f.postedWithinDays) q = q.gte("first_seen_at", new Date(Date.now() - f.postedWithinDays * 86_400_000).toISOString());
+  if (f.postedWithinDays) q = q.gte("posted_at", new Date(Date.now() - f.postedWithinDays * 86_400_000).toISOString());
   const { data, error } = await q;
   if (error) throw error;
   return (data ?? []) as unknown as JobView[];
