@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { saveOnboarding } from "@/app/actions";
 import { DEALBREAKER_LABELS, DEALBREAKERS } from "@/lib/match";
-import { MOTION_CHOICES, ROLE_CHOICES, WORK_CHOICES, type OnboardingAnswers, type RoleChoice } from "@/lib/watch-prefs";
+import { COUNTRY_CHOICES, MOTION_CHOICES, ROLE_CHOICES, WORK_CHOICES, type OnboardingAnswers, type RoleChoice } from "@/lib/watch-prefs";
 
 const BASE_PRESETS = [100, 125, 150, 175, 200];
 const OTE_PRESETS = [150, 200, 250, 300, 400];
@@ -43,6 +43,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
   const [ote, setOte] = useState(initial?.min_ote ? String(initial.min_ote / 1000) : "");
   const [work, setWork] = useState<OnboardingAnswers["work"]>(initial?.work ?? "any");
   const [location, setLocation] = useState(initial?.location ?? "");
+  const [country, setCountry] = useState<OnboardingAnswers["country"]>(initial?.country ?? "US");
   const [motion, setMotion] = useState<OnboardingAnswers["motion"]>(initial?.motion ?? "either");
   const [breakers, setBreakers] = useState<string[]>(initial?.dealbreakers ?? []);
   const [pending, setPending] = useState(false);
@@ -75,9 +76,16 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
     },
     {
       q: "Where do you want to work?",
-      hint: "Location is optional. Try a state or city, like NY or Austin.",
+      hint: "Location is optional. Try a state, province or city, like NY, Austin or Toronto.",
       body: (
         <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {(Object.keys(COUNTRY_CHOICES) as (keyof typeof COUNTRY_CHOICES)[]).map((c) => (
+              <Chip key={c} name="country" value={c} type="radio" checked={country === c} onChange={() => setCountry(c)}>
+                {COUNTRY_CHOICES[c]}
+              </Chip>
+            ))}
+          </div>
           <div className="flex flex-wrap gap-2">
             {(Object.keys(WORK_CHOICES) as (keyof typeof WORK_CHOICES)[]).map((w) => (
               <Chip key={w} name="work" value={w} type="radio" checked={work === w} onChange={() => setWork(w)}>

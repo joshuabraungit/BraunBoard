@@ -23,6 +23,8 @@ export interface PickCandidate extends ReadInput {
   location_raw?: string | null;
   summary: string | null;
   flags?: string[];
+  currency?: string | null;
+  markets?: string[];
 }
 
 export const PICK_COUNT = 5;
@@ -140,7 +142,7 @@ export function pickPay(j: PickCandidate): string {
 }
 
 export function pickMeta(j: PickCandidate): string {
-  return [formatLocation({ remote_type: j.remote_type, city: j.city, state: j.state, location_raw: j.location_raw ?? null }), j.sales_segment !== "Unknown" ? j.sales_segment : null]
+  return [formatLocation({ remote_type: j.remote_type, city: j.city, state: j.state, location_raw: j.location_raw ?? null, markets: j.markets }), j.sales_segment !== "Unknown" ? j.sales_segment : null]
     .filter(Boolean)
     .join(" · ");
 }
@@ -149,7 +151,7 @@ export function subjectFor(picks: PickCandidate[]): string {
   const top = [...picks].sort((a, b) => (oteMid(b) ?? 0) - (oteMid(a) ?? 0))[0];
   if (!top) return "Braun's Picks: this week's sales jobs worth a look";
   const o = oteMid(top);
-  const hook = o ? `${money(top.ote_max ?? o)} OTE at ${top.company_name}` : `${top.title_raw} at ${top.company_name}`;
+  const hook = o ? `${money(top.ote_max ?? o, top.currency)} OTE at ${top.company_name}` : `${top.title_raw} at ${top.company_name}`;
   return `Braun's Picks: ${hook} + ${picks.length - 1} more`;
 }
 

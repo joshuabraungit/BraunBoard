@@ -1,4 +1,4 @@
-// Location parsing + US filter. V1 is United States only.
+// Location parsing + market filter. Braun Board covers the United States and Canada.
 
 import type { RemoteType } from "./types";
 
@@ -24,6 +24,54 @@ const US_CITIES: Record<string, string> = {
   "san jose": "CA", "palo alto": "CA", "mountain view": "CA", "boulder": "CO", "minneapolis": "MN",
   "portland": "OR", "pittsburgh": "PA", "detroit": "MI", "columbus": "OH", "charlotte": "NC",
 };
+
+// ---- Canada -------------------------------------------------------------
+const CA_PROVINCES: Record<string, string> = {
+  ON: "Ontario", BC: "British Columbia", QC: "Quebec", AB: "Alberta", MB: "Manitoba", SK: "Saskatchewan",
+  NS: "Nova Scotia", NB: "New Brunswick", NL: "Newfoundland and Labrador", PE: "Prince Edward Island",
+  YT: "Yukon", NT: "Northwest Territories", NU: "Nunavut",
+};
+const PROVINCE_NAMES: Record<string, string> = {
+  ...Object.fromEntries(Object.entries(CA_PROVINCES).map(([k, v]) => [v.toLowerCase(), k])),
+  "québec": "QC", "newfoundland": "NL", "pei": "PE",
+};
+const CA_CITIES: Record<string, string> = {
+  toronto: "ON", "greater toronto area": "ON", gta: "ON", ottawa: "ON", mississauga: "ON", "kitchener-waterloo": "ON",
+  kitchener: "ON", hamilton: "ON", london: "ON", markham: "ON", vancouver: "BC", victoria: "BC", burnaby: "BC",
+  montreal: "QC", "montréal": "QC", "quebec city": "QC", "québec city": "QC", calgary: "AB", edmonton: "AB",
+  winnipeg: "MB", halifax: "NS", saskatoon: "SK", regina: "SK",
+};
+// "London" alone means the UK; only "London, ON" counts as Canada (handled by the "City, Province" rule).
+const CA_BARE_CITIES = Object.keys(CA_CITIES).filter((c) => c !== "london" && c !== "victoria" && c !== "hamilton");
+const CA_MARKERS = /\b(canada|canadian|can\b)/i;
+
+export type Market = "US" | "CA";
+
+/** Canada-only parsing of one location fragment. */
+function parseCaPart(part: string): { city: string | null; state: string | null; country: "CA" } | null {
+  const m = part.match(/([A-Za-zÀ-ÿ .'-]+),\s*([A-Za-zÀ-ÿ .]+?)(?:,\s*(CA|CAN|Canada))?\s*(?:\(|$|-|,)/);
+  if (m) {
+    const city = m[1].replace(/^(remote|hybrid)\s*[-–:]?\s*/i, "").replace(/^(remote|hybrid|flexible|anywhere)$/i, "").trim();
+    const pv = m[2].trim();
+    const code = CA_PROVINCES[pv.toUpperCase()] && pv.toUpperCase() !== "CA" ? pv.toUpperCase() : PROVINCE_NAMES[pv.toLowerCase()];
+    if (code) return { city: city || null, state: code, country: "CA" };
+    if (/^(canada|can)$/i.test(pv)) {
+      const c = city.toLowerCase();
+      return { city: city || null, state: CA_CITIES[c] ?? null, country: "CA" };
+    }
+  }
+  const lower = part.toLowerCase();
+  for (const city of CA_BARE_CITIES) {
+    if (new RegExp(`(^|[^a-zà-ÿ])${city}([^a-zà-ÿ]|$)`).test(lower)) {
+      return { city: city.split(" ").map((w) => w[0]!.toUpperCase() + w.slice(1)).join(" "), state: CA_CITIES[city]!, country: "CA" };
+    }
+  }
+  for (const [name, code] of Object.entries(PROVINCE_NAMES)) {
+    if (new RegExp(`\\b${name}\\b`).test(lower)) return { city: null, state: code, country: "CA" };
+  }
+  if (CA_MARKERS.test(part)) return { city: null, state: null, country: "CA" };
+  return null;
+}
 
 const NON_US = /\b(canada|toronto|vancouver, (bc|british columbia)|montreal|ontario|quebec|uk|u\.k\.|united kingdom|england|scotland|london|ireland|dublin|uk&i|germany|berlin|munich|france|paris|netherlands|amsterdam|belgium|spain|madrid|barcelona|portugal|lisbon|italy|milan|denmark|copenhagen|norway|oslo|sweden|stockholm|finland|helsinki|switzerland|zurich|austria|vienna|poland|warsaw|czech|prague|romania|ukraine|turkey|istanbul|israel|tel aviv|uae|dubai|abu dhabi|saudi|riyadh|qatar|egypt|south africa|nigeria|kenya|india|bangalore|bengaluru|hyderabad|pune|mumbai|delhi|gurgaon|gurugram|noida|chennai|pakistan|singapore|malaysia|indonesia|jakarta|thailand|bangkok|vietnam|philippines|manila|hong kong|china|beijing|shanghai|shenzhen|taiwan|taipei|korea|seoul|japan|tokyo|australia|sydney|melbourne|new zealand|auckland|anz|brazil|são paulo|sao paulo|mexico|mexico city|colombia|bogot[aá]|argentina|buenos aires|chile|santiago|peru|lima|costa rica|latam|latin america|emea|apac|asia|europe|nordics|dach|benelux)\b/i;
 const US_MARKERS = /\b(united states|usa|u\.s\.a?\.?|us|north america|americas|nationwide)\b/i;
@@ -51,7 +99,10 @@ export interface ParsedLocation {
   state: string | null;
   country: string | null;
   remote_type: RemoteType;
+  /** Open to candidates in the US. */
   is_us: boolean;
+  /** Every market (US, Canada) the job is open in. Empty = out of scope. */
+  markets: Market[];
 }
 
 export function parseRemoteType(text: string, hint?: RemoteType): RemoteType {
@@ -68,38 +119,70 @@ export function parseLocation(
 ): ParsedLocation {
   const text = raw.trim();
   const remote_type = parseRemoteType(text, hints.workplace);
+  const out = (p: { city: string | null; state: string | null; country: string | null }, markets: Market[]): ParsedLocation => ({
+    ...p,
+    remote_type,
+    markets,
+    is_us: markets.includes("US"),
+  });
 
-  // Structured hints win when the ATS gives them (Ashby, sometimes Lever).
-  const hintCountry = hints.country?.toLowerCase();
-  if (hintCountry && /^(us|usa|u\.s\.a?\.?|united states( of america)?)$/.test(hintCountry)) {
-    const st = hints.region ? (US_STATES[hints.region.toUpperCase()] ? hints.region.toUpperCase() : STATE_NAMES[hints.region.toLowerCase()] ?? null) : null;
-    const city = hints.city && !/^(remote|hybrid|anywhere|)$/i.test(hints.city.trim()) ? hints.city : null;
-    return { city, state: st, country: "US", remote_type, is_us: true };
-  }
-
-  // Multi-location strings ("NYC / London"): US if any part is US.
+  // Every market named anywhere in the string ("Remote - US / Remote - Canada" is both).
   const parts = text.split(/\s*(?:\/|;|\bor\b|\||•)\s*/i).filter(Boolean);
+  const markets = new Set<Market>();
+  let usPlace: Omit<ParsedLocation, "remote_type" | "is_us" | "markets"> | null = null;
+  let caPlace: ReturnType<typeof parseCaPart> = null;
   let foreignQualifier = false;
   for (const part of parts.length ? parts : [text]) {
     const q = remoteQualifier(part);
     if (q && !isUsQualifier(q)) {
-      foreignQualifier = true;
+      const ca = parseCaPart(q);
+      if (ca) {
+        markets.add("CA");
+        caPlace ??= ca;
+      } else foreignQualifier = true;
       continue;
     }
     const p = parsePart(part);
-    if (p) return { ...p, remote_type, is_us: true };
+    if (p) {
+      markets.add("US");
+      usPlace ??= p;
+      continue;
+    }
+    const ca = parseCaPart(part);
+    if (ca) {
+      markets.add("CA");
+      caPlace ??= ca;
+    }
   }
-  if (foreignQualifier) return { city: null, state: null, country: null, remote_type, is_us: false };
 
-  if (NON_US.test(text)) return { city: null, state: null, country: null, remote_type, is_us: false };
-  if (hintCountry) return { city: null, state: null, country: hints.country ?? null, remote_type, is_us: false };
+  // Structured hints win when the ATS gives them (Ashby, Lever, Workday).
+  const hintCountry = hints.country?.trim().toLowerCase();
+  if (hintCountry && /^(us|usa|u\.s\.a?\.?|united states( of america)?)$/.test(hintCountry)) {
+    const st = hints.region ? (US_STATES[hints.region.toUpperCase()] ? hints.region.toUpperCase() : STATE_NAMES[hints.region.toLowerCase()] ?? null) : null;
+    const city = hints.city && !/^(remote|hybrid|anywhere|)$/i.test(hints.city.trim()) ? hints.city : null;
+    markets.add("US");
+    return out({ city, state: st, country: "US" }, [...markets].sort().reverse() as Market[]);
+  }
+  if (hintCountry && /^(ca|can|canada)$/.test(hintCountry)) {
+    const region = hints.region?.trim() ?? "";
+    const st = CA_PROVINCES[region.toUpperCase()] ? region.toUpperCase() : PROVINCE_NAMES[region.toLowerCase()] ?? null;
+    const city = hints.city && !/^(remote|hybrid|anywhere|)$/i.test(hints.city.trim()) ? hints.city : null;
+    markets.add("CA");
+    if (markets.has("US") && usPlace) return out(usPlace, ["US", "CA"]);
+    return out({ city, state: st, country: "CA" }, markets.has("US") ? ["US", "CA"] : ["CA"]);
+  }
 
-  // "Remote" with no country at all: ambiguous. Keep it but flag via country=null.
+  const list = (["US", "CA"] as Market[]).filter((m) => markets.has(m));
+  if (usPlace) return out(usPlace, list);
+  if (caPlace) return out(caPlace, list);
+  if (foreignQualifier || NON_US.test(text) || hintCountry) return out({ city: null, state: null, country: hintCountry ? hints.country ?? null : null }, []);
+
+  // "Remote" with no country at all: ambiguous. Keep it as US but flag via country=null.
   // The pipeline marks these needs_review so an admin can confirm.
-  return { city: null, state: null, country: null, remote_type, is_us: remote_type === "Remote" && !NON_US.test(text) };
+  return out({ city: null, state: null, country: null }, remote_type === "Remote" ? ["US"] : []);
 }
 
-function parsePart(part: string): Omit<ParsedLocation, "remote_type" | "is_us"> | null {
+function parsePart(part: string): Omit<ParsedLocation, "remote_type" | "is_us" | "markets"> | null {
   if (NON_US.test(part)) return null;
 
   // "City, ST" or "City, State"
@@ -121,11 +204,23 @@ function parsePart(part: string): Omit<ParsedLocation, "remote_type" | "is_us"> 
   return null;
 }
 
+const CANADA_IN_TITLE = /\b(canada|canadian|toronto|montr[eé]al|vancouver|ontario|qu[eé]bec|calgary|ottawa|edmonton|waterloo|gta)\b/i;
 const FOREIGN_IN_TITLE =
-  /\b(canada|canadian|toronto|montreal|vancouver,? bc|ontario|quebec|calgary|ottawa|emea|apac|apj|latam|uk&i|united kingdom|uk|london|dublin|ireland|germany|dach|france|paris|berlin|munich|amsterdam|benelux|nordics?|australia|anz|sydney|melbourne|singapore|japan|tokyo|india|bangalore|mexico|brazil|s[aã]o paulo|israel|spain|madrid|italy|milan)\b/i;
+  /\b(emea|apac|apj|latam|uk&i|united kingdom|uk|london|dublin|ireland|germany|dach|france|paris|berlin|munich|amsterdam|benelux|nordics?|australia|anz|sydney|melbourne|singapore|japan|tokyo|india|bangalore|mexico|brazil|s[aã]o paulo|israel|spain|madrid|italy|milan)\b/i;
 const US_IN_TITLE = /\b(us|u\.s\.?|usa|united states|north america|americas|new england|east coast|west coast)\b/i;
 
-/** A title like "Senior Majors AE, Toronto" names a non-US territory and no US one. */
+/** A title like "Enterprise AE, EMEA" names a territory outside the US and Canada, and no US one. */
 export function titleNamesForeignOnly(title: string): boolean {
-  return FOREIGN_IN_TITLE.test(title) && !US_IN_TITLE.test(title);
+  return FOREIGN_IN_TITLE.test(title) && !US_IN_TITLE.test(title) && !CANADA_IN_TITLE.test(title);
+}
+
+/** A title like "Senior Majors AE, Toronto" is a Canada role even if the location says "Distributed". */
+export function titleNamesCanadaOnly(title: string): boolean {
+  return CANADA_IN_TITLE.test(title) && !US_IN_TITLE.test(title) && !FOREIGN_IN_TITLE.test(title);
+}
+
+/** The Canadian place a title names, if any ("..., Toronto" -> Toronto, ON). */
+export function canadaPlaceFromTitle(title: string): { city: string | null; state: string | null } {
+  const p = parseCaPart(title);
+  return { city: p?.city ?? null, state: p?.state ?? null };
 }

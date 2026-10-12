@@ -40,7 +40,7 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-const range = (a: number | null, b: number | null) => (a == null ? null : a === b || b == null ? money(a) : `${money(a)}–${money(b)}`);
+const range = (a: number | null, b: number | null, cur?: string | null) => (a == null ? null : a === b || b == null ? money(a, cur) : `${money(a, cur)}–${money(b, cur)}`);
 const known = (v: string) => (v === "Unknown" ? null : v);
 
 export default async function JobPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -73,8 +73,8 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
       </div>
 
       <dl className="mt-6 grid grid-cols-3 gap-4 rounded-xl border border-line bg-surface p-4">
-        <Fact label="Base" value={range(job.salary_min, job.salary_max)} />
-        <Fact label="OTE" value={range(job.ote_min, job.ote_max)} />
+        <Fact label="Base" value={range(job.salary_min, job.salary_max, job.currency)} />
+        <Fact label="OTE" value={range(job.ote_min, job.ote_max, job.currency)} />
         <Fact label="Posted" value={freshnessLabel(job.first_seen_at)} />
       </dl>
 

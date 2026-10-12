@@ -14,6 +14,7 @@ export interface AlertItem {
   remote_type: string;
   location: string | null;
   match_id: string;
+  currency?: string | null;
 }
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -24,7 +25,7 @@ export function renderAlert(watchName: string, items: AlertItem[], siteUrl: stri
   const rows = items
     .map((i) => {
       const comp = formatComp(i);
-      const where = i.remote_type === "Remote" ? "Remote" : i.location ?? "";
+      const where = i.remote_type === "Remote" ? (i.location === "Canada" ? "Remote · Canada" : "Remote") : i.location ?? "";
       const meta = [comp, where].filter(Boolean).join(" · ");
       // Click goes through our redirect so we can measure alert -> detail clicks (primary V1 metric).
       const href = `${siteUrl}/r/${i.match_id}`;

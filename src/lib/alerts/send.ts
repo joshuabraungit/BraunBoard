@@ -8,7 +8,7 @@ export async function sendPendingAlerts(db: SupabaseClient, frequency: "instant"
   const { data: pending, error } = await db
     .from("alert_matches")
     .select(
-      "id, user_id, match_score, company_watch, watches(name, alert_frequency), jobs(slug, title_raw, salary_min, salary_max, ote_min, ote_max, remote_type, city, state, is_active, companies(name))",
+      "id, user_id, match_score, company_watch, watches(name, alert_frequency), jobs(slug, title_raw, salary_min, salary_max, ote_min, ote_max, currency, markets, remote_type, city, state, is_active, companies(name))",
     )
     .is("sent_at", null)
     .order("match_score", { ascending: false, nullsFirst: false });
@@ -20,7 +20,7 @@ export async function sendPendingAlerts(db: SupabaseClient, frequency: "instant"
     const w = m.watches as unknown as { name: string; alert_frequency: string } | null;
     const j = m.jobs as unknown as {
       slug: string; title_raw: string; salary_min: number | null; salary_max: number | null;
-      ote_min: number | null; ote_max: number | null; remote_type: string; city: string | null;
+      ote_min: number | null; ote_max: number | null; currency: string | null; markets: string[] | null; remote_type: string; city: string | null;
       state: string | null; is_active: boolean; companies: { name: string };
     } | null;
     if (!j?.is_active) continue;
@@ -39,8 +39,9 @@ export async function sendPendingAlerts(db: SupabaseClient, frequency: "instant"
       salary_max: j.salary_max,
       ote_min: j.ote_min,
       ote_max: j.ote_max,
+      currency: j.currency,
       remote_type: j.remote_type,
-      location: [j.city, j.state].filter(Boolean).join(", ") || null,
+      location: [j.city, j.state].filter(Boolean).join(", ") || (j.markets?.includes("US") ? null : "Canada"),
     });
     g.ids.push(m.id);
     groups.set(key, g);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findPayInText, resolveCompensation } from "../src/lib/ingest/compensation";
+import { findPayInText, payCurrency, resolveCompensation } from "../src/lib/ingest/compensation";
 
 const none = { min: null, max: null, currency: null };
 
@@ -108,5 +108,16 @@ describe("OTE phrasings seen in the wild", () => {
   it("still reads plain base ranges as base", () => {
     expect(label("The salary range for this position is $120,000- $155,000 per year, and is eligible for on-target-earnings (OTE).")).toBe("base");
     expect(label("Base salary: $83,000-105,000; uncapped accelerators")).toBe("base");
+  });
+});
+
+describe("payCurrency", () => {
+  it("trusts the ATS, then the posting, then the market", () => {
+    expect(payCurrency("CAD", "", ["US"])).toBe("CAD");
+    expect(payCurrency(null, "Salary: C$120,000 - C$140,000", ["CA"])).toBe("CAD");
+    expect(payCurrency(null, "Base $120,000 - $140,000 CAD", ["US", "CA"])).toBe("CAD");
+    expect(payCurrency(null, "Base $120,000 - $140,000", ["CA"])).toBe("CAD");
+    expect(payCurrency(null, "Base $120,000 - $140,000", ["US", "CA"])).toBe("USD");
+    expect(payCurrency(null, "Base $120,000 - $140,000", ["US"])).toBe("USD");
   });
 });

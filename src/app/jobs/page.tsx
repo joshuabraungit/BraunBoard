@@ -17,6 +17,7 @@ function toFilters(sp: SP): JobFilters {
     segment: pick(sp.segment, SALES_SEGMENTS),
     motion: pick(sp.motion, SALES_MOTIONS),
     remote: pick(sp.remote, REMOTE_TYPES),
+    country: pick(sp.country, ["US", "CA"] as const),
     minBase: num(sp.minBase),
     minOte: num(sp.minOte),
     postedWithinDays: num(sp.posted),
@@ -41,7 +42,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
   const [jobs, state] = await Promise.all([listJobs(toFilters(sp), 120), getUserState()]);
   const qs = new URLSearchParams(Object.entries(sp).filter(([, v]) => v) as [string, string][]).toString();
   const hasFilters = qs.length > 0;
-  const suggestedName = [sp.segment, sp.role === "Account Executive" ? "AE" : sp.role, sp.remote, sp.minOte && `$${Math.round(+sp.minOte / 1000)}K+ OTE`, sp.q]
+  const suggestedName = [sp.segment, sp.role === "Account Executive" ? "AE" : sp.role, sp.remote, sp.country === "CA" ? "Canada" : null, sp.minOte && `$${Math.round(+sp.minOte / 1000)}K+ OTE`, sp.q]
     .filter(Boolean)
     .join(" · ");
   return (
@@ -53,6 +54,11 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
         <Select name="segment" label="Any segment" options={SALES_SEGMENTS} value={sp.segment} />
         <Select name="motion" label="Any motion" options={SALES_MOTIONS.filter((m) => m !== "Channel")} value={sp.motion} />
         <Select name="remote" label="Any workplace" options={REMOTE_TYPES} value={sp.remote} />
+        <select name="country" defaultValue={sp.country ?? ""} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label="Country">
+          <option value="">US + Canada</option>
+          <option value="US">United States</option>
+          <option value="CA">Canada</option>
+        </select>
         <select name="minBase" defaultValue={sp.minBase ?? ""} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label="Minimum base">
           <option value="">Any base</option>
           {[100, 125, 150, 175, 200].map((k) => <option key={k} value={k * 1000}>${k}K+ base</option>)}

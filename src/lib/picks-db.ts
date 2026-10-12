@@ -19,7 +19,7 @@ import {
 import { k } from "./salaries";
 
 const COLUMNS =
-  "id, slug, title_raw, company_id, company_name, role_family, sales_segment, remote_type, city, state, location_raw, summary, salary_min, salary_max, ote_min, ote_max, self_sourcing_level, disclosures, flags, first_seen_at:posted_at";
+  "id, slug, title_raw, company_id, company_name, role_family, sales_segment, remote_type, city, state, location_raw, summary, salary_min, salary_max, ote_min, ote_max, self_sourcing_level, disclosures, flags, currency, markets, first_seen_at:posted_at";
 
 /** Jobs posted in the last 2 weeks, with company hiring stats attached. */
 export async function loadCandidates(db: SupabaseClient): Promise<PickCandidate[]> {

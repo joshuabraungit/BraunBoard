@@ -1,5 +1,5 @@
 import type { JobView } from "./data";
-import { scoreMatch, type MatchResult, type WatchPrefs } from "./match";
+import { openInCountries, scoreMatch, type MatchResult, type WatchPrefs } from "./match";
 
 export interface Ranked {
   jobs: JobView[];
@@ -13,7 +13,7 @@ export function rankForWatch(jobs: JobView[], prefs: WatchPrefs, hidden: Set<str
   let blocked = 0;
   const kept: JobView[] = [];
   for (const j of jobs) {
-    if (hidden.has(j.id)) continue;
+    if (hidden.has(j.id) || !openInCountries(j, prefs)) continue;
     const m = scoreMatch(j, prefs);
     // Wrong role never counts, not even as "hidden by dealbreakers".
     if (m.checks.some((c) => c.key === "role" && c.result === "fail")) continue;

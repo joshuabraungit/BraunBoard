@@ -7,7 +7,7 @@ import { SAMPLE_JOBS } from "./sample-data";
 import type { PayRow } from "./salaries";
 
 const COLUMNS =
-  "slug, title_raw, role_family, sales_segment, remote_type, city, state, salary_min, salary_max, ote_min, ote_max, company_name, company_slug, posted_at";
+  "slug, title_raw, role_family, sales_segment, remote_type, city, state, salary_min, salary_max, ote_min, ote_max, company_name, company_slug, posted_at, currency, markets";
 
 async function load(): Promise<{ rows: PayRow[]; loadedAt: string }> {
   if (!isSupabaseConfigured()) {
@@ -20,7 +20,12 @@ async function load(): Promise<{ rows: PayRow[]; loadedAt: string }> {
   for (let from = 0; ; from += 1000) {
     const { data, error } = await db.from("visible_jobs").select(COLUMNS).order("id").range(from, from + 999);
     if (error) throw new Error(`salary data: ${error.message}`);
-    rows.push(...((data ?? []) as unknown as PayRow[]));
+    // The salary report is US pay only: skip Canadian-dollar postings and Canada-only roles.
+    rows.push(
+      ...((data ?? []) as unknown as (PayRow & { currency: string | null; markets: string[] | null })[]).filter(
+        (r) => r.currency !== "CAD" && (r.markets ?? ["US"]).includes("US"),
+      ),
+    );
     if (!data || data.length < 1000) break;
   }
   return { rows, loadedAt: new Date().toISOString() };

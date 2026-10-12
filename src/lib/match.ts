@@ -4,6 +4,7 @@
 // denominator instead of counting against the role.
 
 import type { RemoteType, RoleFamily, SalesMotion, SalesSegment, SelfSourcingLevel } from "./ingest/types";
+import { CAD_TO_USD } from "./ingest/compensation";
 
 export interface WatchPrefs {
   role_families: RoleFamily[];
@@ -15,6 +16,8 @@ export interface WatchPrefs {
   min_base: number | null;
   min_ote: number | null;
   dealbreakers: Dealbreaker[];
+  /** Where the person can work. Missing = US (every watch made before Canada support). */
+  countries?: ("US" | "CA")[];
 }
 
 export const DEALBREAKERS = [
@@ -53,6 +56,14 @@ export interface MatchableJob {
   ote_max: number | null;
   description_raw: string | null;
   company_employee_range?: string | null;
+  currency?: string | null;
+  markets?: string[] | null;
+}
+
+/** Is the job open where this person can work? */
+export function openInCountries(job: { markets?: string[] | null }, prefs: Pick<WatchPrefs, "countries">): boolean {
+  const want = prefs.countries?.length ? prefs.countries : ["US"];
+  return (job.markets?.length ? job.markets : ["US"]).some((m) => (want as string[]).includes(m));
 }
 
 export type CheckResult = "pass" | "fail" | "unknown";
@@ -109,8 +120,11 @@ export function scoreMatch(job: MatchableJob, prefs: WatchPrefs): MatchResult {
 
   if (prefs.min_base != null || prefs.min_ote != null) {
     // Compare against the top of the published range: if the job *can* pay what you want, it passes.
-    const baseTop = job.salary_max ?? job.salary_min;
-    const oteTop = job.ote_max ?? job.ote_min;
+    // Minimums are in USD; Canadian pay is compared at a conservative USD value.
+    const fx = job.currency === "CAD" ? CAD_TO_USD : 1;
+    const top = (v: number | null) => (v == null ? null : Math.round(v * fx));
+    const baseTop = top(job.salary_max ?? job.salary_min);
+    const oteTop = top(job.ote_max ?? job.ote_min);
     const parts: CheckResult[] = [];
     if (prefs.min_base != null) parts.push(baseTop == null ? "unknown" : baseTop >= prefs.min_base ? "pass" : "fail");
     if (prefs.min_ote != null) parts.push(oteTop == null ? "unknown" : oteTop >= prefs.min_ote ? "pass" : "fail");

@@ -6,8 +6,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { adapters } from "./adapters";
 import { fetchGreenhousePayRange } from "./adapters/greenhouse";
 import { classifyTitle } from "./classify";
-import { titleNamesForeignOnly, parseLocation } from "./location";
-import { resolveCompensation } from "./compensation";
+import { canadaPlaceFromTitle, parseLocation, titleNamesCanadaOnly, titleNamesForeignOnly, type ParsedLocation } from "./location";
+import { payCurrency, resolveCompensation } from "./compensation";
 import { extractAttributes } from "./extract";
 import { dedupeKey, descriptionSimilarity, DUPLICATE_THRESHOLD, normalizeLocationKey } from "./dedupe";
 import type { AtsProvider, CompanyRef, RawJob } from "./types";
@@ -73,14 +73,9 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
       }
 
       const cls = classifyTitle(job.title);
-      const loc = parseLocation(job.location, {
-        country: job.country_hint,
-        region: job.region_hint,
-        city: job.city_hint,
-        workplace: job.workplace_type,
-      });
+      const loc = locate(job);
 
-      if (!cls || !loc.is_us || titleNamesForeignOnly(job.title)) {
+      if (!cls || !loc.markets.length || titleNamesForeignOnly(job.title)) {
         // No longer in scope under current rules: hide it now when reprocessing,
         // otherwise it ages out after missed checks like any vanished job.
         if (prior && opts.reprocess && prior.is_active) {
@@ -99,8 +94,9 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
         const refresh: Record<string, unknown> = { last_seen_at: now, missed_checks: 0, is_active: true, removed_at: null };
         if (job.posted_at) refresh.source_posted_at = job.posted_at;
         if (opts.reprocess && !prior.classification_overridden) {
-          const comp = resolveCompensation(await structuredPay(company, job), job.description);
+          const comp = await payFor(company, job, loc);
           Object.assign(refresh, comp, {
+            markets: loc.markets,
             role_family: cls.role_family,
             seniority: cls.seniority,
             title_normalized: cls.title_normalized,
@@ -157,12 +153,33 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
   return stats;
 }
 
+/** Where a job is open. A title like "AE, Toronto" makes it a Canada role whatever the location field says. */
+export function locate(job: RawJob): ParsedLocation {
+  const loc = parseLocation(job.location, {
+    country: job.country_hint,
+    region: job.region_hint,
+    city: job.city_hint,
+    workplace: job.workplace_type,
+  });
+  if (!titleNamesCanadaOnly(job.title) || (loc.markets.length === 1 && loc.markets[0] === "CA")) return loc;
+  const place = canadaPlaceFromTitle(job.title);
+  return { ...loc, city: place.city, state: place.state, country: "CA", markets: ["CA"], is_us: false };
+}
+
+/** Pay with the right currency: CAD for Canada-only jobs unless the posting says otherwise. */
+async function payFor(company: CompanyRow, job: RawJob, loc: ParsedLocation) {
+  const structured = await structuredPay(company, job, loc.markets.includes("US") ? "US" : "CA");
+  const comp = resolveCompensation(structured, job.description);
+  const hasPay = comp.salary_min != null || comp.ote_min != null;
+  return { ...comp, currency: hasPay ? payCurrency(structured.currency, job.description, loc.markets) : null };
+}
+
 /** Structured pay from the ATS. Greenhouse only exposes it per job, so it's fetched just for kept jobs. */
-async function structuredPay(company: CompanyRow, job: RawJob) {
+async function structuredPay(company: CompanyRow, job: RawJob, market: "US" | "CA" = "US") {
   let structured = { min: job.salary_min, max: job.salary_max, currency: job.currency, isOte: !!job.structured_is_ote };
   if (job.source_provider === "greenhouse") {
     try {
-      const pay = await fetchGreenhousePayRange(company.ats_identifier, job.source_job_id);
+      const pay = await fetchGreenhousePayRange(company.ats_identifier, job.source_job_id, market);
       if (pay) structured = pay;
     } catch {
       /* pay is optional */
@@ -178,7 +195,7 @@ async function insertNewJob(
   cls: NonNullable<ReturnType<typeof classifyTitle>>,
   loc: ReturnType<typeof parseLocation>,
 ): Promise<string | null> {
-  const comp = resolveCompensation(await structuredPay(company, job), job.description);
+  const comp = await payFor(company, job, loc);
   const attrs = await extractAttributes(job.title, job.description, cls);
   const locKey = normalizeLocationKey(loc.city, loc.state, loc.remote_type);
   const key = dedupeKey(company.id, cls.title_normalized, locKey);
@@ -217,6 +234,7 @@ async function insertNewJob(
       city: loc.city,
       state: loc.state,
       country: loc.country,
+      markets: loc.markets,
       remote_type: loc.remote_type,
       employment_type: job.employment_type ?? null,
       ...comp,

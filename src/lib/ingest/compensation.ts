@@ -147,3 +147,18 @@ export function resolveCompensation(
   if ((result.salary_min ?? result.ote_min) != null && !result.currency) result.currency = "USD";
   return result;
 }
+
+/**
+ * Which currency a job's pay is in. The ATS's own currency wins; then an explicit
+ * "CAD" / "C$" in the posting; then a Canada-only job is assumed CAD. Everything else USD.
+ */
+export function payCurrency(structured: string | null | undefined, description: string, markets: readonly string[]): "USD" | "CAD" {
+  const s = structured?.trim().toUpperCase();
+  if (s === "CAD") return "CAD";
+  if (s === "USD") return "USD";
+  if (/\b(CAD|CDN)\b|\bC\$|\bCA\$/.test(description)) return markets.includes("US") && /\bUSD\b/.test(description) ? "USD" : "CAD";
+  return markets.length === 1 && markets[0] === "CA" ? "CAD" : "USD";
+}
+
+/** Rough USD value for comparing against USD filters. Kept conservative on purpose. */
+export const CAD_TO_USD = 0.72;

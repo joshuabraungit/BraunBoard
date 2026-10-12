@@ -29,6 +29,10 @@ export interface JobView {
   disclosures: Partial<Disclosures>;
   /** Red / green flag codes, see lib/flags.ts */
   flags?: string[];
+  /** "USD" or "CAD" when pay is published. */
+  currency?: string | null;
+  /** Where the job is open: "US", "CA" or both. */
+  markets?: string[];
   apply_url: string;
   /** When the employer posted it (falls back to when we first saw it). */
   first_seen_at: string;
@@ -55,6 +59,8 @@ export interface JobFilters {
   segment?: SalesSegment;
   motion?: SalesMotion;
   remote?: RemoteType;
+  /** "US" or "CA". Jobs open in both show up for either. */
+  country?: "US" | "CA";
   minBase?: number;
   minOte?: number;
   postedWithinDays?: number;
@@ -62,7 +68,7 @@ export interface JobFilters {
 }
 
 const CARD_COLUMNS =
-  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags";
+  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags, currency, markets";
 
 function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
   const since = f.postedWithinDays ? Date.now() - f.postedWithinDays * 86_400_000 : 0;
@@ -73,6 +79,7 @@ function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
       (!f.segment || j.sales_segment === f.segment) &&
       (!f.motion || j.sales_motion === f.motion) &&
       (!f.remote || j.remote_type === f.remote) &&
+      (!f.country || (j.markets ?? ["US"]).includes(f.country)) &&
       (!f.minBase || (j.salary_max ?? j.salary_min ?? 0) >= f.minBase) &&
       (!f.minOte || (j.ote_max ?? j.ote_min ?? 0) >= f.minOte) &&
       (!f.companySlug || j.company_slug === f.companySlug) &&
@@ -90,8 +97,10 @@ export async function listJobs(f: JobFilters = {}, limit = 60, opts: { withDescr
   if (f.segment) q = q.eq("sales_segment", f.segment);
   if (f.motion) q = q.eq("sales_motion", f.motion);
   if (f.remote) q = q.eq("remote_type", f.remote);
-  if (f.minBase) q = q.gte("salary_max", f.minBase);
-  if (f.minOte) q = q.gte("ote_max", f.minOte);
+  if (f.country) q = q.contains("markets", [f.country]);
+  // Pay filters are in USD; Canadian pay is compared at a conservative USD value.
+  if (f.minBase) q = q.gte("salary_max_usd", f.minBase);
+  if (f.minOte) q = q.gte("ote_max_usd", f.minOte);
   if (f.companySlug) q = q.eq("company_slug", f.companySlug);
   if (f.postedWithinDays) q = q.gte("posted_at", new Date(Date.now() - f.postedWithinDays * 86_400_000).toISOString());
   const { data, error } = await q;

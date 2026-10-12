@@ -44,6 +44,7 @@ export async function saveOnboarding(formData: FormData) {
     min_ote: money(formData.get("min_ote")),
     work: formData.get("work") ?? "any",
     location: String(formData.get("location") ?? ""),
+    country: formData.get("country") ?? "US",
     motion: formData.get("motion") ?? "either",
     dealbreakers: formData.getAll("dealbreakers"),
   });
@@ -84,6 +85,7 @@ export async function watchSearch(formData: FormData) {
     min_base: money(sp.get("minBase")),
     min_ote: money(sp.get("minOte")),
     dealbreakers: [],
+    countries: sp.get("country") === "CA" ? ["CA"] : sp.get("country") === "US" ? ["US"] : ["US", "CA"],
   };
   const name = String(formData.get("name") ?? "").trim() || "My search";
   const db = await serverClient();

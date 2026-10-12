@@ -21,6 +21,7 @@ export const ROLE_CHOICES = {
 export type RoleChoice = keyof typeof ROLE_CHOICES;
 
 export const WORK_CHOICES = { remote: "Remote", hybrid: "Hybrid", office: "Office", any: "Any" } as const;
+export const COUNTRY_CHOICES = { US: "United States", CA: "Canada", both: "Either" } as const;
 export const MOTION_CHOICES = { new: "New business", expansion: "Expansion", either: "Either" } as const;
 
 export const OnboardingAnswers = z.object({
@@ -29,6 +30,7 @@ export const OnboardingAnswers = z.object({
   min_ote: z.number().int().positive().nullable(),
   work: z.enum(["remote", "hybrid", "office", "any"]),
   location: z.string().max(80).default(""),
+  country: z.enum(["US", "CA", "both"]).default("US"),
   motion: z.enum(["new", "expansion", "either"]),
   dealbreakers: z.array(z.enum(DEALBREAKERS)).default([]),
 });
@@ -48,6 +50,7 @@ export const StoredWatch = z.object({
     min_base: z.number().nullable(),
     min_ote: z.number().nullable(),
     dealbreakers: z.array(z.enum(DEALBREAKERS)),
+    countries: z.array(z.enum(["US", "CA"])).optional(),
   }),
 });
 export type StoredWatch = z.infer<typeof StoredWatch>;
@@ -74,6 +77,7 @@ export function answersToPrefs(a: OnboardingAnswers): WatchPrefs {
     min_base: a.min_base,
     min_ote: a.min_ote,
     dealbreakers: a.dealbreakers,
+    countries: a.country === "both" ? ["US", "CA"] : [a.country],
   };
 }
 
@@ -112,5 +116,6 @@ export function rowToPrefs(r: Record<string, unknown>): WatchPrefs {
     min_base: r.min_base ?? null,
     min_ote: r.min_ote ?? null,
     dealbreakers: (r.dealbreakers as string[] | undefined)?.filter((d) => (DEALBREAKERS as readonly string[]).includes(d)) ?? [],
+    countries: (r.countries as string[] | undefined)?.length ? r.countries : ["US"],
   });
 }
