@@ -102,3 +102,10 @@ describe("more exclusions + VP variants (seen in real data)", () => {
     expect(classifyTitle("RVP, Enterprise Sales - Northeast")?.role_family).toBe("VP Sales");
   });
 });
+
+describe("Strategic Cuisines", () => {
+  it("is a restaurant category, not the Strategic segment", () => {
+    expect(classifyTitle("Bilingual Strategic Cuisines Account Executive (Mandarin) - West Coast")?.sales_segment).toBe("Unknown");
+    expect(classifyTitle("Strategic Account Executive")?.sales_segment).toBe("Strategic");
+  });
+});

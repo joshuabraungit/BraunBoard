@@ -5,6 +5,7 @@ import { Nav } from "@/components/Nav";
 import { UserMenu } from "@/components/UserMenu";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.braunboard.com"),
   title: "Braun Board",
   description: "Tell us the sales job you would take. We will tell you when it shows up.",
 };

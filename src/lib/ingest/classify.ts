@@ -97,7 +97,9 @@ export function classifyTitle(rawTitle: string): TitleClassification | null {
   const hit = FAMILIES.find((f) => f.re.test(title));
   if (!hit) return null;
 
-  const seg = SEGMENTS.find((s) => s.re.test(title));
+  // "Strategic Cuisines" (Toast) is a restaurant category, not a deal-size segment.
+  const segTitle = title.replace(/\bstrategic cuisines?\b/gi, "");
+  const seg = SEGMENTS.find((s) => s.re.test(segTitle));
   return {
     role_family: hit.family,
     seniority: seniorityFor(hit.family),

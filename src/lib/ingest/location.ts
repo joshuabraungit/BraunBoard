@@ -120,3 +120,12 @@ function parsePart(part: string): Omit<ParsedLocation, "remote_type" | "is_us"> 
   if (US_MARKERS.test(part)) return { city: null, state: null, country: "US" };
   return null;
 }
+
+const FOREIGN_IN_TITLE =
+  /\b(canada|canadian|toronto|montreal|vancouver,? bc|ontario|quebec|calgary|ottawa|emea|apac|apj|latam|uk&i|united kingdom|uk|london|dublin|ireland|germany|dach|france|paris|berlin|munich|amsterdam|benelux|nordics?|australia|anz|sydney|melbourne|singapore|japan|tokyo|india|bangalore|mexico|brazil|s[aã]o paulo|israel|spain|madrid|italy|milan)\b/i;
+const US_IN_TITLE = /\b(us|u\.s\.?|usa|united states|north america|americas|new england|east coast|west coast)\b/i;
+
+/** A title like "Senior Majors AE, Toronto" names a non-US territory and no US one. */
+export function titleNamesForeignOnly(title: string): boolean {
+  return FOREIGN_IN_TITLE.test(title) && !US_IN_TITLE.test(title);
+}

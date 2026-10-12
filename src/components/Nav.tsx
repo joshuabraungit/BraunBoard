@@ -8,6 +8,7 @@ const ITEMS = [
   { href: "/jobs", label: "All Jobs" },
   { href: "/watchlist", label: "Watchlist" },
   { href: "/companies", label: "Companies" },
+  { href: "/salaries", label: "Salaries" },
   { href: "/alerts", label: "Alerts" },
 ];
 

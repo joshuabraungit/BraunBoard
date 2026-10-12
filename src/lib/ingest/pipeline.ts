@@ -6,7 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { adapters } from "./adapters";
 import { fetchGreenhousePayRange } from "./adapters/greenhouse";
 import { classifyTitle } from "./classify";
-import { parseLocation } from "./location";
+import { titleNamesForeignOnly, parseLocation } from "./location";
 import { resolveCompensation } from "./compensation";
 import { extractAttributes } from "./extract";
 import { dedupeKey, descriptionSimilarity, DUPLICATE_THRESHOLD, normalizeLocationKey } from "./dedupe";
@@ -62,7 +62,7 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
         workplace: job.workplace_type,
       });
 
-      if (!cls || !loc.is_us) {
+      if (!cls || !loc.is_us || titleNamesForeignOnly(job.title)) {
         // No longer in scope under current rules: hide it now when reprocessing,
         // otherwise it ages out after missed checks like any vanished job.
         if (prior && opts.reprocess && prior.is_active) {

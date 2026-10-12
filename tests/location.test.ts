@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseLocation } from "../src/lib/ingest/location";
+import { titleNamesForeignOnly } from "../src/lib/ingest/location";
 
 describe("parseLocation", () => {
   it.each([
@@ -52,5 +53,20 @@ describe("city cleanup", () => {
   it("never uses 'Remote' as a city", () => {
     expect(parseLocation("Remote-Texas").city).toBeNull();
     expect(parseLocation("x", { country: "US", region: "TX", city: "Remote" }).city).toBeNull();
+  });
+});
+
+describe("titleNamesForeignOnly", () => {
+  it("rejects titles that name only a non-US territory", () => {
+    expect(titleNamesForeignOnly("Senior Majors Account Executive, Toronto")).toBe(true);
+    expect(titleNamesForeignOnly("Sales Engineer, Canada")).toBe(true);
+    expect(titleNamesForeignOnly("Territory Account Executive, Eastern Canada")).toBe(true);
+    expect(titleNamesForeignOnly("Enterprise AE, EMEA")).toBe(true);
+  });
+  it("keeps titles that include the US", () => {
+    expect(titleNamesForeignOnly("Business Development Representative (BDR) - New England and/or Canada")).toBe(false);
+    expect(titleNamesForeignOnly("Enterprise Account Executive - Existing Customers (US/Canada)")).toBe(false);
+    expect(titleNamesForeignOnly("Enterprise Account Executive - Americas (East)")).toBe(false);
+    expect(titleNamesForeignOnly("Mid-Market AE, Healthcare")).toBe(false);
   });
 });
