@@ -13,6 +13,10 @@
   --accent-soft: #e8f1eb;
   --fresh: #b4441c;       /* freshness gets a warm signal color */
   --fresh-soft: #fbeee7;
+  --red: #b42318;         /* red flags */
+  --red-soft: #fdecea;
+  --amber: #8a5a00;
+  --amber-soft: #fbf1dc;
 }
 
 @theme inline {
@@ -27,6 +31,10 @@
   --color-accent-soft: var(--accent-soft);
   --color-fresh: var(--fresh);
   --color-fresh-soft: var(--fresh-soft);
+  --color-red: var(--red);
+  --color-red-soft: var(--red-soft);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
   --font-sans: ui-sans-serif, -apple-system, "Segoe UI", "Inter", Helvetica, Arial, sans-serif;
 }
 

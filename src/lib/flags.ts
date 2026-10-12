@@ -1,0 +1,272 @@
+// Red / green flags and "The Braun Read" verdict for a posting.
+// Rules are deliberately plain and explainable: every flag points at something
+// the posting said (or didn't say). No AI judgment calls here.
+
+import type { Disclosures } from "./ingest/extract";
+
+export type FlagTone = "red" | "green";
+export interface Flag {
+  code: string;
+  tone: FlagTone;
+  label: string;
+  why: string;
+}
+
+export interface FlagInput {
+  description_raw: string | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  ote_min: number | null;
+  ote_max: number | null;
+  self_sourcing_level: string;
+  disclosures: Partial<Disclosures> | null;
+}
+
+interface Rule {
+  code: string;
+  tone: FlagTone;
+  label: string;
+  why: string;
+  test: (t: string, j: FlagInput) => boolean;
+}
+
+const hasPay = (j: FlagInput) => j.salary_min != null || j.ote_min != null;
+
+const RULES: Rule[] = [
+  // ---- Red ----
+  {
+    code: "commission_only",
+    tone: "red",
+    label: "Commission only",
+    why: "The posting says pay is commission only. No base means you carry all the risk.",
+    test: (t) => /\b(commission[- ]only|100% commission|straight commission)\b/.test(t),
+  },
+  {
+    code: "uncapped_no_numbers",
+    tone: "red",
+    label: "\"Unlimited earnings,\" no numbers",
+    why: "It sells uncapped or unlimited earnings but never says what anyone actually earns.",
+    test: (t, j) => !hasPay(j) && /\b(uncapped|unlimited)\s+(commission|earning|income|upside|potential)/.test(t),
+  },
+  {
+    code: "hustle_language",
+    tone: "red",
+    label: "Hustle-culture language",
+    why: "Words like rockstar, ninja, grind, or work hard / play hard usually mean long hours and high turnover.",
+    test: (t) => /\b(rock ?star|ninja|work hard,? play hard|grind(ing)?|killer instinct|hungry to crush|crush(ing)? (your )?quota|thick[- ]skinned)\b/.test(t),
+  },
+  {
+    code: "dial_quotas",
+    tone: "red",
+    label: "Heavy call quotas",
+    why: "It sets a daily dial or activity number. Expect to be managed on activity, not outcomes.",
+    test: (t) => /\b(\d{2,3}\+?\s*(cold )?(calls|dials)\s*(a|per|each)\s*day|high[- ]volume (of )?(cold )?(calls|dials|outbound))\b/.test(t),
+  },
+  {
+    code: "clawbacks",
+    tone: "red",
+    label: "Commission clawbacks",
+    why: "The posting mentions clawbacks. Ask exactly when commission can be taken back.",
+    test: (t) => /\bclaw[- ]?backs?\b/.test(t),
+  },
+  {
+    code: "many_hats",
+    tone: "red",
+    label: "\"Wear many hats\"",
+    why: "Often code for an under-resourced team where sales also does marketing, CS, and ops.",
+    test: (t) => /\bwear(ing)? (many|multiple|a lot of) hats\b/.test(t),
+  },
+  {
+    code: "aggressive_split",
+    tone: "red",
+    label: "Most of the pay is variable",
+    why: "OTE is more than double the base. You only make the big number if you hit quota.",
+    test: (_t, j) => j.salary_min != null && j.ote_min != null && j.ote_min >= j.salary_min * 2.2,
+  },
+
+  // ---- Green ----
+  {
+    code: "publishes_ote",
+    tone: "green",
+    label: "Publishes OTE",
+    why: "It tells you the on-target earnings up front. Most postings don't.",
+    test: (_t, j) => j.ote_min != null,
+  },
+  {
+    code: "shares_attainment",
+    tone: "green",
+    label: "Shares quota attainment",
+    why: "It says how many reps actually hit their number. That's the most honest stat in sales hiring.",
+    test: (_t, j) => !!j.disclosures?.quota_attainment,
+  },
+  {
+    code: "states_quota",
+    tone: "green",
+    label: "States the quota",
+    why: "You know the number before the first call.",
+    test: (_t, j) => !!j.disclosures?.quota_size,
+  },
+  {
+    code: "states_deal_size",
+    tone: "green",
+    label: "States deal size",
+    why: "Average deal size tells you what kind of selling this really is.",
+    test: (_t, j) => !!j.disclosures?.average_deal_size,
+  },
+  {
+    code: "pipeline_support",
+    tone: "green",
+    label: "SDR or inbound support",
+    why: "You won't be building all of your own pipeline from zero.",
+    test: (t, j) => j.self_sourcing_level === "Low" || /\b(sdr|bdr) (support|team will|partner)|supported by (an? )?(sdr|bdr)|inbound leads?\b/.test(t),
+  },
+  {
+    code: "ramp_support",
+    tone: "green",
+    label: "Ramp or draw",
+    why: "It mentions a ramp period or guaranteed draw, so you're not on full quota from day one.",
+    test: (t) => /\b(ramp(ed)? (period|quota|time|schedule)|\d+[- ]month ramp|guaranteed (draw|commission)|non[- ]recoverable draw)\b/.test(t),
+  },
+  {
+    code: "accelerators",
+    tone: "green",
+    label: "Pays accelerators",
+    why: "Higher commission rates once you pass quota. Overperformance actually pays.",
+    test: (t) => /\baccelerators?\b/.test(t),
+  },
+];
+
+export const FLAG_RULES: Readonly<Record<string, Omit<Rule, "test">>> = Object.fromEntries(
+  RULES.map(({ test: _t, ...r }) => [r.code, r]),
+);
+
+export function computeFlags(j: FlagInput): Flag[] {
+  const t = (j.description_raw ?? "").toLowerCase().replace(/\s+/g, " ");
+  return RULES.filter((r) => r.test(t, j)).map(({ test: _t, ...r }) => r);
+}
+
+/** Stored codes back to full flags (cards only have the codes). Red first. */
+export function flagsFromCodes(codes: string[] | null | undefined): Flag[] {
+  return (codes ?? [])
+    .map((c) => FLAG_RULES[c])
+    .filter(Boolean)
+    .sort((a, b) => (a.tone === b.tone ? 0 : a.tone === "red" ? -1 : 1)) as Flag[];
+}
+
+// ---------------------------------------------------------------------------
+// The Braun Read: a verdict plus the handful of checks behind it.
+// ---------------------------------------------------------------------------
+
+export type Grade = "good" | "ok" | "bad" | "unknown";
+export interface Check {
+  label: string;
+  grade: Grade;
+  detail: string;
+}
+export interface BraunRead {
+  verdict: "Strong posting" | "Worth a look" | "Ask hard questions" | "Proceed with caution";
+  line: string;
+  checks: Check[];
+  flags: Flag[];
+}
+
+export interface ReadInput extends FlagInput {
+  first_seen_at: string;
+  /** Other open sales roles at the same company right now. */
+  companyOpenRoles?: number;
+}
+
+const DISCLOSURE_KEYS: (keyof Disclosures)[] = ["quota_size", "quota_attainment", "average_deal_size", "territory", "sales_cycle"];
+
+export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
+  const flags = computeFlags(j);
+  const checks: Check[] = [];
+
+  // Pay
+  if (j.ote_min != null && j.salary_min != null) {
+    const basePct = Math.round((j.salary_min / j.ote_min) * 100);
+    checks.push({
+      label: "Pay",
+      grade: basePct >= 45 ? "good" : "ok",
+      detail: `Base and OTE both listed. Roughly a ${basePct}/${100 - basePct} base-to-variable split.`,
+    });
+  } else if (j.ote_min != null) {
+    checks.push({ label: "Pay", grade: "good", detail: "OTE is listed. Ask what the base is." });
+  } else if (j.salary_min != null) {
+    checks.push({ label: "Pay", grade: "ok", detail: "Base is listed but not OTE. Ask what the variable is and how many people hit it." });
+  } else {
+    checks.push({ label: "Pay", grade: "bad", detail: "No pay listed at all." });
+  }
+
+  // Transparency
+  const shared = DISCLOSURE_KEYS.filter((k) => j.disclosures?.[k]).length;
+  checks.push({
+    label: "Transparency",
+    grade: shared >= 2 ? "good" : shared === 1 ? "ok" : "bad",
+    detail:
+      shared === 0
+        ? "Says nothing about quota, attainment, deal size, territory or sales cycle."
+        : `Shares ${shared} of 5: quota, attainment, deal size, territory, sales cycle.`,
+  });
+
+  // Pipeline
+  const pipe: Record<string, [Grade, string]> = {
+    High: ["ok", "Mostly self-sourced. Great if you like outbound, rough if you don't."],
+    Medium: ["good", "A mix of self-sourced pipeline and inbound or SDR help."],
+    Low: ["good", "Mostly inbound or an assigned book."],
+    Unknown: ["unknown", "Doesn't say where pipeline comes from. Ask."],
+  };
+  const [pg, pd] = pipe[j.self_sourcing_level] ?? pipe.Unknown!;
+  checks.push({ label: "Pipeline", grade: pg, detail: pd });
+
+  // Time on market
+  const days = Math.floor((now - new Date(j.first_seen_at).getTime()) / 86_400_000);
+  checks.push({
+    label: "Time on market",
+    grade: days <= 21 ? "good" : days <= 45 ? "ok" : "bad",
+    detail:
+      days <= 1 ? "Brand new." : days <= 21 ? `Open ${days} days.` : days <= 45 ? `Open ${days} days. Normal, but not fresh.` : `Open ${days}+ days. Ask why it's been hard to fill.`,
+  });
+
+  // Company hiring
+  if (j.companyOpenRoles != null) {
+    const n = j.companyOpenRoles;
+    checks.push({
+      label: "Company hiring",
+      grade: n >= 25 ? "ok" : "good",
+      detail:
+        n === 0
+          ? "This is their only open sales role."
+          : n >= 25
+            ? `${n} other open sales roles. Could be big growth, could be churn. Ask how many reps they hired last year and how many are still there.`
+            : `${n} other open sales role${n === 1 ? "" : "s"}.`,
+    });
+  }
+
+  // Verdict. Pay, transparency and pipeline earn points; time on market and hiring
+  // volume only ever subtract, so a fresh posting can't coast on being fresh.
+  const reds = flags.filter((f) => f.tone === "red").length;
+  const greens = flags.filter((f) => f.tone === "green").length;
+  const pts = (c: Check, core: boolean) =>
+    c.grade === "bad" ? -1 : !core ? 0 : c.grade === "good" ? 2 : c.grade === "ok" ? 1 : 0;
+  const core = new Set(["Pay", "Transparency", "Pipeline"]);
+  const score = checks.reduce((s, c) => s + pts(c, core.has(c.label)), 0) + greens - reds * 2;
+  const grade = (label: string) => checks.find((c) => c.label === label)?.grade;
+
+  let verdict: BraunRead["verdict"];
+  let line: string;
+  if (reds >= 2 || score <= -2 || (reds === 1 && score < 3)) {
+    verdict = "Proceed with caution";
+    line = "A few things here deserve a hard look before you spend time on it.";
+  } else if (score >= 6 && reds === 0 && grade("Pay") === "good" && grade("Transparency") === "good") {
+    verdict = "Strong posting";
+    line = "More honest than most. You know what you're walking into.";
+  } else if (score >= 3) {
+    verdict = "Worth a look";
+    line = "Solid on the basics. Use the first call to fill in the gaps.";
+  } else {
+    verdict = "Ask hard questions";
+    line = "Too much is left unsaid. Make them answer before you invest.";
+  }
+  return { verdict, line, checks, flags };
+}

@@ -6,6 +6,7 @@ import { adminClient } from "../src/lib/supabase/admin";
 import { classifyTitle } from "../src/lib/ingest/classify";
 import { extractAttributes, lastExtractionError } from "../src/lib/ingest/extract";
 import { fail, notice, requireEnv } from "./report";
+import { recomputeFlags } from "../src/lib/flags-db";
 
 async function main() {
   requireEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "ANTHROPIC_API_KEY");
@@ -28,7 +29,11 @@ async function main() {
     jobs.push(...(data ?? []));
     if (!data || data.length < 1000) break;
   }
-  if (!jobs.length) return notice("Backfill: nothing to do, every active job has a summary");
+  if (!jobs.length) {
+    notice("Backfill: nothing to do, every active job has a summary");
+    const f = await recomputeFlags(db);
+    return notice(`Flags: ${f.changed} of ${f.checked} jobs updated`);
+  }
 
   let done = 0;
   let failed = 0;
@@ -64,6 +69,8 @@ async function main() {
   };
   await Promise.all(Array.from({ length: 4 }, worker));
   notice(`Backfill: ${done} jobs summarized, ${failed} failed${firstError ? ` (first error: ${firstError})` : ""}`);
+  const f = await recomputeFlags(db);
+  notice(`Flags: ${f.changed} of ${f.checked} jobs updated`);
 }
 
 main().catch(fail);

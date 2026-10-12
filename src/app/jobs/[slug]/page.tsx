@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getJob } from "@/lib/data";
+import { countOtherOpenRoles, getJob } from "@/lib/data";
+import { braunRead } from "@/lib/flags";
+import { BraunReadPanel } from "@/components/BraunRead";
 import { freshnessLabel } from "@/lib/freshness";
 import { formatComp, formatLocation, money } from "@/lib/format";
 import { CompanyLogo } from "@/components/CompanyLogo";
@@ -45,7 +47,8 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
   const { slug } = await params;
   const job = await getJob(slug);
   if (!job) notFound();
-  const [state, watch] = await Promise.all([getUserState(), getActiveWatch()]);
+  const [state, watch, openRoles] = await Promise.all([getUserState(), getActiveWatch(), countOtherOpenRoles(job.company_id, job.id)]);
+  const read = braunRead({ ...job, companyOpenRoles: openRoles });
   const match = watch ? scoreMatch(job, watch.prefs) : null;
   const back = `/jobs/${job.slug}`;
   const saved = state.savedJobIds.has(job.id);
@@ -80,6 +83,8 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
         <WatchCompanyButton companyId={job.company_id} on={state.watchedCompanyIds.has(job.company_id)} back={back} className={btn} />
         <SaveJobButton jobId={job.id} saved={saved} back={back} className={btn} />
       </div>
+
+      <BraunReadPanel read={read} />
 
       {match && match.score != null && (
         <div className="mt-6">

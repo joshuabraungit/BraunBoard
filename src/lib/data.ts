@@ -27,6 +27,8 @@ export interface JobView {
   summary: string | null;
   description_raw: string | null;
   disclosures: Partial<Disclosures>;
+  /** Red / green flag codes, see lib/flags.ts */
+  flags?: string[];
   apply_url: string;
   first_seen_at: string;
   company_id: string;
@@ -59,7 +61,7 @@ export interface JobFilters {
 }
 
 const CARD_COLUMNS =
-  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at, company_id, company_name, company_slug, company_logo_url, company_domain";
+  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags";
 
 function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
   const since = f.postedWithinDays ? Date.now() - f.postedWithinDays * 86_400_000 : 0;
@@ -101,6 +103,14 @@ export async function getJob(slug: string): Promise<JobView | null> {
   const db = await serverClient();
   const { data } = await db.from("visible_jobs").select(`${CARD_COLUMNS}, description_raw`).eq("slug", slug).maybeSingle();
   return (data as unknown as JobView) ?? null;
+}
+
+/** How many other sales roles the company has open right now. */
+export async function countOtherOpenRoles(companyId: string, exceptJobId: string): Promise<number | undefined> {
+  if (!isSupabaseConfigured()) return SAMPLE_JOBS.filter((j) => j.company_id === companyId && j.id !== exceptJobId).length;
+  const db = await serverClient();
+  const { count } = await db.from("visible_jobs").select("id", { count: "exact", head: true }).eq("company_id", companyId).neq("id", exceptJobId);
+  return count ?? undefined;
 }
 
 export async function getCompany(slug: string): Promise<{ company: CompanyView; jobs: JobView[]; added7: number; added30: number } | null> {
