@@ -85,3 +85,17 @@ describe("language tags", () => {
     expect(languageFor("Enterprise Account Executive")).toBeNull();
   });
 });
+
+describe("UK regressions", () => {
+  it("doesn't move a job in India to the UK because the title says UKI", () => {
+    const job = { title: "Senior Applied Value Engineer - UKI Energy", location: "Bangalore, India", description: "", source_provider: "lever" } as RawJob;
+    expect(locate(job).markets).toEqual([]);
+  });
+  it("doesn't use a nation as the city", () => {
+    expect(parseLocation("England, United Kingdom", { country: "United Kingdom", city: "England" })).toMatchObject({ city: null, markets: ["UK"] });
+  });
+  it("still moves a remote job titled for the UK", () => {
+    const job = { title: "Account Executive, UK", location: "Remote", description: "", source_provider: "ashby" } as RawJob;
+    expect(locate(job).markets).toEqual(["UK"]);
+  });
+});

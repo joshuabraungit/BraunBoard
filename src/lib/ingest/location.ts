@@ -213,7 +213,8 @@ export function parseLocation(
   }
 
   if (hintCountry && /^(gb|gbr|uk|united kingdom|great britain|england|scotland|wales|northern ireland)$/.test(hintCountry)) {
-    const city = hints.city && !/^(remote|hybrid|anywhere|)$/i.test(hints.city.trim()) ? hints.city : null;
+    // Some boards put the nation in the city field ("England"); that's not a city.
+    const city = hints.city && !/^(remote|hybrid|anywhere|uk|united kingdom|great britain|england|scotland|wales|northern ireland|)$/i.test(hints.city.trim()) ? hints.city : null;
     markets.add("UK");
     const list = MARKET_ORDER.filter((m) => markets.has(m));
     if (usPlace) return out(usPlace, list);
@@ -280,6 +281,12 @@ export function ukPlaceFromTitle(title: string, location = ""): { city: string |
  * Whether the title points at a territory this job's markets don't cover.
  * US / Canada jobs: any foreign territory ("AE, EMEA"). UK-only jobs: only territories outside Europe.
  */
+/** The location names a place outside the US, Canada and UK (e.g. "Bangalore, India"). */
+export function namesForeignPlace(location: string): boolean {
+  const parts = location.split(/\s*(?:\/|;|\bor\b|\||•)\s*/i).filter(Boolean);
+  return parts.some((p) => NON_US.test(p) && !parseUkPart(p) && !parseCaPart(p));
+}
+
 export function titleOutOfMarket(title: string, markets: readonly Market[]): boolean {
   if (markets.length === 1 && markets[0] === "UK") return OUTSIDE_EUROPE_IN_TITLE.test(title);
   return titleNamesForeignOnly(title);

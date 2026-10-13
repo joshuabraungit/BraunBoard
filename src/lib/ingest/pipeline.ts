@@ -6,7 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { adapters } from "./adapters";
 import { fetchGreenhousePayRange } from "./adapters/greenhouse";
 import { classifyTitle } from "./classify";
-import { canadaPlaceFromTitle, parseLocation, titleNamesCanadaOnly, titleNamesUkOnly, titleOutOfMarket, ukPlaceFromTitle, type ParsedLocation } from "./location";
+import { canadaPlaceFromTitle, parseLocation, titleNamesCanadaOnly, namesForeignPlace, titleNamesUkOnly, titleOutOfMarket, ukPlaceFromTitle, type ParsedLocation } from "./location";
 import { payCurrency, resolveCompensation } from "./compensation";
 import { extractAttributes } from "./extract";
 import { dedupeKey, descriptionSimilarity, DUPLICATE_THRESHOLD, normalizeLocationKey } from "./dedupe";
@@ -167,7 +167,11 @@ export function locate(job: RawJob): ParsedLocation {
   }
   // Same idea for the UK: "Enterprise AE, UK&I" listed under "New York; London" is a UK role.
   // Only when the location already includes the UK, or doesn't name a country at all.
-  if (titleNamesUkOnly(job.title) && !(loc.markets.length === 1 && loc.markets[0] === "UK") && (loc.markets.includes("UK") || loc.country == null)) {
+  if (
+    titleNamesUkOnly(job.title) &&
+    !(loc.markets.length === 1 && loc.markets[0] === "UK") &&
+    (loc.markets.includes("UK") || (loc.country == null && !namesForeignPlace(job.location)))
+  ) {
     const place = ukPlaceFromTitle(job.title, job.location);
     return { ...loc, city: place.city, state: place.state, country: "UK", markets: ["UK"], is_us: false };
   }
