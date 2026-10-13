@@ -36,6 +36,8 @@ export interface JobView {
   apply_url: string;
   /** When the employer posted it (falls back to when we first saw it). */
   first_seen_at: string;
+  /** Last time our crawler saw it live on the company's careers page (job page only). */
+  last_seen_at?: string;
   company_id: string;
   company_name: string;
   company_slug: string;
@@ -132,7 +134,7 @@ export async function listJobsWithTotal(
 export async function getJob(slug: string): Promise<JobView | null> {
   if (!isSupabaseConfigured()) return SAMPLE_JOBS.find((j) => j.slug === slug) ?? null;
   const db = await serverClient();
-  const { data } = await db.from("visible_jobs").select(`${CARD_COLUMNS}, description_raw`).eq("slug", slug).maybeSingle();
+  const { data } = await db.from("visible_jobs").select(`${CARD_COLUMNS}, description_raw, last_seen_at`).eq("slug", slug).maybeSingle();
   return (data as unknown as JobView) ?? null;
 }
 
