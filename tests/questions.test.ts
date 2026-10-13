@@ -100,3 +100,12 @@ describe("coaching", () => {
     expect(questionsFor({ ...base, role_family: "Account Executive", flags }).some((q) => /reviews calls/.test(q.text))).toBe(false);
   });
 });
+
+describe("coaching for managers", () => {
+  it("doesn't flag or ask a BDR manager about being coached", () => {
+    const t = "Provide weekly coaching and call reviews for your team.";
+    const j = { ...base, salary_max: null, ote_max: null, description_raw: t, role_family: "SDR/BDR", seniority: "Manager" };
+    expect(computeFlags(j).some((f) => f.code === "coaching")).toBe(false);
+    expect(questionsFor({ ...base, role_family: "SDR/BDR", seniority: "Manager" }).some((q) => /reviews calls/.test(q.text))).toBe(false);
+  });
+});

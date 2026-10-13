@@ -23,6 +23,8 @@ export interface FlagInput {
   self_sourcing_level: string;
   disclosures: Partial<Disclosures> | null;
   role_family?: string;
+  /** "Manager" etc. A BDR manager is classed as SDR/BDR but does the coaching. */
+  seniority?: string;
   /** When the employer posted it (the site's "Posted" date). */
   first_seen_at?: string;
   /** Other open postings at the same company with the exact same title (filled in by the recompute job). */
@@ -185,6 +187,7 @@ const RULES: Rule[] = [
     // Only for people carrying a number. For managers, "provide regular coaching" is their job, not support.
     test: (t, j) =>
       IC_ROLES.has(j.role_family ?? "") &&
+      (j.seniority ?? "Individual Contributor") === "Individual Contributor" &&
       /\b(weekly|regular|ongoing|dedicated|structured|1:1|one[- ]on[- ]one)\s+(\w+\s+){0,2}(coaching|call reviews?|call coaching)\b/.test(t),
   },
 ];
