@@ -60,3 +60,23 @@ describe("checkedLabel", () => {
     expect(checkedLabel("2026-10-10T12:00:00Z", now)).toEqual({ open: false, text: "Last confirmed open 3 days ago" });
   });
 });
+
+import { braunRead } from "../src/lib/flags";
+
+describe("verdict and red flags", () => {
+  const strong = {
+    salary_min: 120_000, salary_max: 130_000, ote_min: 240_000, ote_max: 250_000,
+    self_sourcing_level: "Medium",
+    disclosures: { quota_size: true, quota_attainment: true },
+    first_seen_at: new Date().toISOString(),
+  };
+  it("never says Worth a look with a real red flag", () => {
+    const r = braunRead({ ...strong, description_raw: "Commissions are subject to clawback." });
+    expect(r.verdict).toBe("Ask hard questions");
+  });
+  it("heads-ups don't drag down a good posting", () => {
+    const r = braunRead({ ...strong, ote_max: 600_000, description_raw: "Great team." });
+    expect(r.flags.some((f) => f.code === "wide_pay_range")).toBe(true);
+    expect(["Strong posting", "Worth a look"]).toContain(r.verdict);
+  });
+});

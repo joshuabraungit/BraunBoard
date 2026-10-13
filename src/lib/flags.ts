@@ -89,6 +89,7 @@ const RULES: Rule[] = [
     tone: "red",
     label: "Pay range too wide to mean much",
     why: "The top of the range is more than double the bottom. Ask where in that range this offer would really land.",
+    scored: false, // often covers several levels or locations; a question, not a verdict
     test: (_t, j) => (j.salary_min != null && (j.salary_max ?? 0) >= j.salary_min * 2.2) || (j.ote_min != null && (j.ote_max ?? 0) >= j.ote_min * 2.2),
   },
   {
@@ -199,11 +200,18 @@ export function computeFlags(j: FlagInput): Flag[] {
 const NOT_ON_CARDS = new Set(["publishes_ote", "open_90_days"]);
 export const cardFlags = (flags: Flag[]) => flags.filter((f) => !NOT_ON_CARDS.has(f.code));
 
+/** True for flags that count against the verdict (real red flags, not heads-ups). */
+export const isRedFlag = (f: Flag) => f.tone === "red" && f.scored !== false;
+/** True for heads-ups: worth asking about, but not held against the posting. */
+export const isHeadsUp = (f: Flag) => f.tone === "red" && f.scored === false;
+/** Display order: red flags, then heads-ups, then green flags. */
+const flagRank = (f: Flag) => (isRedFlag(f) ? 0 : isHeadsUp(f) ? 1 : 2);
+
 export function flagsFromCodes(codes: string[] | null | undefined): Flag[] {
   return (codes ?? [])
     .map((c) => FLAG_RULES[c])
     .filter((f): f is Flag => !!f)
-    .sort((a, b) => (a.tone === b.tone ? 0 : a.tone === "red" ? -1 : 1));
+    .sort((a, b) => flagRank(a) - flagRank(b));
 }
 
 // ---------------------------------------------------------------------------
@@ -315,6 +323,10 @@ export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
   if (reds >= 2 || score <= -2 || (reds === 1 && score < 1)) {
     verdict = "Proceed with caution";
     line = "A few things here deserve a hard look before you spend time on it.";
+  } else if (reds >= 1) {
+    // A real red flag never gets a positive verdict, however good the rest looks.
+    verdict = "Ask hard questions";
+    line = "Some good signs, but there's a red flag here. Get it answered before you invest.";
   } else if (score >= 6 && reds === 0 && grade("Pay") === "good" && grade("Transparency") === "good") {
     verdict = "Strong posting";
     line = "More honest than most. You know what you're walking into.";

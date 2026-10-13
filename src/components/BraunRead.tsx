@@ -1,9 +1,11 @@
-import type { BraunRead as Read, Flag, Grade } from "@/lib/flags";
+import { isHeadsUp, isRedFlag, type BraunRead as Read, type Flag, type Grade } from "@/lib/flags";
 
-const TONE = {
-  red: "border-red/25 bg-red-soft text-red",
-  green: "border-accent/25 bg-accent-soft text-accent",
+const CHIP = {
+  red: { cls: "border-red/25 bg-red-soft text-red", icon: "▲ " },
+  headsUp: { cls: "border-amber/25 bg-amber-soft text-amber", icon: "? " },
+  green: { cls: "border-accent/25 bg-accent-soft text-accent", icon: "✓ " },
 };
+const chipFor = (f: Flag) => (isRedFlag(f) ? CHIP.red : isHeadsUp(f) ? CHIP.headsUp : CHIP.green);
 
 /** Compact chips for job cards. Red first, capped so cards stay calm. */
 export function FlagChips({ flags, max = 3 }: { flags: Flag[]; max?: number }) {
@@ -13,8 +15,8 @@ export function FlagChips({ flags, max = 3 }: { flags: Flag[]; max?: number }) {
   return (
     <div className="mt-3 flex flex-wrap gap-1.5">
       {shown.map((f) => (
-        <span key={f.code} title={f.why} className={`rounded border px-1.5 py-0.5 text-xs font-medium ${TONE[f.tone]}`}>
-          {f.tone === "red" ? "▲ " : "✓ "}
+        <span key={f.code} title={f.why} className={`rounded border px-1.5 py-0.5 text-xs font-medium ${chipFor(f).cls}`}>
+          {chipFor(f).icon}
           {f.label}
         </span>
       ))}
@@ -44,7 +46,8 @@ export function VerdictPill({ verdict }: { verdict: Read["verdict"] }) {
 
 /** "The Braun Read" panel on the job page. */
 export function BraunReadPanel({ read }: { read: Read }) {
-  const reds = read.flags.filter((f) => f.tone === "red");
+  const reds = read.flags.filter(isRedFlag);
+  const headsUps = read.flags.filter(isHeadsUp);
   const greens = read.flags.filter((f) => f.tone === "green");
   return (
     <section className="mt-6 overflow-hidden rounded-xl border border-line bg-surface">
@@ -64,9 +67,12 @@ export function BraunReadPanel({ read }: { read: Read }) {
         ))}
       </dl>
 
-      {(reds.length > 0 || greens.length > 0) && (
+      {(reds.length > 0 || greens.length > 0 || headsUps.length > 0) && (
         <div className="grid gap-4 border-t border-line px-4 py-4 sm:grid-cols-2">
-          <FlagList title="Red flags" flags={reds} empty="None spotted." tone="red" />
+          <div className="space-y-4">
+            <FlagList title="Red flags" flags={reds} empty="None spotted." tone="red" />
+            {headsUps.length > 0 && <FlagList title="Worth asking about" flags={headsUps} empty="" tone="headsUp" />}
+          </div>
           <FlagList title="Green flags" flags={greens} empty="None spotted." tone="green" />
         </div>
       )}
@@ -77,10 +83,12 @@ export function BraunReadPanel({ read }: { read: Read }) {
   );
 }
 
-function FlagList({ title, flags, empty, tone }: { title: string; flags: Flag[]; empty: string; tone: "red" | "green" }) {
+const TITLE_TONE = { red: "text-red", headsUp: "text-amber", green: "text-accent" };
+
+function FlagList({ title, flags, empty, tone }: { title: string; flags: Flag[]; empty: string; tone: keyof typeof TITLE_TONE }) {
   return (
     <div>
-      <h3 className={`mb-1.5 text-xs font-bold uppercase tracking-wide ${tone === "red" ? "text-red" : "text-accent"}`}>{title}</h3>
+      <h3 className={`mb-1.5 text-xs font-bold uppercase tracking-wide ${TITLE_TONE[tone]}`}>{title}</h3>
       {flags.length ? (
         <ul className="space-y-2">
           {flags.map((f) => (
