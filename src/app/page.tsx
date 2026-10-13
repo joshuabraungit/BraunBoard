@@ -13,8 +13,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   const { picks } = await searchParams;
   const [newToday, highOte, remoteEnt, state, watch, companies] = await Promise.all([
     listJobs({ postedWithinDays: 1 }, 6),
-    listJobs({ minOte: 250_000 }, 6),
-    listJobs({ role: "Account Executive", segment: "Enterprise", remote: "Remote" }, 6),
+    listJobs({ minOte: 250_000, postedWithinDays: 90 }, 6),
+    listJobs({ role: "Account Executive", segment: "Enterprise", remote: "Remote", postedWithinDays: 90 }, 6),
     getUserState(),
     getActiveWatch(),
     listCompanies(),

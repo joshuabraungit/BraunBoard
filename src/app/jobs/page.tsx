@@ -8,6 +8,8 @@ export const dynamic = "force-dynamic";
 
 type SP = Record<string, string | undefined>;
 
+const DEFAULT_POSTED_DAYS = 90;
+
 function toFilters(sp: SP): JobFilters {
   const pick = <T extends string>(v: string | undefined, allowed: readonly T[]) => (allowed.includes(v as T) ? (v as T) : undefined);
   const num = (v?: string) => (v && !isNaN(+v) ? +v : undefined);
@@ -20,7 +22,8 @@ function toFilters(sp: SP): JobFilters {
     country: pick(sp.country, ["US", "CA"] as const),
     minBase: num(sp.minBase),
     minOte: num(sp.minOte),
-    postedWithinDays: num(sp.posted),
+    // Default to the last 90 days so old postings don't bury fresh ones. "all" means any time.
+    postedWithinDays: sp.posted === "all" ? undefined : (num(sp.posted) ?? DEFAULT_POSTED_DAYS),
   };
 }
 
@@ -68,15 +71,17 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
           {[150, 200, 250, 300, 400].map((k) => <option key={k} value={k * 1000}>${k}K+ OTE</option>)}
         </select>
         <select name="posted" defaultValue={sp.posted ?? ""} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label="Posted">
-          <option value="">Any time</option>
-          <option value="1">Last 24h</option>
-          <option value="3">Last 3 days</option>
+          <option value="">Last 90 days</option>
+          <option value="30">Last 30 days</option>
           <option value="7">Last 7 days</option>
+          <option value="3">Last 3 days</option>
+          <option value="1">Last 24h</option>
+          <option value="all">Any time</option>
         </select>
         <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white">Search</button>
       </form>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-ink-3">{jobs.length} jobs</p>
+        <p className="text-sm text-ink-3">{jobs.length} jobs{!sp.posted && " · posted in the last 90 days"}</p>
         {hasFilters && (
           <form action={watchSearch} className="flex w-full items-center gap-2 sm:w-auto">
             <input type="hidden" name="qs" value={qs} />
