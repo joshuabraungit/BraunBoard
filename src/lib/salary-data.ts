@@ -28,7 +28,7 @@ async function load(): Promise<{ rows: Row[]; loadedAt: string }> {
   return { rows, loadedAt: new Date().toISOString() };
 }
 
-const loadCached = unstable_cache(load, ["salary-pay-rows-v2"], { revalidate: 3600 });
+const loadCached = unstable_cache(load, ["salary-pay-rows-v3"], { revalidate: 3600 });
 
 /**
  * Rows for one country's report. The US report is US roles paid in dollars; the UK report is

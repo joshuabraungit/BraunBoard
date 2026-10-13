@@ -18,7 +18,7 @@ async function main() {
   const staleArg = process.argv.indexOf("--stale");
   const stale = staleArg > 0 ? Number(process.argv[staleArg + 1]) : 4;
   const { companies, totals } = await ingestAll(db, { staleAfterHours: all || reprocess ? 0 : stale, reprocess });
-  notice(`Ingest: crawled ${companies} companies, ${totals.kept} US sales jobs seen, ${totals.new} new, ${totals.removed} removed`);
+  notice(`Ingest: crawled ${companies} companies, ${totals.kept} sales jobs seen (US, Canada, UK), ${totals.new} new, ${totals.removed} removed`);
   const f = await recomputeFlags(db);
   notice(`Flags: ${f.changed} of ${f.checked} jobs updated`);
   const { error: statsErr } = await db.rpc("refresh_company_stats");
