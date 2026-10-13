@@ -80,3 +80,23 @@ describe("verdict and red flags", () => {
     expect(["Strong posting", "Worth a look"]).toContain(r.verdict);
   });
 });
+
+describe("coaching", () => {
+  it("pairs the attainment question with who coaches, for people carrying a number", () => {
+    const qs = questionsFor({ ...base, role_family: "Account Executive" });
+    expect(qs[0]!.text).toMatch(/percent of reps hit quota/);
+    expect(qs[1]!.text).toBe("Who sits with reps and reviews calls each week?");
+    expect(questionsFor({ ...base, role_family: "Sales Director" }).some((q) => /reviews calls/.test(q.text))).toBe(false);
+  });
+  it("flags real coaching for reps, not for managers whose job is coaching", () => {
+    const t = "You'll get structured weekly coaching and call reviews.";
+    const j = { ...base, salary_max: null, ote_max: null, description_raw: t };
+    expect(computeFlags({ ...j, role_family: "SDR/BDR" }).some((f) => f.code === "coaching")).toBe(true);
+    expect(computeFlags({ ...j, role_family: "Sales Manager" }).some((f) => f.code === "coaching")).toBe(false);
+    expect(computeFlags({ ...j, role_family: "Account Executive", description_raw: "Participate in ongoing sales enablement and coaching." }).some((f) => f.code === "coaching")).toBe(false);
+  });
+  it("skips the coaching question when the posting already commits to it", () => {
+    const flags = computeFlags({ ...base, salary_max: null, ote_max: null, role_family: "Account Executive", description_raw: "Dedicated coaching from day one." });
+    expect(questionsFor({ ...base, role_family: "Account Executive", flags }).some((q) => /reviews calls/.test(q.text))).toBe(false);
+  });
+});

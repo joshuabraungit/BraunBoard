@@ -20,6 +20,8 @@ export interface Question {
   text: string;
 }
 
+const CARRIES_NUMBER = new Set(["SDR/BDR", "Account Executive", "Account Manager", "Customer Expansion"]);
+
 /** Up to `max` questions, most important first. */
 export function questionsFor(j: QuestionInput, max = 6): Question[] {
   const has = new Set(j.flags.map((f) => f.code));
@@ -43,6 +45,8 @@ export function questionsFor(j: QuestionInput, max = 6): Question[] {
 
   // 2. The numbers that decide whether the job is doable.
   if (!d.quota_attainment && !has.has("shares_attainment")) add("Not in the posting", "What percent of reps hit quota last year?");
+  // The answer to this one usually explains the attainment number.
+  if (CARRIES_NUMBER.has(j.role_family ?? "") && !has.has("coaching")) add("Explains the attainment number", "Who sits with reps and reviews calls each week?");
   if (j.salary_min == null && j.ote_min == null) add("No pay listed", "What are the base and the OTE for this role?");
   else if (j.ote_min == null) add("No OTE listed", "What's the OTE, and what did the median rep earn last year?");
   else if (j.salary_min == null) add("No base listed", "What's the base, and how is the rest paid out?");

@@ -39,6 +39,7 @@ interface Rule {
 }
 
 const hasPay = (j: FlagInput) => j.salary_min != null || j.ote_min != null;
+const IC_ROLES = new Set(["SDR/BDR", "Account Executive", "Account Manager", "Customer Expansion", "Sales Engineer"]);
 
 const RULES: Rule[] = [
   // ---- Red ----
@@ -175,6 +176,16 @@ const RULES: Rule[] = [
     label: "Pays accelerators",
     why: "Higher commission rates once you pass quota. Overperformance actually pays.",
     test: (t) => /\baccelerators?\b/.test(t),
+  },
+  {
+    code: "coaching",
+    tone: "green",
+    label: "Real coaching",
+    why: "The posting commits to regular coaching or call reviews. A bad attainment number usually means no coaching and no standard, not bad reps.",
+    // Only for people carrying a number. For managers, "provide regular coaching" is their job, not support.
+    test: (t, j) =>
+      IC_ROLES.has(j.role_family ?? "") &&
+      /\b(weekly|regular|ongoing|dedicated|structured|1:1|one[- ]on[- ]one)\s+(\w+\s+){0,2}(coaching|call reviews?|call coaching)\b/.test(t),
   },
 ];
 

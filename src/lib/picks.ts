@@ -100,6 +100,7 @@ const GREEN_LINES: Record<string, string> = {
   accelerators: "Accelerators past quota, so overperformance actually pays.",
   states_deal_size: "Deal size is spelled out, so you know what kind of selling this is.",
   pipeline_support: "You get SDR or inbound help, not a blank territory.",
+  coaching: "They commit to regular coaching, which is what usually sits behind a good attainment number.",
 };
 
 const firstSentence = (s: string) => {
