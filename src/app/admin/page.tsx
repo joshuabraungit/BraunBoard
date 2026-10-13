@@ -25,6 +25,45 @@ interface Overview {
   recent_errors: { name: string; slug: string; error: string; started_at: string }[];
 }
 
+interface Audience {
+  users: number;
+  users_with_role: number;
+  users_with_watch: number;
+  roles: { label: string; n: number }[];
+  countries: { label: string; n: number }[];
+  picks_subscribers: number;
+}
+
+const COUNTRY_NAMES: Record<string, string> = { US: "United States", CA: "Canada", UK: "United Kingdom" };
+
+/** Simple horizontal bars: label, bar, count. Shares are of `base` people. */
+function Bars({ title, note, rows, base }: { title: string; note: string; rows: { label: string; n: number }[]; base: number }) {
+  const max = Math.max(1, ...rows.map((r) => r.n));
+  return (
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <p className="text-xs uppercase tracking-wide text-ink-3">{title}</p>
+      {rows.length ? (
+        <ul className="mt-3 space-y-2">
+          {rows.map((r) => (
+            <li key={r.label} className="grid grid-cols-[8.5rem_1fr_4.5rem] items-center gap-3 text-sm">
+              <span className="truncate font-medium">{r.label}</span>
+              <span className="h-2 rounded-full bg-line">
+                <span className="block h-2 rounded-full bg-accent" style={{ width: `${(r.n / max) * 100}%` }} />
+              </span>
+              <span className="text-right tabular-nums">
+                {r.n} <span className="text-xs text-ink-3">{base ? `${Math.round((r.n / base) * 100)}%` : ""}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 text-sm text-ink-3">Nobody yet.</p>
+      )}
+      <p className="mt-3 text-xs text-ink-3">{note}</p>
+    </div>
+  );
+}
+
 function ago(iso: string | null) {
   if (!iso) return "never";
   const m = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
@@ -56,9 +95,11 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 
 export default async function AdminDashboard() {
   await requireAdmin();
-  const { data, error } = await adminClient().rpc("admin_overview");
+  const db = adminClient();
+  const [{ data, error }, { data: aud }] = await Promise.all([db.rpc("admin_overview"), db.rpc("admin_audience")]);
   if (error || !data) return <p className="text-red">Couldn&apos;t load the dashboard: {error?.message}</p>;
   const o = data as Overview;
+  const a = aud as Audience | null;
   const clickRate = o.alerts_sent_30d ? Math.round((o.alerts_clicked_30d / o.alerts_sent_30d) * 100) : null;
   const crawlStale = !o.last_crawl_at || Date.now() - new Date(o.last_crawl_at).getTime() > 6 * 3_600_000;
 
@@ -79,6 +120,29 @@ export default async function AdminDashboard() {
         <Tile label="Company watches" value={o.company_watches} />
         <Tile label="Alerts waiting to send" value={o.alerts_pending} sub="Go out with the next instant run or daily digest" />
       </Group>
+
+      {a && (
+        <section className="mt-8">
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-2">Who&apos;s signing up</h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            <Bars
+              title="Role they're looking for"
+              rows={a.roles}
+              base={a.users_with_role}
+              note={`From the For You setup. ${a.users_with_role} of ${a.users} signups picked a role, and people can pick more than one, so it adds up to more than 100%. This is the job they want, not the one they have today. Sales Leader covers Manager, Director, VP and CRO.`}
+            />
+            <Bars
+              title="Where they want to work"
+              rows={a.countries.map((c) => ({ label: COUNTRY_NAMES[c.label] ?? c.label, n: c.n }))}
+              base={a.users_with_watch}
+              note="From their job watches. Someone watching both the US and Canada counts in both."
+            />
+          </div>
+          <p className="mt-2 text-xs text-ink-3">
+            {a.picks_subscribers} people get Braun&apos;s Picks. Picks signups only give an email, so they aren&apos;t in these charts unless they also made an account.
+          </p>
+        </section>
+      )}
 
       <Group title="Alerts (last 30 days)">
         <Tile label="Alert emails sent" value={o.alerts_sent_30d} />
