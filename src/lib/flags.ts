@@ -292,7 +292,7 @@ export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
     label: "Time on market",
     grade: days <= 21 ? "good" : days <= 45 ? "ok" : "bad",
     detail:
-      days <= 1 ? "Brand new." : days <= 21 ? `Open ${days} days.` : days <= 45 ? `Open ${days} days. Normal, but not fresh.` : `Open ${days}+ days. Ask why it's been hard to fill.`,
+      days <= 1 ? "Brand new." : days <= 21 ? `Open ${days} days.` : days <= 45 ? `Open ${days} days. Normal, but not fresh.` : `Open ${days} days. Ask why it's been hard to fill.`,
   });
 
   // Company hiring

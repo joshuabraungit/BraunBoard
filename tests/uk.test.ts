@@ -99,3 +99,9 @@ describe("UK regressions", () => {
     expect(locate(job).markets).toEqual(["UK"]);
   });
 });
+
+describe("three markets", () => {
+  it("lists three markets naturally", () => {
+    expect(formatLocation({ remote_type: "Remote", city: null, state: null, markets: ["US", "CA", "UK"] })).toBe("Remote · US, Canada & UK");
+  });
+});

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { listJobsWithTotal, type JobFilters } from "@/lib/data";
 import { isMarketChoice, MARKET_CHOICES, marketsFor, payPresets, visitorMarket, type MarketChoice } from "@/lib/market";
 import { JobGrid } from "@/components/JobCard";
@@ -64,6 +65,16 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
     getUserState(),
   ]);
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // Past the end (an old link, or results shrank): go to the last real page instead of an empty one.
+  if (page > 1 && jobs.length === 0) {
+    const { total: real } = await listJobsWithTotal(toFilters(sp, market), 1);
+    const last = Math.max(1, Math.ceil(real / PAGE_SIZE));
+    if (last < page) {
+      const p = new URLSearchParams(Object.entries(sp).filter(([k, v]) => v && k !== "page") as [string, string][]);
+      if (last > 1) p.set("page", String(last));
+      redirect(`/jobs${p.toString() ? `?${p}` : ""}`);
+    }
+  }
   // The search itself, without the page number (used for watches and page links).
   const qs = new URLSearchParams(Object.entries(sp).filter(([k, v]) => v && k !== "page") as [string, string][]).toString();
   const pageHref = (n: number) => {

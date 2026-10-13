@@ -25,7 +25,9 @@ const MARKET_NAME: Record<string, string> = { US: "US", CA: "Canada", UK: "UK" }
 export function formatLocation(j: { remote_type: string; city: string | null; state: string | null; location_raw?: string | null; markets?: string[] | null }): string {
   const place = [j.city, j.state].filter(Boolean).join(", ");
   const m = j.markets?.length ? j.markets : ["US"];
-  const where = m.map((x) => MARKET_NAME[x] ?? x).join(" & ");
+  const names = m.map((x) => MARKET_NAME[x] ?? x);
+  // "US", "US & Canada", "US, Canada & UK"
+  const where = names.length > 2 ? `${names.slice(0, -1).join(", ")} & ${names.at(-1)}` : names.join(" & ");
   // The city shown belongs to the first market (US, then Canada, then UK).
   const primary = m.includes("US") ? "US" : m.includes("CA") ? "CA" : "UK";
   const others = m.filter((x) => x !== primary).map((x) => MARKET_NAME[x] ?? x);
