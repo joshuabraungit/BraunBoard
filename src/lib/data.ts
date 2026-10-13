@@ -29,9 +29,9 @@ export interface JobView {
   disclosures: Partial<Disclosures>;
   /** Red / green flag codes, see lib/flags.ts */
   flags?: string[];
-  /** "USD" or "CAD" when pay is published. */
+  /** "USD", "CAD" or "GBP" when pay is published. */
   currency?: string | null;
-  /** Where the job is open: "US", "CA" or both. */
+  /** Where the job is open: any of "US", "CA", "UK". */
   markets?: string[];
   apply_url: string;
   /** When the employer posted it (falls back to when we first saw it). */
@@ -61,8 +61,8 @@ export interface JobFilters {
   segment?: SalesSegment;
   motion?: SalesMotion;
   remote?: RemoteType;
-  /** "US" or "CA". Jobs open in both show up for either. */
-  country?: "US" | "CA";
+  /** Only jobs open in at least one of these markets ("US", "CA", "UK"). */
+  markets?: string[];
   minBase?: number;
   minOte?: number;
   postedWithinDays?: number;
@@ -81,7 +81,7 @@ function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
       (!f.segment || j.sales_segment === f.segment) &&
       (!f.motion || j.sales_motion === f.motion) &&
       (!f.remote || j.remote_type === f.remote) &&
-      (!f.country || (j.markets ?? ["US"]).includes(f.country)) &&
+      (!f.markets?.length || (j.markets ?? ["US"]).some((m) => f.markets!.includes(m))) &&
       (!f.minBase || (j.salary_max ?? j.salary_min ?? 0) >= f.minBase) &&
       (!f.minOte || (j.ote_max ?? j.ote_min ?? 0) >= f.minOte) &&
       (!f.companySlug || j.company_slug === f.companySlug) &&
@@ -117,7 +117,7 @@ export async function listJobsWithTotal(
   if (f.segment) q = q.eq("sales_segment", f.segment);
   if (f.motion) q = q.eq("sales_motion", f.motion);
   if (f.remote) q = q.eq("remote_type", f.remote);
-  if (f.country) q = q.contains("markets", [f.country]);
+  if (f.markets?.length) q = q.overlaps("markets", f.markets);
   // Pay filters are in USD; Canadian pay is compared at a conservative USD value.
   if (f.minBase) q = q.gte("salary_max_usd", f.minBase);
   if (f.minOte) q = q.gte("ote_max_usd", f.minOte);

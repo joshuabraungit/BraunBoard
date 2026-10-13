@@ -185,7 +185,7 @@ export function salaryStats(rows: PayRow[], allPostings: number): SalaryStats {
 }
 
 /** Round to the nearest $1K and format like "$275K". */
-export function k(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2).replace(/0$/, "")}M`;
-  return `$${Math.round(n / 1000)}K`;
+export function k(n: number, sym = "$"): string {
+  if (n >= 1_000_000) return `${sym}${(n / 1_000_000).toFixed(2).replace(/0$/, "")}M`;
+  return `${sym}${Math.round(n / 1000)}K`;
 }

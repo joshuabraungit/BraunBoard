@@ -69,6 +69,12 @@ export async function saveOnboarding(formData: FormData) {
 // Watches
 // ---------------------------------------------------------------------------
 
+function watchCountries(v: string | null): ("US" | "CA" | "UK")[] {
+  if (v === "US" || v === "CA" || v === "UK") return [v];
+  if (v === "all") return ["US", "CA", "UK"];
+  return ["US", "CA"];
+}
+
 /** "Watch this search" from All Jobs. Filters come straight from the query string. */
 export async function watchSearch(formData: FormData) {
   const qs = String(formData.get("qs") ?? "");
@@ -85,7 +91,8 @@ export async function watchSearch(formData: FormData) {
     min_base: money(sp.get("minBase")),
     min_ote: money(sp.get("minOte")),
     dealbreakers: [],
-    countries: sp.get("country") === "CA" ? ["CA"] : sp.get("country") === "US" ? ["US"] : ["US", "CA"],
+    // The jobs page always passes the country it was showing ("NA", "US", "CA", "UK" or "all").
+    countries: watchCountries(sp.get("country")),
   };
   const name = String(formData.get("name") ?? "").trim() || "My search";
   const db = await serverClient();

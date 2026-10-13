@@ -5,8 +5,10 @@ import { saveOnboarding } from "@/app/actions";
 import { DEALBREAKER_LABELS, DEALBREAKERS } from "@/lib/match";
 import { COUNTRY_CHOICES, MOTION_CHOICES, ROLE_CHOICES, WORK_CHOICES, type OnboardingAnswers, type RoleChoice } from "@/lib/watch-prefs";
 
-const BASE_PRESETS = [100, 125, 150, 175, 200];
-const OTE_PRESETS = [150, 200, 250, 300, 400];
+const PRESETS = {
+  usd: { base: [100, 125, 150, 175, 200], ote: [150, 200, 250, 300, 400] },
+  gbp: { base: [50, 60, 75, 90, 110], ote: [80, 100, 125, 150, 200] },
+};
 
 function Chip({ name, value, type, checked, onChange, children }: { name: string; value: string; type: "checkbox" | "radio"; checked: boolean; onChange: (v: boolean) => void; children: React.ReactNode }) {
   return (
@@ -17,14 +19,15 @@ function Chip({ name, value, type, checked, onChange, children }: { name: string
   );
 }
 
-function Money({ name, label, presets, value, setValue }: { name: string; label: string; presets: number[]; value: string; setValue: (v: string) => void }) {
+function Money({ name, label, presets, value, setValue, sym }: { name: string; label: string; presets: number[]; value: string; setValue: (v: string) => void; sym: string }) {
   return (
     <div>
       <p className="mb-2 text-sm font-semibold">{label}</p>
       <div className="flex flex-wrap items-center gap-2">
         {presets.map((k) => (
           <Chip key={k} name={`${name}_preset`} value={String(k)} type="radio" checked={value === String(k)} onChange={() => setValue(String(k))}>
-            ${k}K+
+            {sym}
+            {k}K+
           </Chip>
         ))}
         <Chip name={`${name}_preset`} value="" type="radio" checked={value === ""} onChange={() => setValue("")}>
@@ -47,6 +50,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
   const [motion, setMotion] = useState<OnboardingAnswers["motion"]>(initial?.motion ?? "either");
   const [breakers, setBreakers] = useState<string[]>(initial?.dealbreakers ?? []);
   const [pending, setPending] = useState(false);
+  const uk = country === "UK";
 
   const steps = [
     {
@@ -64,24 +68,27 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
       ok: roles.length > 0,
     },
     {
-      q: "What would it have to pay?",
-      hint: "Only counts jobs that publish pay. Jobs that don't say aren't held against them.",
-      body: (
-        <div className="space-y-5">
-          <Money name="min_base" label="Minimum base" presets={BASE_PRESETS} value={base} setValue={setBase} />
-          <Money name="min_ote" label="Minimum OTE" presets={OTE_PRESETS} value={ote} setValue={setOte} />
-        </div>
-      ),
-      ok: true,
-    },
-    {
       q: "Where do you want to work?",
-      hint: "Location is optional. Try a state, province or city, like NY, Austin or Toronto.",
+      hint: "Location is optional. Try a state, province or city, like NY, Austin, Toronto or London.",
       body: (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
             {(Object.keys(COUNTRY_CHOICES) as (keyof typeof COUNTRY_CHOICES)[]).map((c) => (
-              <Chip key={c} name="country" value={c} type="radio" checked={country === c} onChange={() => setCountry(c)}>
+              <Chip
+                key={c}
+                name="country"
+                value={c}
+                type="radio"
+                checked={country === c}
+                onChange={() => {
+                  // Pay answers are in the country's currency, so switching between $ and £ clears them.
+                  if ((c === "UK") !== uk) {
+                    setBase("");
+                    setOte("");
+                  }
+                  setCountry(c);
+                }}
+              >
                 {COUNTRY_CHOICES[c]}
               </Chip>
             ))}
@@ -94,6 +101,17 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
             ))}
           </div>
           <input name="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location (optional)" className="w-full max-w-xs rounded-lg border border-line bg-surface px-3 py-2 text-sm" />
+        </div>
+      ),
+      ok: true,
+    },
+    {
+      q: "What would it have to pay?",
+      hint: "Only counts jobs that publish pay. Jobs that don't say aren't held against them.",
+      body: (
+        <div className="space-y-5">
+          <Money name="min_base" label="Minimum base" presets={PRESETS[uk ? "gbp" : "usd"].base} value={base} setValue={setBase} sym={uk ? "£" : "$"} />
+          <Money name="min_ote" label="Minimum OTE" presets={PRESETS[uk ? "gbp" : "usd"].ote} value={ote} setValue={setOte} sym={uk ? "£" : "$"} />
         </div>
       ),
       ok: true,

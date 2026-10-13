@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "Privacy Policy · Braun Board" };
 
 export default function Privacy() {
   return (
-    <LegalPage title="Privacy Policy" updated="October 12, 2026">
+    <LegalPage title="Privacy Policy" updated="October 13, 2026">
       <p>
         Braun Board helps salespeople find B2B sales jobs and get alerted when relevant ones appear. This page explains what we
         collect and how we use it. Plain version: we only collect what we need to run the job alerts you ask for, and we don&apos;t
@@ -52,6 +52,31 @@ export default function Privacy() {
         <li>Turn alerts off any time on the Alerts page or from the link in any alert email.</li>
         <li>Edit or delete your watches on the Watchlist page.</li>
         <li>Ask us to delete your account and data by emailing the address below.</li>
+      </ul>
+
+      <h2>If you&apos;re in the UK or EU</h2>
+      <p>
+        UK and EU data protection law (the UK GDPR and the GDPR) gives you extra rights. Braun Board, run by Josh Braun, is responsible
+        for your data.
+      </p>
+      <ul>
+        <li>
+          <strong>Why we use your data:</strong> to provide the account, matches and job alerts you sign up for. Job alerts are part
+          of that service: they start as a daily email when you create an account, and you can switch them to instant or off at any
+          time. Braun&apos;s Picks is only sent if you subscribe to it, and every email has an unsubscribe link.
+        </li>
+        <li>
+          <strong>Your rights:</strong> you can ask for a copy of your data, ask us to correct or delete it, object to how we use it, or
+          ask for it in a portable format. Email the address below.
+        </li>
+        <li>
+          <strong>Where it&apos;s stored:</strong> our database and hosting are in the United States, so your data is transferred
+          there.
+        </li>
+        <li>
+          <strong>Complaints:</strong> if you&apos;re unhappy with how we handle your data, you can complain to the UK Information
+          Commissioner&apos;s Office (ico.org.uk) or your local EU data protection authority.
+        </li>
       </ul>
 
       <h2>Contact</h2>

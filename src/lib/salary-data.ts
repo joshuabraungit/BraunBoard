@@ -9,26 +9,36 @@ import type { PayRow } from "./salaries";
 const COLUMNS =
   "slug, title_raw, role_family, sales_segment, remote_type, city, state, salary_min, salary_max, ote_min, ote_max, company_name, company_slug, posted_at, currency, markets";
 
-async function load(): Promise<{ rows: PayRow[]; loadedAt: string }> {
+type Row = PayRow & { currency: string | null; markets: string[] | null };
+
+async function load(): Promise<{ rows: Row[]; loadedAt: string }> {
   if (!isSupabaseConfigured()) {
-    return { rows: SAMPLE_JOBS.map((j) => ({ ...j, posted_at: j.first_seen_at })) as unknown as PayRow[], loadedAt: new Date().toISOString() };
+    return { rows: SAMPLE_JOBS.map((j) => ({ ...j, posted_at: j.first_seen_at })) as unknown as Row[], loadedAt: new Date().toISOString() };
   }
   const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     auth: { persistSession: false },
   });
-  const rows: PayRow[] = [];
+  const rows: Row[] = [];
   for (let from = 0; ; from += 1000) {
     const { data, error } = await db.from("visible_jobs").select(COLUMNS).order("id").range(from, from + 999);
     if (error) throw new Error(`salary data: ${error.message}`);
-    // The salary report is US pay only: skip Canadian-dollar postings and Canada-only roles.
-    rows.push(
-      ...((data ?? []) as unknown as (PayRow & { currency: string | null; markets: string[] | null })[]).filter(
-        (r) => r.currency !== "CAD" && (r.markets ?? ["US"]).includes("US"),
-      ),
-    );
+    rows.push(...((data ?? []) as unknown as Row[]));
     if (!data || data.length < 1000) break;
   }
   return { rows, loadedAt: new Date().toISOString() };
 }
 
-export const getPayRows = unstable_cache(load, ["salary-pay-rows-v1"], { revalidate: 3600 });
+const loadCached = unstable_cache(load, ["salary-pay-rows-v2"], { revalidate: 3600 });
+
+/**
+ * Rows for one country's report. The US report is US roles paid in dollars; the UK report is
+ * UK-only roles paid in pounds. Currencies are never mixed. Canada doesn't have its own yet.
+ */
+export async function getPayRows(market: "US" | "UK" = "US"): Promise<{ rows: PayRow[]; loadedAt: string }> {
+  const { rows, loadedAt } = await loadCached();
+  const keep =
+    market === "UK"
+      ? (r: Row) => (r.markets ?? []).includes("UK") && !(r.markets ?? []).includes("US") && (r.currency ?? "GBP") === "GBP"
+      : (r: Row) => (r.currency ?? "USD") === "USD" && (r.markets ?? ["US"]).includes("US");
+  return { rows: rows.filter(keep), loadedAt };
+}

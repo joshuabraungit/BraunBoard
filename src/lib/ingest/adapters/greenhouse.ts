@@ -57,13 +57,24 @@ export const greenhouse: Adapter = {
 export async function fetchGreenhousePayRange(
   boardToken: string,
   jobId: string,
-  market: "US" | "CA" = "US",
+  market: "US" | "CA" | "UK" = "US",
 ): Promise<{ min: number; max: number; currency: string; isOte: boolean } | null> {
   const data = await getJson<{ pay_input_ranges?: GhPayRange[] }>(
     `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(boardToken)}/jobs/${jobId}?pay_transparency=true`,
   );
   const ranges = data.pay_input_ranges ?? [];
   // Several ranges are often listed per country or zone: prefer the one for this job's market.
+  if (market === "UK") {
+    // Never show a US range on a UK job: only a range in pounds or labeled for the UK counts.
+    const r = ranges.find((x) => x.currency_type === "GBP" || /\b(uk|united kingdom|london|gbp)\b/i.test(x.title ?? ""));
+    if (!r?.min_cents || !r?.max_cents || (r.currency_type && r.currency_type !== "GBP")) return null;
+    return {
+      min: Math.round(r.min_cents / 100),
+      max: Math.round(r.max_cents / 100),
+      currency: "GBP",
+      isOte: /\b(OTE|on[- ]target)\b/i.test(`${r.title ?? ""} ${(r as { blurb?: string }).blurb ?? ""}`),
+    };
+  }
   const want = market === "CA" ? /\b(canada|canadian|cad|ca)\b/i : /\b(us|united states|usa)\b/i;
   const r =
     ranges.find((x) => want.test(x.title ?? "") || (market === "CA" ? x.currency_type === "CAD" : x.currency_type === "USD")) ??

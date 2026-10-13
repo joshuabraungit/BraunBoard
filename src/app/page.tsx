@@ -6,22 +6,31 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { JobGrid, Section } from "@/components/JobCard";
 import { getActiveWatch, getUserState } from "@/lib/session";
 import { rankForWatch } from "@/lib/matching";
+import { marketsFor, visitorMarket } from "@/lib/market";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ picks?: string }> }) {
   const { picks } = await searchParams;
+  // Sections follow the visitor's country: UK visitors see UK jobs, North America sees US + Canada.
+  const market = await visitorMarket();
+  const markets = marketsFor(market);
+  const uk = market === "UK";
+  // High OTE: $250K+ in USD terms, which is £200K+ for UK jobs.
+  const highOteMin = 250_000;
   const [newToday, highOte, remoteEnt, state, watch, companies] = await Promise.all([
-    listJobs({ postedWithinDays: 1 }, 6),
-    listJobs({ minOte: 250_000, postedWithinDays: 90 }, 6),
-    listJobs({ role: "Account Executive", segment: "Enterprise", remote: "Remote", postedWithinDays: 90 }, 6),
+    listJobs({ postedWithinDays: 1, markets }, 6),
+    listJobs({ minOte: highOteMin, postedWithinDays: 90, markets }, 6),
+    listJobs({ role: "Account Executive", segment: "Enterprise", remote: "Remote", postedWithinDays: 90, markets }, 6),
     getUserState(),
     getActiveWatch(),
     listCompanies(),
   ]);
   const rampingUp = companies.filter((c) => c.trend === "ramping").sort(byHiringFastest).slice(0, 6);
   const ctx = { savedJobIds: state.savedJobIds, back: "/" };
-  const forYou = watch ? rankForWatch(await listJobs({}, 1000, { withDescription: true }), watch.prefs, state.hiddenJobIds) : null;
+  const forYou = watch
+    ? rankForWatch(await listJobs({ markets: watch.prefs.countries ?? ["US"] }, 1000, { withDescription: true }), watch.prefs, state.hiddenJobIds)
+    : null;
 
   return (
     <>
@@ -63,10 +72,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
       <div className="mt-10">
         <PicksSignup back="/" source="home" status={picks} compact />
       </div>
-      <Section title="High OTE · $250K+" href="/jobs?minOte=250000">
+      <Section title={uk ? "High OTE · £200K+" : "High OTE · $250K+"} href={`/jobs?minOte=250000&country=${market}`}>
         <JobGrid jobs={highOte} ctx={ctx} />
       </Section>
-      <Section title="Remote Enterprise AE" href="/jobs?role=Account+Executive&segment=Enterprise&remote=Remote">
+      <Section title="Remote Enterprise AE" href={`/jobs?role=Account+Executive&segment=Enterprise&remote=Remote&country=${market}`}>
         <JobGrid jobs={remoteEnt} ctx={ctx} />
       </Section>
     </>

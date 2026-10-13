@@ -13,16 +13,24 @@ export interface Compensation {
 const EMPTY: Compensation = { salary_min: null, salary_max: null, ote_min: null, ote_max: null, currency: null };
 
 // $150,000 - $175,000 | $150K–$175K | $150k to $175k | USD 150,000 - 175,000
-const RANGE =
-  /(?:USD\s*)?\$?\s?(\d{2,3}(?:,\d{3})+|\d{2,3}(?:\.\d+)?\s?[kK])\s*(?:-|–|—|to)\s*(?:USD\s*)?\$?\s?(\d{2,3}(?:,\d{3})+|\d{2,3}(?:\.\d+)?\s?[kK])/g;
-// Single figure: "$300K OTE"
-const SINGLE = /\$\s?(\d{2,3}(?:,\d{3})+|\d{2,3}(?:\.\d+)?\s?[kK])/g;
+// The currency symbol is a parameter: "$" for US / Canada jobs, "£" for UK jobs.
+const FIG = String.raw`(\d{2,3}(?:,\d{3})+|\d{2,3}(?:\.\d+)?\s?[kK])`;
+function payRegexes(sym: "$" | "£") {
+  const s = sym === "$" ? String.raw`(?:USD\s*)?\$?` : String.raw`(?:GBP\s*)?£?`;
+  const strict = sym === "$" ? String.raw`\$` : String.raw`(?:£|GBP\s?)`;
+  return {
+    range: new RegExp(String.raw`${s}\s?${FIG}\s*(?:-|–|—|to)\s*${s}\s?${FIG}`, "g"),
+    // Single figure: "$300K OTE", "£120K OTE"
+    single: new RegExp(String.raw`${strict}\s?${FIG}`, "g"),
+  };
+}
+const PAY = { $: payRegexes("$"), "£": payRegexes("£") };
 
 const OTE_WORDS = /\b(ote|on[- ]target[- ]earnings?|on[- ]target compensation|target(ed)? total (cash|compensation)|total target(ed)? (cash|compensation))\b/i;
 const BASE_WORDS = /\b(base|base salary|base pay|salary range|annual salary)\b/i;
 
 function toNumber(s: string): number {
-  const t = s.replace(/[\s,$]/g, "").toLowerCase();
+  const t = s.replace(/[\s,$£]/g, "").toLowerCase();
   return t.endsWith("k") ? Math.round(parseFloat(t) * 1000) : parseInt(t, 10);
 }
 
@@ -53,7 +61,8 @@ interface Found {
 }
 
 /** Finds explicitly labeled pay figures in description text. */
-export function findPayInText(text: string): Found[] {
+export function findPayInText(text: string, sym: "$" | "£" = "$"): Found[] {
+  const { range: RANGE, single: SINGLE } = PAY[sym];
   const out: Found[] = [];
   const seen = new Set<number>();
   const label = (idx: number, len: number): Found["label"] => {
@@ -110,8 +119,9 @@ export function plausibleRange(min: number, max: number): boolean {
 export function resolveCompensation(
   structured: { min: number | null; max: number | null; currency: string | null; isOte?: boolean },
   description: string,
+  sym: "$" | "£" = "$",
 ): Compensation {
-  const found = findPayInText(description);
+  const found = findPayInText(description, sym);
   const ote = found.find((f) => f.label === "ote");
   const base = found.find((f) => f.label === "base");
   const result: Compensation = { ...EMPTY };
@@ -144,21 +154,26 @@ export function resolveCompensation(
   if (result.salary_min != null && result.ote_max != null && result.ote_max < result.salary_min) {
     [result.salary_min, result.salary_max, result.ote_min, result.ote_max] = [result.ote_min, result.ote_max, result.salary_min, result.salary_max];
   }
-  if ((result.salary_min ?? result.ote_min) != null && !result.currency) result.currency = "USD";
+  if ((result.salary_min ?? result.ote_min) != null && !result.currency) result.currency = sym === "£" ? "GBP" : "USD";
   return result;
 }
 
 /**
  * Which currency a job's pay is in. The ATS's own currency wins; then an explicit
- * "CAD" / "C$" in the posting; then a Canada-only job is assumed CAD. Everything else USD.
+ * currency in the posting; then the job's market (Canada-only = CAD, UK-only = GBP). Else USD.
  */
-export function payCurrency(structured: string | null | undefined, description: string, markets: readonly string[]): "USD" | "CAD" {
+export function payCurrency(structured: string | null | undefined, description: string, markets: readonly string[]): "USD" | "CAD" | "GBP" {
   const s = structured?.trim().toUpperCase();
-  if (s === "CAD") return "CAD";
-  if (s === "USD") return "USD";
+  if (s === "CAD" || s === "USD" || s === "GBP") return s;
+  const only = markets.length === 1 ? markets[0] : null;
+  if (only === "UK") return "GBP";
   if (/\b(CAD|CDN)\b|\bC\$|\bCA\$/.test(description)) return markets.includes("US") && /\bUSD\b/.test(description) ? "USD" : "CAD";
-  return markets.length === 1 && markets[0] === "CA" ? "CAD" : "USD";
+  return only === "CA" ? "CAD" : "USD";
 }
 
 /** Rough USD value for comparing against USD filters. Kept conservative on purpose. */
 export const CAD_TO_USD = 0.72;
+export const GBP_TO_USD = 1.25;
+
+/** Multiply by this to get a rough USD value. */
+export const toUsdRate = (currency: string | null | undefined) => (currency === "CAD" ? CAD_TO_USD : currency === "GBP" ? GBP_TO_USD : 1);

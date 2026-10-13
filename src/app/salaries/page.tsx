@@ -30,7 +30,12 @@ export default async function Salaries() {
       <p className="text-xs font-semibold uppercase tracking-wide text-ink-3">Braun Board Salary Report</p>
       <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">What B2B salespeople actually make in {YEAR}</h1>
       <p className="mt-3 text-lg text-ink-2">
-        Real numbers from {withPay.toLocaleString()} open sales job postings that publish pay. Straight from employer career pages, updated every few hours.
+        Real numbers from {withPay.toLocaleString()} open US sales job postings that publish pay. Straight from employer career pages, updated every few hours.
+      </p>
+      <p className="mt-2 text-sm">
+        <Link href="/salaries/uk" className="font-semibold underline">
+          See UK salaries in pounds →
+        </Link>
       </p>
 
       {featured.page && featured.s.ote && (

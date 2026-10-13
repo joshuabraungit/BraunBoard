@@ -4,7 +4,7 @@
 // denominator instead of counting against the role.
 
 import type { RemoteType, RoleFamily, SalesMotion, SalesSegment, SelfSourcingLevel } from "./ingest/types";
-import { CAD_TO_USD } from "./ingest/compensation";
+import { toUsdRate } from "./ingest/compensation";
 
 export interface WatchPrefs {
   role_families: RoleFamily[];
@@ -16,8 +16,8 @@ export interface WatchPrefs {
   min_base: number | null;
   min_ote: number | null;
   dealbreakers: Dealbreaker[];
-  /** Where the person can work. Missing = US (every watch made before Canada support). */
-  countries?: ("US" | "CA")[];
+  /** Where the person can work. Missing = US (every watch made before Canada and UK support). */
+  countries?: ("US" | "CA" | "UK")[];
 }
 
 export const DEALBREAKERS = [
@@ -121,7 +121,7 @@ export function scoreMatch(job: MatchableJob, prefs: WatchPrefs): MatchResult {
   if (prefs.min_base != null || prefs.min_ote != null) {
     // Compare against the top of the published range: if the job *can* pay what you want, it passes.
     // Minimums are in USD; Canadian pay is compared at a conservative USD value.
-    const fx = job.currency === "CAD" ? CAD_TO_USD : 1;
+    const fx = toUsdRate(job.currency);
     const top = (v: number | null) => (v == null ? null : Math.round(v * fx));
     const baseTop = top(job.salary_max ?? job.salary_min);
     const oteTop = top(job.ote_max ?? job.ote_min);

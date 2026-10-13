@@ -20,7 +20,7 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<R
     );
   }
 
-  const [state, jobs, watches] = await Promise.all([getUserState(), listJobs({}, 1000, { withDescription: true }), listWatches()]);
+  const [state, jobs, watches] = await Promise.all([getUserState(), listJobs({ markets: watch.prefs.countries ?? ["US"] }, 1000, { withDescription: true }), listWatches()]);
   const ranked = rankForWatch(jobs, watch.prefs, state.hiddenJobIds);
 
   return (

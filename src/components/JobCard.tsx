@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { JobView } from "@/lib/data";
 import { freshnessLabel, isFresh } from "@/lib/freshness";
-import { formatComp, formatLocation } from "@/lib/format";
+import { languageFor, formatComp, formatLocation } from "@/lib/format";
 import { CompanyLogo } from "./CompanyLogo";
 import { SaveJobButton, HideJobButton } from "./Actions";
 import { MatchBadge } from "./MatchBadge";
@@ -16,8 +16,10 @@ export interface CardContext {
   allowHide?: boolean;
 }
 
-export function tagsFor(j: Pick<JobView, "sales_segment" | "sales_motion" | "self_sourcing_level">): string[] {
+export function tagsFor(j: Pick<JobView, "sales_segment" | "sales_motion" | "self_sourcing_level"> & { title_raw?: string }): string[] {
   const t: string[] = [];
+  const lang = j.title_raw ? languageFor(j.title_raw) : null;
+  if (lang) t.push(lang);
   if (j.sales_segment !== "Unknown") t.push(j.sales_segment);
   if (j.sales_motion !== "Unknown") t.push(j.sales_motion);
   if (j.self_sourcing_level === "High") t.push("Outbound");

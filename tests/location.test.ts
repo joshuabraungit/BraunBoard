@@ -90,9 +90,9 @@ describe("Canada", () => {
     expect(parseLocation("Remote", { country: "CA" })).toMatchObject({ country: "CA", markets: ["CA"] });
   });
   it("still drops the rest of the world", () => {
-    expect(parseLocation("London, UK").markets).toEqual([]);
     expect(parseLocation("Remote - Colombia").markets).toEqual([]);
-    expect(parseLocation("London").markets).toEqual([]);
+    expect(parseLocation("Berlin, Germany").markets).toEqual([]);
+    expect(parseLocation("Dublin, Ireland").markets).toEqual([]);
   });
   it("spots Canada-only titles", () => {
     expect(titleNamesCanadaOnly("Senior Majors Account Executive, Toronto")).toBe(true);

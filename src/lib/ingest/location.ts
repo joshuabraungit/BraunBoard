@@ -1,4 +1,4 @@
-// Location parsing + market filter. Braun Board covers the United States and Canada.
+// Location parsing + market filter. Braun Board covers the United States, Canada and the UK.
 
 import type { RemoteType } from "./types";
 
@@ -45,7 +45,35 @@ const CA_CITIES: Record<string, string> = {
 const CA_BARE_CITIES = Object.keys(CA_CITIES).filter((c) => c !== "london" && c !== "victoria" && c !== "hamilton");
 const CA_MARKERS = /\b(canada|canadian|can\b)/i;
 
-export type Market = "US" | "CA";
+export type Market = "US" | "CA" | "UK";
+const MARKET_ORDER: Market[] = ["US", "CA", "UK"];
+
+// ---- United Kingdom -----------------------------------------------------
+const UK_NATIONS: Record<string, string> = { england: "England", scotland: "Scotland", wales: "Wales", "northern ireland": "Northern Ireland" };
+// Cities that are clearly the UK on their own. Ambiguous ones (Cambridge, Birmingham, Manchester,
+// Reading, Bristol...) only count with a UK marker, since US "City, ST" parsing runs first anyway.
+const UK_SAFE_CITIES = ["london", "edinburgh", "glasgow", "belfast", "cardiff", "leeds", "liverpool", "sheffield", "milton keynes", "nottingham", "brighton", "aberdeen", "newcastle upon tyne"];
+const UK_CITIES = [...UK_SAFE_CITIES, "manchester", "birmingham", "bristol", "cambridge", "oxford", "reading", "newcastle", "bath", "york", "southampton", "leicester", "coventry", "guildford", "slough", "watford"];
+const UK_MARKERS = /\b(united kingdom|great britain|u\.k\.?|uk|gb|gbr|uk&i|uki|england|scotland|northern ireland)\b|(?<!new south )\bwales\b/i;
+// Places that borrow UK names.
+const NOT_UK = /\b(new south wales|nsw|australia|ontario|canada|new england|new york)\b/i;
+
+const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
+
+/** UK-only parsing of one location fragment. */
+function parseUkPart(part: string): { city: string | null; state: string | null; country: "UK" } | null {
+  if (NOT_UK.test(part)) return null;
+  const lower = part.toLowerCase();
+  const marked = UK_MARKERS.test(part);
+  const has = (c: string) => new RegExp(`(^|[^a-z])${c}([^a-z]|$)`).test(lower);
+  const city = UK_CITIES.find((c) => has(c) && (marked || UK_SAFE_CITIES.includes(c)));
+  if (city) return { city: titleCase(city.replace(/ upon tyne$/, "")), state: null, country: "UK" };
+  if (marked) {
+    const nation = Object.keys(UK_NATIONS).find((n) => has(n));
+    return { city: null, state: nation ? UK_NATIONS[nation]! : null, country: "UK" };
+  }
+  return null;
+}
 
 /** Canada-only parsing of one location fragment. */
 function parseCaPart(part: string): { city: string | null; state: string | null; country: "CA" } | null {
@@ -131,14 +159,19 @@ export function parseLocation(
   const markets = new Set<Market>();
   let usPlace: Omit<ParsedLocation, "remote_type" | "is_us" | "markets"> | null = null;
   let caPlace: ReturnType<typeof parseCaPart> = null;
+  let ukPlace: ReturnType<typeof parseUkPart> = null;
   let foreignQualifier = false;
   for (const part of parts.length ? parts : [text]) {
     const q = remoteQualifier(part);
     if (q && !isUsQualifier(q)) {
       const ca = parseCaPart(q);
+      const uk = ca ? null : parseUkPart(q);
       if (ca) {
         markets.add("CA");
         caPlace ??= ca;
+      } else if (uk) {
+        markets.add("UK");
+        ukPlace ??= uk;
       } else foreignQualifier = true;
       continue;
     }
@@ -152,6 +185,12 @@ export function parseLocation(
     if (ca) {
       markets.add("CA");
       caPlace ??= ca;
+      continue;
+    }
+    const uk = parseUkPart(part);
+    if (uk) {
+      markets.add("UK");
+      ukPlace ??= uk;
     }
   }
 
@@ -161,20 +200,31 @@ export function parseLocation(
     const st = hints.region ? (US_STATES[hints.region.toUpperCase()] ? hints.region.toUpperCase() : STATE_NAMES[hints.region.toLowerCase()] ?? null) : null;
     const city = hints.city && !/^(remote|hybrid|anywhere|)$/i.test(hints.city.trim()) ? hints.city : null;
     markets.add("US");
-    return out({ city, state: st, country: "US" }, [...markets].sort().reverse() as Market[]);
+    return out({ city, state: st, country: "US" }, MARKET_ORDER.filter((m) => markets.has(m)));
   }
   if (hintCountry && /^(ca|can|canada)$/.test(hintCountry)) {
     const region = hints.region?.trim() ?? "";
     const st = CA_PROVINCES[region.toUpperCase()] ? region.toUpperCase() : PROVINCE_NAMES[region.toLowerCase()] ?? null;
     const city = hints.city && !/^(remote|hybrid|anywhere|)$/i.test(hints.city.trim()) ? hints.city : null;
     markets.add("CA");
-    if (markets.has("US") && usPlace) return out(usPlace, ["US", "CA"]);
-    return out({ city, state: st, country: "CA" }, markets.has("US") ? ["US", "CA"] : ["CA"]);
+    const list = MARKET_ORDER.filter((m) => markets.has(m));
+    if (markets.has("US") && usPlace) return out(usPlace, list);
+    return out({ city, state: st, country: "CA" }, list);
   }
 
-  const list = (["US", "CA"] as Market[]).filter((m) => markets.has(m));
+  if (hintCountry && /^(gb|gbr|uk|united kingdom|great britain|england|scotland|wales|northern ireland)$/.test(hintCountry)) {
+    const city = hints.city && !/^(remote|hybrid|anywhere|)$/i.test(hints.city.trim()) ? hints.city : null;
+    markets.add("UK");
+    const list = MARKET_ORDER.filter((m) => markets.has(m));
+    if (usPlace) return out(usPlace, list);
+    if (caPlace) return out(caPlace, list);
+    return out({ city: city ?? ukPlace?.city ?? null, state: ukPlace?.state ?? null, country: "UK" }, list);
+  }
+
+  const list = MARKET_ORDER.filter((m) => markets.has(m));
   if (usPlace) return out(usPlace, list);
   if (caPlace) return out(caPlace, list);
+  if (ukPlace) return out(ukPlace, list);
   if (foreignQualifier || NON_US.test(text) || hintCountry) return out({ city: null, state: null, country: hintCountry ? hints.country ?? null : null }, []);
 
   // "Remote" with no country at all: ambiguous. Keep it as US but flag via country=null.
@@ -208,6 +258,32 @@ const CANADA_IN_TITLE = /\b(canada|canadian|toronto|montr[eé]al|vancouver|ontar
 const FOREIGN_IN_TITLE =
   /\b(emea|apac|apj|latam|uk&i|united kingdom|uk|london|dublin|ireland|germany|dach|france|paris|berlin|munich|amsterdam|benelux|nordics?|australia|anz|sydney|melbourne|singapore|japan|tokyo|india|bangalore|mexico|brazil|s[aã]o paulo|israel|spain|madrid|italy|milan)\b/i;
 const US_IN_TITLE = /\b(us|u\.s\.?|usa|united states|north america|americas|new england|east coast|west coast)\b/i;
+
+const UK_IN_TITLE = /\b(uk|u\.k\.|united kingdom|uk&i|uki|britain|london|england|scotland|edinburgh|manchester)\b/i;
+// Territories a UK-based seller wouldn't cover. Europe-wide titles (DACH, Nordics, EMEA) are often
+// sold from London, so those stay in for UK jobs.
+const OUTSIDE_EUROPE_IN_TITLE = /\b(apac|apj|latam|asia|australia|anz|sydney|melbourne|singapore|japan|tokyo|india|bangalore|mexico|brazil|s[aã]o paulo|middle east|mena|africa)\b/i;
+
+/** A title like "Enterprise AE, UK&I" is a UK role even if the location field lists other offices. */
+export function titleNamesUkOnly(title: string): boolean {
+  return UK_IN_TITLE.test(title) && !US_IN_TITLE.test(title) && !CANADA_IN_TITLE.test(title) && !OUTSIDE_EUROPE_IN_TITLE.test(title);
+}
+
+/** The UK place a title names, or failing that the UK office in the location field. */
+export function ukPlaceFromTitle(title: string, location = ""): { city: string | null; state: string | null } {
+  const t = parseUkPart(title);
+  const p = (t?.city ? t : null) ?? location.split(/\s*(?:\/|;|\bor\b|\||•)\s*/i).map(parseUkPart).find((x) => x?.city) ?? t;
+  return { city: p?.city ?? null, state: p?.state ?? null };
+}
+
+/**
+ * Whether the title points at a territory this job's markets don't cover.
+ * US / Canada jobs: any foreign territory ("AE, EMEA"). UK-only jobs: only territories outside Europe.
+ */
+export function titleOutOfMarket(title: string, markets: readonly Market[]): boolean {
+  if (markets.length === 1 && markets[0] === "UK") return OUTSIDE_EUROPE_IN_TITLE.test(title);
+  return titleNamesForeignOnly(title);
+}
 
 /** A title like "Enterprise AE, EMEA" names a territory outside the US and Canada, and no US one. */
 export function titleNamesForeignOnly(title: string): boolean {

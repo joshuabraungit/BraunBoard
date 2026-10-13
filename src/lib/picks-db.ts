@@ -21,12 +21,12 @@ import { k } from "./salaries";
 const COLUMNS =
   "id, slug, title_raw, company_id, company_name, role_family, sales_segment, remote_type, city, state, location_raw, summary, salary_min, salary_max, ote_min, ote_max, self_sourcing_level, disclosures, flags, currency, markets, first_seen_at:posted_at";
 
-/** Jobs posted in the last 2 weeks, with company hiring stats attached. */
+/** Jobs posted in the last 2 weeks, with company hiring stats attached. Picks is a US + Canada email. */
 export async function loadCandidates(db: SupabaseClient): Promise<PickCandidate[]> {
   const since = new Date(Date.now() - 14 * 86_400_000).toISOString();
   const rows: PickCandidate[] = [];
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await db.from("visible_jobs").select(COLUMNS).gte("posted_at", since).order("id").range(from, from + 999);
+    const { data, error } = await db.from("visible_jobs").select(COLUMNS).gte("posted_at", since).overlaps("markets", ["US", "CA"]).order("id").range(from, from + 999);
     if (error) throw new Error(`picks candidates: ${error.message}`);
     rows.push(...((data ?? []) as unknown as PickCandidate[]));
     if (!data || data.length < 1000) break;
@@ -63,6 +63,7 @@ async function remoteVsOffice(db: SupabaseClient): Promise<string | null> {
     .select("remote_type, ote_min, ote_max")
     .eq("role_family", "Account Executive")
     .eq("sales_segment", "Enterprise")
+    .eq("currency", "USD")
     .not("ote_min", "is", null)
     .limit(1000);
   const med = (xs: number[]) => {

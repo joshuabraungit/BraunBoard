@@ -6,7 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { adapters } from "./adapters";
 import { fetchGreenhousePayRange } from "./adapters/greenhouse";
 import { classifyTitle } from "./classify";
-import { canadaPlaceFromTitle, parseLocation, titleNamesCanadaOnly, titleNamesForeignOnly, type ParsedLocation } from "./location";
+import { canadaPlaceFromTitle, parseLocation, titleNamesCanadaOnly, titleNamesUkOnly, titleOutOfMarket, ukPlaceFromTitle, type ParsedLocation } from "./location";
 import { payCurrency, resolveCompensation } from "./compensation";
 import { extractAttributes } from "./extract";
 import { dedupeKey, descriptionSimilarity, DUPLICATE_THRESHOLD, normalizeLocationKey } from "./dedupe";
@@ -75,7 +75,7 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
       const cls = classifyTitle(job.title);
       const loc = locate(job);
 
-      if (!cls || !loc.markets.length || titleNamesForeignOnly(job.title)) {
+      if (!cls || !loc.markets.length || titleOutOfMarket(job.title, loc.markets)) {
         // No longer in scope under current rules: hide it now when reprocessing,
         // otherwise it ages out after missed checks like any vanished job.
         if (prior && opts.reprocess && prior.is_active) {
@@ -161,21 +161,33 @@ export function locate(job: RawJob): ParsedLocation {
     city: job.city_hint,
     workplace: job.workplace_type,
   });
-  if (!titleNamesCanadaOnly(job.title) || (loc.markets.length === 1 && loc.markets[0] === "CA")) return loc;
-  const place = canadaPlaceFromTitle(job.title);
-  return { ...loc, city: place.city, state: place.state, country: "CA", markets: ["CA"], is_us: false };
+  if (titleNamesCanadaOnly(job.title) && !(loc.markets.length === 1 && loc.markets[0] === "CA")) {
+    const place = canadaPlaceFromTitle(job.title);
+    return { ...loc, city: place.city, state: place.state, country: "CA", markets: ["CA"], is_us: false };
+  }
+  // Same idea for the UK: "Enterprise AE, UK&I" listed under "New York; London" is a UK role.
+  // Only when the location already includes the UK, or doesn't name a country at all.
+  if (titleNamesUkOnly(job.title) && !(loc.markets.length === 1 && loc.markets[0] === "UK") && (loc.markets.includes("UK") || loc.country == null)) {
+    const place = ukPlaceFromTitle(job.title, job.location);
+    return { ...loc, city: place.city, state: place.state, country: "UK", markets: ["UK"], is_us: false };
+  }
+  return loc;
 }
 
-/** Pay with the right currency: CAD for Canada-only jobs unless the posting says otherwise. */
+/** The market whose pay we show: US first, then Canada, then the UK. */
+const payMarket = (loc: ParsedLocation): "US" | "CA" | "UK" => (loc.markets.includes("US") ? "US" : loc.markets.includes("CA") ? "CA" : "UK");
+
+/** Pay with the right currency: CAD for Canada-only jobs, GBP for UK-only jobs, unless the posting says otherwise. */
 async function payFor(company: CompanyRow, job: RawJob, loc: ParsedLocation) {
-  const structured = await structuredPay(company, job, loc.markets.includes("US") ? "US" : "CA");
-  const comp = resolveCompensation(structured, job.description);
+  const market = payMarket(loc);
+  const structured = await structuredPay(company, job, market);
+  const comp = resolveCompensation(structured, job.description, market === "UK" ? "£" : "$");
   const hasPay = comp.salary_min != null || comp.ote_min != null;
   return { ...comp, currency: hasPay ? payCurrency(structured.currency, job.description, loc.markets) : null };
 }
 
 /** Structured pay from the ATS. Greenhouse only exposes it per job, so it's fetched just for kept jobs. */
-async function structuredPay(company: CompanyRow, job: RawJob, market: "US" | "CA" = "US") {
+async function structuredPay(company: CompanyRow, job: RawJob, market: "US" | "CA" | "UK" = "US") {
   let structured = { min: job.salary_min, max: job.salary_max, currency: job.currency, isOte: !!job.structured_is_ote };
   if (job.source_provider === "greenhouse") {
     try {

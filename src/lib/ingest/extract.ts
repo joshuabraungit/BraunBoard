@@ -129,7 +129,7 @@ export function heuristics(text: string, cls: TitleClassification): Omit<Extract
     sales_motion,
     self_sourcing_level,
     disclosures: {
-      quota_size: /\bquota (of|is)\s*\$?\d/.test(t),
+      quota_size: /\bquota (of|is)\s*[$£]?\d/.test(t),
       quota_attainment: /\b(attainment|of reps (hit|hitting|achiev))/.test(t),
       average_deal_size: /\b(average (deal|contract) size|acv of|average acv|deal sizes? (of|range))\b/.test(t),
       territory: /\bterritory (is|includes|covers|of)\b/.test(t),
