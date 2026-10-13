@@ -49,7 +49,8 @@ async function main() {
         const where = hint(j);
         const loc = locate(j);
         if (loc.markets.length) continue; // already a US/Canada job
-        const isUk = UK.test(where) || /^(GB|GBR|UK)$/i.test(j.country_hint ?? "");
+        const notUk = /new south wales|nsw|australia|ontario|\bcanada\b/i.test(where);
+        const isUk = (!notUk && UK.test(where)) || /^(GB|GBR|UK)$/i.test(j.country_hint ?? "");
         const cls = classifyTitle(j.title);
         if (!isUk) {
           if (cls && EUROPE_WIDE.test(where)) europeWide++;
@@ -103,6 +104,10 @@ async function main() {
   ];
   console.log(lines.join("\n"));
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join("\n") + "\n");
+  notice(`UK roles: ${roles.map(([r, n]) => `${r} ${n}`).join(", ")}`);
+  notice(`UK top companies: ${top.slice(0, 20).map(([n, k]) => `${n} ${k}`).join(", ")}`);
+  notice(`UK OTE mentioned: ${ukOte} (${pct(ukOte)}%); remote: ${ukRemote}`);
+  notice(`UK samples: ${samples.slice(0, 8).join("; ")}`);
   notice(`UK: ${uk} sales jobs at ${byCompany.size} companies; ${pct(ukWithPay)}% mention pay; ${ukMissedTitles} more with UK-style titles; ${europeWide} EMEA-wide`);
 }
 
