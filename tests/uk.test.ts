@@ -105,3 +105,11 @@ describe("three markets", () => {
     expect(formatLocation({ remote_type: "Remote", city: null, state: null, markets: ["US", "CA", "UK"] })).toBe("Remote · US, Canada & UK");
   });
 });
+
+describe("more regions in titles", () => {
+  it("treats SAARC / MEA / SEA titles as foreign", () => {
+    expect(titleOutOfMarket("Manager, BDR - SAARC", ["US"])).toBe(true);
+    expect(titleOutOfMarket("Account Executive, MEA", ["US"])).toBe(true);
+    expect(titleOutOfMarket("Account Executive, SEA", ["UK"])).toBe(true);
+  });
+});

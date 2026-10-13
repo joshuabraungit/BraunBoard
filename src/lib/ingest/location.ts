@@ -257,13 +257,13 @@ function parsePart(part: string): Omit<ParsedLocation, "remote_type" | "is_us" |
 
 const CANADA_IN_TITLE = /\b(canada|canadian|toronto|montr[eé]al|vancouver|ontario|qu[eé]bec|calgary|ottawa|edmonton|waterloo|gta)\b/i;
 const FOREIGN_IN_TITLE =
-  /\b(emea|apac|apj|latam|uk&i|united kingdom|uk|london|dublin|ireland|germany|dach|france|paris|berlin|munich|amsterdam|benelux|nordics?|australia|anz|sydney|melbourne|singapore|japan|tokyo|india|bangalore|mexico|brazil|s[aã]o paulo|israel|spain|madrid|italy|milan)\b/i;
+  /\b(emea|apac|apj|latam|saarc|mea|sea|uk&i|united kingdom|uk|london|dublin|ireland|germany|dach|france|paris|berlin|munich|amsterdam|benelux|nordics?|australia|anz|sydney|melbourne|singapore|japan|tokyo|india|bangalore|mexico|brazil|s[aã]o paulo|israel|spain|madrid|italy|milan)\b/i;
 const US_IN_TITLE = /\b(us|u\.s\.?|usa|united states|north america|americas|new england|east coast|west coast)\b/i;
 
 const UK_IN_TITLE = /\b(uk|u\.k\.|united kingdom|uk&i|uki|britain|london|england|scotland|edinburgh|manchester)\b/i;
 // Territories a UK-based seller wouldn't cover. Europe-wide titles (DACH, Nordics, EMEA) are often
 // sold from London, so those stay in for UK jobs.
-const OUTSIDE_EUROPE_IN_TITLE = /\b(apac|apj|latam|asia|australia|anz|sydney|melbourne|singapore|japan|tokyo|india|bangalore|mexico|brazil|s[aã]o paulo|middle east|mena|africa)\b/i;
+const OUTSIDE_EUROPE_IN_TITLE = /\b(apac|apj|latam|saarc|sea|asia|australia|anz|sydney|melbourne|singapore|japan|tokyo|india|bangalore|mexico|brazil|s[aã]o paulo|middle east|mena|africa)\b/i;
 
 /** A title like "Enterprise AE, UK&I" is a UK role even if the location field lists other offices. */
 export function titleNamesUkOnly(title: string): boolean {

@@ -109,3 +109,11 @@ describe("coaching for managers", () => {
     expect(questionsFor({ ...base, role_family: "SDR/BDR", seniority: "Manager" }).some((q) => /reviews calls/.test(q.text))).toBe(false);
   });
 });
+
+import { classifyTitle } from "../src/lib/ingest/classify";
+describe("BDR managers", () => {
+  it("classes 'Manager, BDR' as a sales manager", () => {
+    expect(classifyTitle("Manager, BDR - SAARC")?.role_family).toBe("Sales Manager");
+    expect(classifyTitle("Manager, SDRs")?.role_family).toBe("Sales Manager");
+  });
+});

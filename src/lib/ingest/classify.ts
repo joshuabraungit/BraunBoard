@@ -44,7 +44,7 @@ const FAMILIES: { family: RoleFamily; re: RegExp }[] = [
   { family: "Sales Director", re: /\b(director|sr\.? director|senior director)\b.*\b(sales|account executives?|business development|solutions engineering|sales engineering|account management)\b/i },
   { family: "Sales Director", re: /\b(sales|regional|area) director\b/i },
   { family: "Sales Engineer", re: /\b(sales engineer|solutions? engineer|solutions? consultant|pre-?sales|solutions? architect.*(sales|pre-?sales)|value engineer)\b/i },
-  { family: "Sales Manager", re: /\b(sales manager|manager,? (sales|account executives?|business development|sales development|solutions engineering)|(sdr|bdr|sales development|business development|ae|account executive) (team )?(manager|lead)|regional sales manager|area sales manager|first[- ]line sales manager)\b/i },
+  { family: "Sales Manager", re: /\b(sales manager|manager,? (sales|account executives?|business development|sales development|sdrs?|bdrs?|solutions engineering)|(sdr|bdr|sales development|business development|ae|account executive) (team )?(manager|lead)|regional sales manager|area sales manager|first[- ]line sales manager)\b/i },
   { family: "SDR/BDR", re: /\b(sdr|bdr|sales development|business development rep(resentative)?|market development rep|lead development|outbound rep)\b/i },
   { family: "Customer Expansion", re: /\b(expansion|growth account (executive|manager)|upsell|account (executive|manager),? (expansion|growth))\b/i },
   { family: "Account Manager", re: /\b(account manager|client partner|customer account manager|named account manager)\b/i },
