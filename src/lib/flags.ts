@@ -192,8 +192,12 @@ export function computeFlags(j: FlagInput): Flag[] {
 }
 
 /** Stored codes back to full flags (cards only have the codes). Red first. */
-/** Flags worth a chip on a card. "Publishes OTE" is already obvious from the pay line. */
-export const cardFlags = (flags: Flag[]) => flags.filter((f) => f.code !== "publishes_ote");
+/**
+ * Flags worth a chip on a card. "Publishes OTE" is obvious from the pay line, and the card's
+ * posted date already says how long a job has been open. Both still show on the job page.
+ */
+const NOT_ON_CARDS = new Set(["publishes_ote", "open_90_days"]);
+export const cardFlags = (flags: Flag[]) => flags.filter((f) => !NOT_ON_CARDS.has(f.code));
 
 export function flagsFromCodes(codes: string[] | null | undefined): Flag[] {
   return (codes ?? [])

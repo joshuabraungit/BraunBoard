@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { braunRead, computeFlags, flagsFromCodes, type ReadInput } from "../src/lib/flags";
+import { cardFlags, braunRead, computeFlags, flagsFromCodes, type ReadInput } from "../src/lib/flags";
 
 const base: ReadInput = {
   description_raw: "",
@@ -122,5 +122,11 @@ describe("data-backed flags", () => {
     const r = braunRead({ ...fresh, flags: ["mass_posting"], description_raw: "x" });
     expect(r.flags.map((f) => f.code)).toContain("mass_posting");
     expect(r.verdict).toBe("Strong posting");
+  });
+});
+
+describe("card chips", () => {
+  it("leave out flags the card already shows", () => {
+    expect(cardFlags(flagsFromCodes(["open_90_days", "publishes_ote", "mass_posting"])).map((f) => f.code)).toEqual(["mass_posting"]);
   });
 });
