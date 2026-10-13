@@ -88,10 +88,26 @@ function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
 }
 
 export async function listJobs(f: JobFilters = {}, limit = 60, opts: { withDescription?: boolean } = {}): Promise<JobView[]> {
-  if (!isSupabaseConfigured()) return applyFiltersLocal(SAMPLE_JOBS, f).slice(0, limit);
+  return (await listJobsWithTotal(f, limit, opts)).jobs;
+}
+
+/** Same as listJobs, plus how many jobs match in total (not just the ones returned). */
+export async function listJobsWithTotal(
+  f: JobFilters = {},
+  limit = 60,
+  opts: { withDescription?: boolean } = {},
+): Promise<{ jobs: JobView[]; total: number }> {
+  if (!isSupabaseConfigured()) {
+    const all = applyFiltersLocal(SAMPLE_JOBS, f);
+    return { jobs: all.slice(0, limit), total: all.length };
+  }
 
   const db = await serverClient();
-  let q = db.from("visible_jobs").select(opts.withDescription ? `${CARD_COLUMNS}, description_raw` : CARD_COLUMNS).order("posted_at", { ascending: false }).limit(limit);
+  let q = db
+    .from("visible_jobs")
+    .select(opts.withDescription ? `${CARD_COLUMNS}, description_raw` : CARD_COLUMNS, { count: "exact" })
+    .order("posted_at", { ascending: false })
+    .limit(limit);
   if (f.q) q = q.or(`title_raw.ilike.%${f.q.replace(/[%,()]/g, "")}%,company_name.ilike.%${f.q.replace(/[%,()]/g, "")}%`);
   if (f.role) q = q.eq("role_family", f.role);
   if (f.segment) q = q.eq("sales_segment", f.segment);
@@ -103,9 +119,10 @@ export async function listJobs(f: JobFilters = {}, limit = 60, opts: { withDescr
   if (f.minOte) q = q.gte("ote_max_usd", f.minOte);
   if (f.companySlug) q = q.eq("company_slug", f.companySlug);
   if (f.postedWithinDays) q = q.gte("posted_at", new Date(Date.now() - f.postedWithinDays * 86_400_000).toISOString());
-  const { data, error } = await q;
+  const { data, error, count } = await q;
   if (error) throw error;
-  return (data ?? []) as unknown as JobView[];
+  const jobs = (data ?? []) as unknown as JobView[];
+  return { jobs, total: count ?? jobs.length };
 }
 
 export async function getJob(slug: string): Promise<JobView | null> {

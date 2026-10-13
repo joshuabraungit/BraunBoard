@@ -1,4 +1,4 @@
-import { listJobs, type JobFilters } from "@/lib/data";
+import { listJobsWithTotal, type JobFilters } from "@/lib/data";
 import { JobGrid } from "@/components/JobCard";
 import { getUserState } from "@/lib/session";
 import { watchSearch } from "@/app/actions";
@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 type SP = Record<string, string | undefined>;
 
 const DEFAULT_POSTED_DAYS = 90;
+const PAGE_SIZE = 120;
 
 function toFilters(sp: SP): JobFilters {
   const pick = <T extends string>(v: string | undefined, allowed: readonly T[]) => (allowed.includes(v as T) ? (v as T) : undefined);
@@ -42,7 +43,7 @@ function Select({ name, label, options, value }: { name: string; label: string; 
 
 export default async function AllJobs({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
-  const [jobs, state] = await Promise.all([listJobs(toFilters(sp), 120), getUserState()]);
+  const [{ jobs, total }, state] = await Promise.all([listJobsWithTotal(toFilters(sp), PAGE_SIZE), getUserState()]);
   const qs = new URLSearchParams(Object.entries(sp).filter(([, v]) => v) as [string, string][]).toString();
   const hasFilters = qs.length > 0;
   const suggestedName = [sp.segment, sp.role === "Account Executive" ? "AE" : sp.role, sp.remote, sp.country === "CA" ? "Canada" : null, sp.minOte && `$${Math.round(+sp.minOte / 1000)}K+ OTE`, sp.q]
@@ -81,7 +82,11 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
         <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white">Search</button>
       </form>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-ink-3">{jobs.length} jobs{!sp.posted && " · posted in the last 90 days"}</p>
+        <p className="text-sm text-ink-3">
+          {total.toLocaleString()} {total === 1 ? "job" : "jobs"}
+          {!sp.posted && " posted in the last 90 days"}
+          {total > jobs.length && ` · showing the newest ${jobs.length}`}
+        </p>
         {hasFilters && (
           <form action={watchSearch} className="flex w-full items-center gap-2 sm:w-auto">
             <input type="hidden" name="qs" value={qs} />
