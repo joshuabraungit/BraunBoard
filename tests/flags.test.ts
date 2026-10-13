@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { braunRead, computeFlags, flagsFromCodes, type ReadInput } from "../src/lib/flags";
+import { cardFlags, braunRead, computeFlags, flagsFromCodes, type ReadInput } from "../src/lib/flags";
 
 const base: ReadInput = {
   description_raw: "",
@@ -102,5 +102,31 @@ describe("pipeline support", () => {
   it("doesn't call a self-sourced role supported", () => {
     expect(codes({ self_sourcing_level: "High", description_raw: "Follow up on inbound leads and prospect" })).not.toContain("pipeline_support");
     expect(codes({ self_sourcing_level: "Medium", description_raw: "supported by an SDR" })).toContain("pipeline_support");
+  });
+});
+
+describe("data-backed flags", () => {
+  it("flags pay ranges too wide to mean much", () => {
+    expect(codes({ ote_min: 120000, ote_max: 275000 })).toContain("wide_pay_range");
+    expect(codes({ ote_min: 250000, ote_max: 300000 })).not.toContain("wide_pay_range");
+  });
+  it("flags roles open 90+ days, mass postings and player-coach leaders", () => {
+    expect(codes({ first_seen_at: new Date(Date.now() - 100 * 86_400_000).toISOString() })).toContain("open_90_days");
+    expect(codes({ same_title_open: 12 })).toContain("mass_posting");
+    expect(codes({ same_title_open: 3 })).not.toContain("mass_posting");
+    expect(codes({ description_raw: "This is a player-coach role", role_family: "Sales Manager" })).toContain("player_coach");
+    expect(codes({ description_raw: "be a player-coach across accounts", role_family: "Account Executive" })).not.toContain("player_coach");
+  });
+  it("keeps heads-ups out of the verdict", () => {
+    const fresh = { ...base, salary_min: 140000, ote_min: 280000, self_sourcing_level: "Medium", disclosures: { quota_attainment: true, territory: true } };
+    const r = braunRead({ ...fresh, flags: ["mass_posting"], description_raw: "x" });
+    expect(r.flags.map((f) => f.code)).toContain("mass_posting");
+    expect(r.verdict).toBe("Strong posting");
+  });
+});
+
+describe("card chips", () => {
+  it("leave out flags the card already shows", () => {
+    expect(cardFlags(flagsFromCodes(["open_90_days", "publishes_ote", "mass_posting"])).map((f) => f.code)).toEqual(["mass_posting"]);
   });
 });

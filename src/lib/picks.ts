@@ -39,7 +39,7 @@ export function scorePick(j: PickCandidate, now = Date.now()): number | null {
   if (!hasPay(j) || daysOld(j, now) > FRESH_DAYS) return null;
   const read = braunRead(j, now);
   if (read.verdict !== "Strong posting" && read.verdict !== "Worth a look") return null;
-  if (read.flags.some((f) => f.tone === "red")) return null;
+  if (read.flags.some((f) => f.tone === "red" && f.scored !== false)) return null;
   const greens = read.flags.filter((f) => f.tone === "green").length;
   const d = daysOld(j, now);
   return (

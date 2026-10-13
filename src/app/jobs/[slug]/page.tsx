@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { getCompanyStats, getJob } from "@/lib/data";
 import { braunRead } from "@/lib/flags";
 import { BraunReadPanel } from "@/components/BraunRead";
-import { freshnessLabel } from "@/lib/freshness";
+import { checkedLabel, freshnessLabel } from "@/lib/freshness";
+import { questionsFor } from "@/lib/questions";
+import { QuestionsPanel } from "@/components/Questions";
 import { formatComp, formatLocation, money } from "@/lib/format";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { tagsFor } from "@/components/JobCard";
@@ -50,6 +52,8 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
   const [state, watch, stats] = await Promise.all([getUserState(), getActiveWatch(), getCompanyStats(job.company_id)]);
   const read = braunRead({ ...job, company: stats });
   const match = watch ? scoreMatch(job, watch.prefs) : null;
+  const questions = questionsFor({ ...job, flags: read.flags, company: stats });
+  const checked = job.last_seen_at ? checkedLabel(job.last_seen_at) : null;
   const back = `/jobs/${job.slug}`;
   const saved = state.savedJobIds.has(job.id);
   const btn = "rounded-lg border border-line-strong bg-surface px-4 py-2.5 text-sm font-semibold aria-pressed:border-fresh aria-pressed:text-fresh";
@@ -78,6 +82,14 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
         <Fact label="Posted" value={freshnessLabel(job.first_seen_at)} />
       </dl>
 
+      {checked && (
+        <p className={`mt-3 flex items-center gap-1.5 text-sm ${checked.open ? "text-accent" : "text-ink-3"}`}>
+          {checked.open && <span aria-hidden className="inline-block h-2 w-2 rounded-full bg-accent" />}
+          {checked.text}
+          <span className="text-ink-3">on {job.company_name}&apos;s careers page</span>
+        </p>
+      )}
+
       <div className="mt-4 hidden gap-2 sm:flex">
         <a href={job.apply_url} target="_blank" rel="noopener" className="rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90">Apply on {job.company_name} →</a>
         <WatchCompanyButton companyId={job.company_id} on={state.watchedCompanyIds.has(job.company_id)} back={back} className={btn} />
@@ -85,6 +97,8 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
       </div>
 
       <BraunReadPanel read={read} />
+
+      <QuestionsPanel questions={questions} title={job.title_raw} company={job.company_name} />
 
       {match && match.score != null && (
         <div className="mt-6">
@@ -121,7 +135,7 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
                   <li key={d} className="rounded border border-line bg-surface px-2 py-0.5 text-sm">{d}</li>
                 ))}
               </ul>
-              <p className="mt-3 text-sm text-ink-3">Worth asking about on your first call.</p>
+              <p className="mt-3 text-sm text-ink-3">The questions above cover the big ones.</p>
             </>
           ) : (
             "This posting is unusually transparent. Nice."

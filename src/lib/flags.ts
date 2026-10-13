@@ -10,6 +10,8 @@ export interface Flag {
   tone: FlagTone;
   label: string;
   why: string;
+  /** False for heads-ups that inform the reader but don't count against the verdict. */
+  scored?: boolean;
 }
 
 export interface FlagInput {
@@ -20,6 +22,11 @@ export interface FlagInput {
   ote_max: number | null;
   self_sourcing_level: string;
   disclosures: Partial<Disclosures> | null;
+  role_family?: string;
+  /** When the employer posted it (the site's "Posted" date). */
+  first_seen_at?: string;
+  /** Other open postings at the same company with the exact same title (filled in by the recompute job). */
+  same_title_open?: number;
 }
 
 interface Rule {
@@ -27,6 +34,7 @@ interface Rule {
   tone: FlagTone;
   label: string;
   why: string;
+  scored?: boolean;
   test: (t: string, j: FlagInput) => boolean;
 }
 
@@ -75,6 +83,37 @@ const RULES: Rule[] = [
     label: "\"Wear many hats\"",
     why: "Often code for an under-resourced team where sales also does marketing, CS, and ops.",
     test: (t) => /\bwear(ing)? (many|multiple|a lot of) hats\b/.test(t),
+  },
+  {
+    code: "wide_pay_range",
+    tone: "red",
+    label: "Pay range too wide to mean much",
+    why: "The top of the range is more than double the bottom. Ask where in that range this offer would really land.",
+    test: (_t, j) => (j.salary_min != null && (j.salary_max ?? 0) >= j.salary_min * 2.2) || (j.ote_min != null && (j.ote_max ?? 0) >= j.ote_min * 2.2),
+  },
+  {
+    code: "open_90_days",
+    tone: "red",
+    label: "Open 90+ days",
+    why: "This role has been posted for three months or more. Ask why it's been hard to fill, and whether anyone left it.",
+    scored: false, // already counted in the "Time on market" check
+    test: (_t, j) => !!j.first_seen_at && Date.now() - new Date(j.first_seen_at).getTime() > 90 * 86_400_000,
+  },
+  {
+    code: "mass_posting",
+    tone: "red",
+    label: "Same role posted many times",
+    why: "The company has 8 or more open postings with this exact title. Could be a big build-out, could be a revolving door. Ask how many reps they hired last year and how many are still there.",
+    scored: false, // a question to ask, not a verdict
+    test: (_t, j) => (j.same_title_open ?? 0) >= 8,
+  },
+  {
+    code: "player_coach",
+    tone: "red",
+    label: "Player-coach",
+    why: "You'd lead a team and work deals yourself. Ask whether you carry a personal quota and how your pay splits between the two.",
+    scored: false,
+    test: (t, j) => /\bplayer[- ]coach\b/.test(t) && ["Sales Manager", "Sales Director", "VP Sales", "CRO"].includes(j.role_family ?? ""),
   },
   {
     code: "aggressive_split",
@@ -138,11 +177,14 @@ const RULES: Rule[] = [
   },
 ];
 
-const info = (r: Rule): Flag => ({ code: r.code, tone: r.tone, label: r.label, why: r.why });
+const info = (r: Rule): Flag => ({ code: r.code, tone: r.tone, label: r.label, why: r.why, ...(r.scored === false ? { scored: false } : {}) });
 
 export const FLAG_RULES: Readonly<Record<string, Flag>> = Object.fromEntries(
   RULES.map((r) => [r.code, info(r)]),
 );
+
+/** Flags that need data from other jobs, so only the recompute job can set them. */
+const DATA_ONLY = new Set(["mass_posting"]);
 
 export function computeFlags(j: FlagInput): Flag[] {
   const t = (j.description_raw ?? "").toLowerCase().replace(/\s+/g, " ");
@@ -150,8 +192,12 @@ export function computeFlags(j: FlagInput): Flag[] {
 }
 
 /** Stored codes back to full flags (cards only have the codes). Red first. */
-/** Flags worth a chip on a card. "Publishes OTE" is already obvious from the pay line. */
-export const cardFlags = (flags: Flag[]) => flags.filter((f) => f.code !== "publishes_ote");
+/**
+ * Flags worth a chip on a card. "Publishes OTE" is obvious from the pay line, and the card's
+ * posted date already says how long a job has been open. Both still show on the job page.
+ */
+const NOT_ON_CARDS = new Set(["publishes_ote", "open_90_days"]);
+export const cardFlags = (flags: Flag[]) => flags.filter((f) => !NOT_ON_CARDS.has(f.code));
 
 export function flagsFromCodes(codes: string[] | null | undefined): Flag[] {
   return (codes ?? [])
@@ -188,7 +234,11 @@ export interface ReadInput extends FlagInput {
 const DISCLOSURE_KEYS: (keyof Disclosures)[] = ["quota_size", "quota_attainment", "average_deal_size", "territory", "sales_cycle"];
 
 export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
-  const flags = j.description_raw == null && j.flags?.length ? flagsFromCodes(j.flags) : computeFlags(j);
+  const stored = flagsFromCodes(j.flags);
+  const flags =
+    j.description_raw == null && j.flags?.length
+      ? stored
+      : [...computeFlags(j), ...stored.filter((f) => DATA_ONLY.has(f.code))].filter((f, i, a) => a.findIndex((x) => x.code === f.code) === i);
   const checks: Check[] = [];
 
   // Pay
@@ -252,7 +302,7 @@ export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
 
   // Verdict. Pay, transparency and pipeline earn points; time on market and hiring
   // volume only ever subtract, so a fresh posting can't coast on being fresh.
-  const reds = flags.filter((f) => f.tone === "red").length;
+  const reds = flags.filter((f) => f.tone === "red" && f.scored !== false).length;
   const greens = flags.filter((f) => f.tone === "green").length;
   const pts = (c: Check, core: boolean) =>
     c.grade === "bad" ? -1 : !core ? 0 : c.grade === "good" ? 2 : c.grade === "ok" ? 1 : 0;

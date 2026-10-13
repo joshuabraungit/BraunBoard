@@ -36,6 +36,8 @@ export interface JobView {
   apply_url: string;
   /** When the employer posted it (falls back to when we first saw it). */
   first_seen_at: string;
+  /** Last time our crawler saw it live on the company's careers page (job page only). */
+  last_seen_at?: string;
   company_id: string;
   company_name: string;
   company_slug: string;
@@ -88,10 +90,28 @@ function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
 }
 
 export async function listJobs(f: JobFilters = {}, limit = 60, opts: { withDescription?: boolean } = {}): Promise<JobView[]> {
-  if (!isSupabaseConfigured()) return applyFiltersLocal(SAMPLE_JOBS, f).slice(0, limit);
+  return (await listJobsWithTotal(f, limit, opts)).jobs;
+}
+
+/** Same as listJobs, plus how many jobs match in total (not just the ones returned). */
+export async function listJobsWithTotal(
+  f: JobFilters = {},
+  limit = 60,
+  opts: { withDescription?: boolean; offset?: number } = {},
+): Promise<{ jobs: JobView[]; total: number }> {
+  const offset = Math.max(0, opts.offset ?? 0);
+  if (!isSupabaseConfigured()) {
+    const all = applyFiltersLocal(SAMPLE_JOBS, f);
+    return { jobs: all.slice(offset, offset + limit), total: all.length };
+  }
 
   const db = await serverClient();
-  let q = db.from("visible_jobs").select(opts.withDescription ? `${CARD_COLUMNS}, description_raw` : CARD_COLUMNS).order("posted_at", { ascending: false }).limit(limit);
+  let q = db
+    .from("visible_jobs")
+    .select(opts.withDescription ? `${CARD_COLUMNS}, description_raw` : CARD_COLUMNS, { count: "exact" })
+    .order("posted_at", { ascending: false })
+    .order("id")
+    .range(offset, offset + limit - 1);
   if (f.q) q = q.or(`title_raw.ilike.%${f.q.replace(/[%,()]/g, "")}%,company_name.ilike.%${f.q.replace(/[%,()]/g, "")}%`);
   if (f.role) q = q.eq("role_family", f.role);
   if (f.segment) q = q.eq("sales_segment", f.segment);
@@ -103,15 +123,18 @@ export async function listJobs(f: JobFilters = {}, limit = 60, opts: { withDescr
   if (f.minOte) q = q.gte("ote_max_usd", f.minOte);
   if (f.companySlug) q = q.eq("company_slug", f.companySlug);
   if (f.postedWithinDays) q = q.gte("posted_at", new Date(Date.now() - f.postedWithinDays * 86_400_000).toISOString());
-  const { data, error } = await q;
+  const { data, error, count } = await q;
+  // Asking for a page past the end is not an error, just an empty page.
+  if (error && error.code === "PGRST103") return { jobs: [], total: count ?? 0 };
   if (error) throw error;
-  return (data ?? []) as unknown as JobView[];
+  const jobs = (data ?? []) as unknown as JobView[];
+  return { jobs, total: count ?? jobs.length };
 }
 
 export async function getJob(slug: string): Promise<JobView | null> {
   if (!isSupabaseConfigured()) return SAMPLE_JOBS.find((j) => j.slug === slug) ?? null;
   const db = await serverClient();
-  const { data } = await db.from("visible_jobs").select(`${CARD_COLUMNS}, description_raw`).eq("slug", slug).maybeSingle();
+  const { data } = await db.from("visible_jobs").select(`${CARD_COLUMNS}, description_raw, last_seen_at`).eq("slug", slug).maybeSingle();
   return (data as unknown as JobView) ?? null;
 }
 
