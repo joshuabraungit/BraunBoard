@@ -184,7 +184,12 @@ const payMarket = (loc: ParsedLocation): "US" | "CA" | "UK" => (loc.markets.incl
 /** Pay with the right currency: CAD for Canada-only jobs, GBP for UK-only jobs, unless the posting says otherwise. */
 async function payFor(company: CompanyRow, job: RawJob, loc: ParsedLocation) {
   const market = payMarket(loc);
-  const structured = await structuredPay(company, job, market);
+  let structured = await structuredPay(company, job, market);
+  // Never guess a currency. Board pay in euros (or anything we don't show) is dropped, and so is
+  // board pay with no currency on a UK job unless the posting itself talks in pounds.
+  const sc = structured.currency?.trim().toUpperCase() || null;
+  const unknownCurrency = sc ? !["USD", "CAD", "GBP"].includes(sc) : market === "UK" && !/£|\bGBP\b/.test(job.description);
+  if (structured.min != null && unknownCurrency) structured = { ...structured, min: null, max: null, currency: null };
   const comp = resolveCompensation(structured, job.description, market === "UK" ? "£" : "$");
   const hasPay = comp.salary_min != null || comp.ote_min != null;
   return { ...comp, currency: hasPay ? payCurrency(structured.currency, job.description, loc.markets) : null };
