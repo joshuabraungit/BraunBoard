@@ -39,7 +39,7 @@ describe("computeFlags", () => {
 
   it("gives green flags for transparency and support", () => {
     const c = codes({
-      description_raw: "3-month ramp, accelerators above 100%, supported by an SDR",
+      description_raw: "3-month ramp, accelerators above 100%, supported by an SDR. Last year 70% of our reps hit quota.",
       ote_min: 250000,
       disclosures: { quota_attainment: true, quota_size: true, average_deal_size: true },
     });

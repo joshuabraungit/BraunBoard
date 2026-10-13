@@ -5,6 +5,7 @@ import { braunRead } from "@/lib/flags";
 import { BraunReadPanel } from "@/components/BraunRead";
 import { checkedLabel, freshnessLabel } from "@/lib/freshness";
 import { questionsFor } from "@/lib/questions";
+import { ATTAINMENT_ROLES, attainmentLabel } from "@/lib/attainment";
 import { QuestionsPanel } from "@/components/Questions";
 import { formatComp, formatLocation, money } from "@/lib/format";
 import { CompanyLogo } from "@/components/CompanyLogo";
@@ -24,14 +25,16 @@ const DISCLOSURE_LABELS: Record<string, string> = {
   sales_cycle: "Sales cycle length",
 };
 
-function Fact({ label, value }: { label: string; value: string | null }) {
+function Fact({ label, value, tone }: { label: string; value: string | null; tone?: "good" }) {
   return (
     <div>
       <dt className="text-xs uppercase tracking-wide text-ink-3">{label}</dt>
-      <dd className={`mt-0.5 text-[15px] ${value ? "font-semibold" : "text-ink-3"}`}>{value ?? "Not disclosed"}</dd>
+      <dd className={`mt-0.5 text-[15px] ${value ? `font-semibold ${tone === "good" ? "text-accent" : ""}` : "text-ink-3"}`}>{value ?? "Not disclosed"}</dd>
     </div>
   );
 }
+
+const ASK_ATTAINMENT = "What percentage of fully ramped reps hit quota last year?";
 
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -52,6 +55,8 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
   const [state, watch, stats] = await Promise.all([getUserState(), getActiveWatch(), getCompanyStats(job.company_id)]);
   const read = braunRead({ ...job, company: stats });
   const match = watch ? scoreMatch(job, watch.prefs) : null;
+  // Attainment is the question for people carrying a number. For SEs and leaders it means something else.
+  const showAttainment = ATTAINMENT_ROLES.has(job.role_family) && job.seniority === "Individual Contributor";
   const questions = questionsFor({ ...job, flags: read.flags, company: stats });
   const checked = job.last_seen_at ? checkedLabel(job.last_seen_at) : null;
   const back = `/jobs/${job.slug}`;
@@ -76,11 +81,46 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
         </div>
       </div>
 
-      <dl className="mt-6 grid grid-cols-3 gap-4 rounded-xl border border-line bg-surface p-4">
-        <Fact label="Base" value={range(job.salary_min, job.salary_max, job.currency)} />
-        <Fact label="OTE" value={range(job.ote_min, job.ote_max, job.currency)} />
-        <Fact label="Posted" value={freshnessLabel(job.first_seen_at)} />
-      </dl>
+      <div className="mt-6 rounded-xl border border-line bg-surface">
+        <dl className={`grid gap-4 p-4 ${showAttainment ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
+          <Fact label="Base" value={range(job.salary_min, job.salary_max, job.currency)} />
+          <Fact label="OTE" value={range(job.ote_min, job.ote_max, job.currency)} />
+          {showAttainment && <Fact label="Quota attainment" value={job.attainment ? attainmentLabel(job.attainment) : null} tone={job.attainment?.kind === "hit" ? "good" : undefined} />}
+          <Fact label="Posted" value={freshnessLabel(job.first_seen_at)} />
+        </dl>
+        {showAttainment && (
+          <div className="space-y-1 border-t border-line px-4 py-3 text-sm">
+            {job.attainment ? (
+              <>
+                <p className="text-ink-2">
+                  <span className="font-semibold text-ink">In their words:</span> &ldquo;{job.attainment.quote}&rdquo;
+                </p>
+                {job.attainment.kind === "average" && (
+                  <>
+                    <p className="text-ink-2">
+                      <span className="font-semibold text-ink">Why it matters:</span> that&apos;s an average, not how many reps hit. A few big
+                      years can hide a team where most people missed.
+                    </p>
+                    <p className="text-ink-2">
+                      <span className="font-semibold text-ink">Ask:</span> &ldquo;{ASK_ATTAINMENT}&rdquo;
+                    </p>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-ink-2">
+                  <span className="font-semibold text-ink">Why it matters:</span> OTE tells you what you could earn. Attainment tells you how
+                  realistic it is.
+                </p>
+                <p className="text-ink-2">
+                  <span className="font-semibold text-ink">Ask:</span> &ldquo;{ASK_ATTAINMENT}&rdquo;
+                </p>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       {checked && (
         <p className={`mt-3 flex items-center gap-1.5 text-sm ${checked.open ? "text-accent" : "text-ink-3"}`}>

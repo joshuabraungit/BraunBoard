@@ -15,7 +15,7 @@ describe("questionsFor", () => {
   it("asks about the big gaps and always ends with why the role is open", () => {
     const qs = questionsFor(base);
     expect(qs.length).toBe(6);
-    expect(qs[0]!.text).toMatch(/percent of reps hit quota/);
+    expect(qs[0]!.text).toMatch(/percentage of fully ramped reps hit quota/);
     expect(qs.some((q) => /base and the OTE/.test(q.text))).toBe(true);
     expect(qs.at(-1)!.text).toMatch(/Why is this role open/);
   });
@@ -33,7 +33,7 @@ describe("questionsFor", () => {
       ote_min: 240_000,
       self_sourcing_level: "Low",
       disclosures: { quota_attainment: true, quota_size: true, territory: true, average_deal_size: true, sales_cycle: true },
-      flags: computeFlags({ ...base, salary_min: 120_000, salary_max: 120_000, ote_min: 240_000, ote_max: 240_000, description_raw: "6 month ramp with a draw." }),
+      flags: computeFlags({ ...base, salary_min: 120_000, salary_max: 120_000, ote_min: 240_000, ote_max: 240_000, description_raw: "6 month ramp with a draw. 75% of our reps hit quota last year." }),
     });
     expect(qs.map((q) => q.text)).toEqual(["Why is this role open? Did someone leave, or is it new?"]);
   });
@@ -84,7 +84,7 @@ describe("verdict and red flags", () => {
 describe("coaching", () => {
   it("pairs the attainment question with who coaches, for people carrying a number", () => {
     const qs = questionsFor({ ...base, role_family: "Account Executive" });
-    expect(qs[0]!.text).toMatch(/percent of reps hit quota/);
+    expect(qs[0]!.text).toMatch(/percentage of fully ramped reps hit quota/);
     expect(qs[1]!.text).toBe("Who sits with reps and reviews calls each week?");
     expect(questionsFor({ ...base, role_family: "Sales Director" }).some((q) => /reviews calls/.test(q.text))).toBe(false);
   });

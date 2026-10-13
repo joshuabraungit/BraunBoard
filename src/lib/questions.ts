@@ -45,7 +45,9 @@ export function questionsFor(j: QuestionInput, max = 6): Question[] {
   if (j.company?.trend === "pulling_back") add("Company pulling back", "I noticed fewer open sales roles lately. What changed?");
 
   // 2. The numbers that decide whether the job is doable.
-  if (!d.quota_attainment && !has.has("shares_attainment")) add("Not in the posting", "What percent of reps hit quota last year?");
+  // "Fully ramped" stops the answer hiding behind new hires who were never expected to hit yet.
+  if (has.has("attainment_average")) add("They only share an average", "What percentage of fully ramped reps hit quota last year? An average can hide a lot.");
+  else if (!has.has("shares_attainment")) add("Not in the posting", "What percentage of fully ramped reps hit quota last year?");
   // The answer to this one usually explains the attainment number.
   const isRep = CARRIES_NUMBER.has(j.role_family ?? "") && (j.seniority ?? "Individual Contributor") === "Individual Contributor";
   if (isRep && !has.has("coaching")) add("Explains the attainment number", "Who sits with reps and reviews calls each week?");

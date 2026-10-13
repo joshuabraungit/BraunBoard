@@ -5,6 +5,7 @@ import { isSupabaseConfigured, serverClient } from "./supabase/server";
 import { SAMPLE_COMPANIES, SAMPLE_JOBS } from "./sample-data";
 import type { RemoteType, RoleFamily, SalesMotion, SalesSegment, SelfSourcingLevel, Seniority } from "./ingest/types";
 import type { Disclosures } from "./ingest/extract";
+import type { Attainment } from "./attainment";
 
 export interface JobView {
   id: string;
@@ -31,6 +32,8 @@ export interface JobView {
   flags?: string[];
   /** "USD", "CAD" or "GBP" when pay is published. */
   currency?: string | null;
+  /** Quota attainment the posting states about its team, if any. */
+  attainment?: Attainment | null;
   /** Where the job is open: any of "US", "CA", "UK". */
   markets?: string[];
   apply_url: string;
@@ -70,7 +73,7 @@ export interface JobFilters {
 }
 
 const CARD_COLUMNS =
-  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags, currency, markets";
+  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags, currency, markets, attainment";
 
 function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
   const since = f.postedWithinDays ? Date.now() - f.postedWithinDays * 86_400_000 : 0;

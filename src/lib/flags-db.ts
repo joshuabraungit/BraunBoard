@@ -2,6 +2,9 @@
 // after every ingest and backfill and keeps cards in sync with the current rules.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { computeFlags, type FlagInput } from "./flags";
+import { parseAttainment, type Attainment } from "./attainment";
+
+const key = (a: Attainment | null | undefined) => (a ? `${a.kind}|${a.pct}|${a.quote}` : "");
 
 export async function recomputeFlags(db: SupabaseClient): Promise<{ checked: number; changed: number }> {
   let checked = 0;
@@ -19,20 +22,30 @@ export async function recomputeFlags(db: SupabaseClient): Promise<{ checked: num
   for (let from = 0; ; from += 500) {
     const { data, error } = await db
       .from("visible_jobs")
-      .select("id, flags, description_raw, salary_min, salary_max, ote_min, ote_max, self_sourcing_level, disclosures, role_family, seniority, company_id, title_normalized, first_seen_at:posted_at")
+      .select("id, flags, description_raw, salary_min, salary_max, ote_min, ote_max, self_sourcing_level, disclosures, role_family, seniority, company_id, title_normalized, first_seen_at:posted_at, attainment")
       .order("id")
       .range(from, from + 499);
     if (error) throw new Error(`recomputeFlags: ${error.message}`);
-    const rows = (data ?? []) as (FlagInput & { id: string; flags: string[]; company_id: string; title_normalized: string })[];
+    type Row = FlagInput & { id: string; flags: string[]; company_id: string; title_normalized: string; attainment: Attainment | null };
+    const rows = (data ?? []) as Row[];
     const updates = rows
-      .map((r) => ({
-        id: r.id,
-        old: r.flags ?? [],
-        next: computeFlags({ ...r, same_title_open: sameTitle.get(`${r.company_id}|${r.title_normalized}`) ?? 1 }).map((f) => f.code),
-      }))
-      .filter((u) => u.old.join() !== u.next.join());
+      .map((r) => {
+        // Attainment is parsed from the posting text. The AI's "mentions attainment" guess is
+        // corrected to match, so the transparency score only credits a real team number.
+        const attainment = parseAttainment(r.description_raw);
+        const disclosures = { ...(r.disclosures ?? {}), quota_attainment: !!attainment };
+        const next = computeFlags({ ...r, disclosures, same_title_open: sameTitle.get(`${r.company_id}|${r.title_normalized}`) ?? 1 }).map((f) => f.code);
+        const changed =
+          (r.flags ?? []).join() !== next.join() ||
+          key(r.attainment) !== key(attainment) ||
+          !!r.disclosures?.quota_attainment !== !!attainment;
+        return { id: r.id, next, attainment, disclosures, changed };
+      })
+      .filter((u) => u.changed);
     for (let i = 0; i < updates.length; i += 20) {
-      await Promise.all(updates.slice(i, i + 20).map((u) => db.from("jobs").update({ flags: u.next }).eq("id", u.id)));
+      await Promise.all(
+        updates.slice(i, i + 20).map((u) => db.from("jobs").update({ flags: u.next, attainment: u.attainment, disclosures: u.disclosures }).eq("id", u.id)),
+      );
     }
     checked += rows.length;
     changed += updates.length;

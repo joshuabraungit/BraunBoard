@@ -8,6 +8,7 @@ import { MatchBadge } from "./MatchBadge";
 import { FlagChips, VerdictPill } from "./BraunRead";
 import { braunRead, cardFlags, flagsFromCodes } from "@/lib/flags";
 import type { MatchResult } from "@/lib/match";
+import { attainmentLabel } from "@/lib/attainment";
 
 export interface CardContext {
   savedJobIds?: Set<string>;
@@ -72,6 +73,17 @@ export function JobCard({ job, ctx }: { job: JobView; ctx: CardContext }) {
         </div>
       )}
 
+      {job.attainment && (
+        <p className="mt-3">
+          <span
+            title={`In their words: "${job.attainment.quote}"`}
+            className={`rounded border px-1.5 py-0.5 text-xs font-semibold ${job.attainment.kind === "hit" ? "border-accent/25 bg-accent-soft text-accent" : "border-line-strong bg-surface text-ink-2"}`}
+          >
+            {job.attainment.kind === "hit" ? "✓ " : ""}
+            {attainmentLabel(job.attainment)}
+          </span>
+        </p>
+      )}
       <FlagChips flags={cardFlags(flagsFromCodes(job.flags))} max={2} />
 
       {job.summary && <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-ink-2">{job.summary}</p>}

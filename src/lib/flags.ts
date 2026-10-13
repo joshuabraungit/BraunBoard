@@ -3,6 +3,7 @@
 // the posting said (or didn't say). No AI judgment calls here.
 
 import type { Disclosures } from "./ingest/extract";
+import { parseAttainment } from "./attainment";
 
 export type FlagTone = "red" | "green";
 export interface Flag {
@@ -140,7 +141,16 @@ const RULES: Rule[] = [
     tone: "green",
     label: "Shares quota attainment",
     why: "It says how many reps actually hit their number. That's the most honest stat in sales hiring.",
-    test: (_t, j) => !!j.disclosures?.quota_attainment,
+    // Only a real number about their team counts. "Track record of attainment" or "100% attainment expected" don't.
+    test: (t) => parseAttainment(t)?.kind === "hit",
+  },
+  {
+    code: "attainment_average",
+    tone: "green",
+    label: "Shares average attainment",
+    why: "It gives the team's average attainment. Better than nothing, but an average can hide that half the team missed. Ask how many fully ramped reps actually hit.",
+    scored: false, // shown, but not the full credit of saying how many reps hit
+    test: (t) => parseAttainment(t)?.kind === "average",
   },
   {
     code: "states_quota",
@@ -211,7 +221,8 @@ export function computeFlags(j: FlagInput): Flag[] {
  * Flags worth a chip on a card. "Publishes OTE" is obvious from the pay line, and the card's
  * posted date already says how long a job has been open. Both still show on the job page.
  */
-const NOT_ON_CARDS = new Set(["publishes_ote", "open_90_days"]);
+// Attainment gets its own chip with the actual number (see JobCard), so its flags stay off the chip row.
+const NOT_ON_CARDS = new Set(["publishes_ote", "open_90_days", "shares_attainment", "attainment_average"]);
 export const cardFlags = (flags: Flag[]) => flags.filter((f) => !NOT_ON_CARDS.has(f.code));
 
 /** True for flags that count against the verdict (real red flags, not heads-ups). */
@@ -325,7 +336,7 @@ export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
   // Verdict. Pay, transparency and pipeline earn points; time on market and hiring
   // volume only ever subtract, so a fresh posting can't coast on being fresh.
   const reds = flags.filter((f) => f.tone === "red" && f.scored !== false).length;
-  const greens = flags.filter((f) => f.tone === "green").length;
+  const greens = flags.filter((f) => f.tone === "green" && f.scored !== false).length;
   const pts = (c: Check, core: boolean) =>
     c.grade === "bad" ? -1 : !core ? 0 : c.grade === "good" ? 2 : c.grade === "ok" ? 1 : 0;
   const core = new Set(["Pay", "Transparency", "Pipeline"]);
