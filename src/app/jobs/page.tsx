@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { listJobsWithTotal, type JobFilters } from "@/lib/data";
 import { JobGrid } from "@/components/JobCard";
 import { getUserState } from "@/lib/session";
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
 type SP = Record<string, string | undefined>;
 
 const DEFAULT_POSTED_DAYS = 90;
-const PAGE_SIZE = 120;
+const PAGE_SIZE = 60;
 
 function toFilters(sp: SP): JobFilters {
   const pick = <T extends string>(v: string | undefined, allowed: readonly T[]) => (allowed.includes(v as T) ? (v as T) : undefined);
@@ -43,8 +44,21 @@ function Select({ name, label, options, value }: { name: string; label: string; 
 
 export default async function AllJobs({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
-  const [{ jobs, total }, state] = await Promise.all([listJobsWithTotal(toFilters(sp), PAGE_SIZE), getUserState()]);
-  const qs = new URLSearchParams(Object.entries(sp).filter(([, v]) => v) as [string, string][]).toString();
+  const page = Math.max(1, Math.floor(Number(sp.page)) || 1);
+  const [{ jobs, total }, state] = await Promise.all([
+    listJobsWithTotal(toFilters(sp), PAGE_SIZE, { offset: (page - 1) * PAGE_SIZE }),
+    getUserState(),
+  ]);
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // The search itself, without the page number (used for watches and page links).
+  const qs = new URLSearchParams(Object.entries(sp).filter(([k, v]) => v && k !== "page") as [string, string][]).toString();
+  const pageHref = (n: number) => {
+    const p = new URLSearchParams(qs);
+    if (n > 1) p.set("page", String(n));
+    const s = p.toString();
+    return `/jobs${s ? `?${s}` : ""}`;
+  };
+  const first = (page - 1) * PAGE_SIZE + 1;
   const hasFilters = qs.length > 0;
   const suggestedName = [sp.segment, sp.role === "Account Executive" ? "AE" : sp.role, sp.remote, sp.country === "CA" ? "Canada" : null, sp.minOte && `$${Math.round(+sp.minOte / 1000)}K+ OTE`, sp.q]
     .filter(Boolean)
@@ -85,7 +99,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
         <p className="text-sm text-ink-3">
           {total.toLocaleString()} {total === 1 ? "job" : "jobs"}
           {!sp.posted && " posted in the last 90 days"}
-          {total > jobs.length && ` · showing the newest ${jobs.length}`}
+          {pages > 1 && jobs.length > 0 && ` · showing ${first.toLocaleString()}–${(first + jobs.length - 1).toLocaleString()}`}
         </p>
         {hasFilters && (
           <form action={watchSearch} className="flex w-full items-center gap-2 sm:w-auto">
@@ -95,7 +109,32 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
           </form>
         )}
       </div>
-      <JobGrid jobs={jobs} ctx={{ savedJobIds: state.savedJobIds, back: `/jobs${qs ? `?${qs}` : ""}` }} empty="No jobs match those filters." />
+      <JobGrid
+        jobs={jobs}
+        ctx={{ savedJobIds: state.savedJobIds, back: pageHref(page) }}
+        empty={page > 1 ? "That page is past the end of the results." : "No jobs match those filters."}
+      />
+      {(pages > 1 || page > 1) && (
+        <nav aria-label="Pages" className="mt-8 flex items-center justify-center gap-3 text-sm">
+          {page > 1 ? (
+            <Link href={pageHref(Math.min(page - 1, pages))} rel="prev" className="rounded-md border border-line px-3 py-1.5 font-semibold hover:border-ink">
+              ← Newer
+            </Link>
+          ) : (
+            <span className="rounded-md border border-line px-3 py-1.5 text-ink-3">← Newer</span>
+          )}
+          <span className="text-ink-3">
+            Page {page.toLocaleString()} of {pages.toLocaleString()}
+          </span>
+          {page < pages ? (
+            <Link href={pageHref(page + 1)} rel="next" className="rounded-md border border-line px-3 py-1.5 font-semibold hover:border-ink">
+              Older →
+            </Link>
+          ) : (
+            <span className="rounded-md border border-line px-3 py-1.5 text-ink-3">Older →</span>
+          )}
+        </nav>
+      )}
     </>
   );
 }
