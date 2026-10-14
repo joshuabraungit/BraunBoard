@@ -21,3 +21,10 @@ describe("buyer extraction cleanup", () => {
     expect(cleanBuyer({ industry: "Sports and media", industry_quote: "professional sports, media, or live-events organizations" }, POSTING).industry).toBe("Sports and media");
   });
 });
+
+import { firstJsonObject } from "../src/lib/ingest/buyer";
+describe("reply parsing", () => {
+  it("reads the first JSON object even with text after it", () => {
+    expect(firstJsonObject('{"buyer": "Lenders", "x": {"y": 1}}\n\nNote: {extra}')).toEqual({ buyer: "Lenders", x: { y: 1 } });
+  });
+});

@@ -18,9 +18,9 @@ Return ONLY a JSON object:
   "buyer": the specific job titles, departments or kinds of customer the rep sells to, in plain words.
            Good: "CFOs and finance teams", "CISOs and security teams", "Support and CX leaders", "Developers and engineering leaders",
            "Procurement, finance, IT and legal", "Restaurant owners", "Small business owners", "Lenders", "Ad agencies".
-           Null if the posting doesn't name one.
+           Keep it under 10 words: who they are, not the company size. Null if the posting doesn't name one.
   "buyer_quote": the exact words from the posting that support "buyer", copied character for character (max 200 chars). Null if buyer is null.
-  "industry": the industry or market the customers are in, if the posting states one (e.g. "Healthcare", "Federal government",
+  "industry": the industry or market the customers are in, under 6 words, if the posting states one (e.g. "Healthcare", "Federal government",
               "State and local government and education", "Financial services", "Retail", "Restaurants"). Null if not stated.
   "industry_quote": exact supporting words from the posting, copied character for character (max 200 chars). Null if industry is null.
 }
@@ -75,6 +75,20 @@ export function cleanBuyer(raw: Partial<BuyerInfo> | null | undefined, posting: 
   return out;
 }
 
+/** The first complete JSON object in a reply, ignoring any text after it. */
+export function firstJsonObject(text: string): unknown {
+  const start = text.indexOf("{");
+  if (start < 0) throw new Error(`No JSON in reply: ${text.slice(0, 120)}`);
+  for (let end = text.indexOf("}", start); end > 0; end = text.indexOf("}", end + 1)) {
+    try {
+      return JSON.parse(text.slice(start, end + 1));
+    } catch {
+      // keep extending to the next closing brace
+    }
+  }
+  throw new Error(`Unreadable JSON in reply: ${text.slice(0, 120)}`);
+}
+
 /** Ask the model. Returns the cleaned result; throws on API errors so callers can retry later. */
 export async function extractBuyer(title: string, description: string, key = process.env.ANTHROPIC_API_KEY): Promise<BuyerInfo> {
   if (!key || !description.trim()) return { ...EMPTY_BUYER };
@@ -92,8 +106,5 @@ export async function extractBuyer(title: string, description: string, key = pro
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const data = (await res.json()) as { content: { type: string; text?: string }[] };
   const text = data.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("");
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start < 0 || end <= start) throw new Error(`No JSON in reply: ${text.slice(0, 120)}`);
-  return cleanBuyer(JSON.parse(text.slice(start, end + 1)) as Partial<BuyerInfo>, description);
+  return cleanBuyer(firstJsonObject(text) as Partial<BuyerInfo>, description);
 }

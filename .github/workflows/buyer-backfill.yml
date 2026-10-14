@@ -1,0 +1,26 @@
+name: Buyer backfill
+
+# Fill "who you're selling to" for every live job not checked yet. The hourly run does this for new jobs.
+on:
+  workflow_dispatch:
+    inputs:
+      max:
+        description: "Max jobs"
+        default: "3000"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/buyer-backfill.ts ${{ inputs.max }}

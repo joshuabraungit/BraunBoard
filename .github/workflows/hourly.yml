@@ -4,6 +4,7 @@ name: Hourly
 # so each run queues the next one itself about an hour later (the cron below only
 # restarts the chain if it ever breaks). Each step only does what's due:
 #  - crawl companies not checked in ~4 hours (+ instant alerts)
+#  - find "who you're selling to" for new jobs
 #  - the daily alert digest, once a day, first run after 8am ET
 #  - build Braun's Picks Monday afternoon, send it Tuesday at 8am ET
 on:
@@ -41,6 +42,9 @@ jobs:
       - run: npm ci
       - name: Crawl what's due + instant alerts
         run: npm run ingest -- --stale 3.5
+      - name: Who you're selling to (new jobs)
+        if: always()
+        run: npx tsx scripts/buyer-backfill.ts 300
       - name: Daily digest (if due)
         if: always()
         run: npm run digest -- --if-due
