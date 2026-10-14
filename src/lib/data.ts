@@ -34,6 +34,13 @@ export interface JobView {
   currency?: string | null;
   /** Quota attainment the posting states about its team, if any. */
   attainment?: Attainment | null;
+  /** Who the rep sells to and the customers' industry, as the posting states them (job page only). */
+  buyer?: string | null;
+  buyer_quote?: string | null;
+  industry?: string | null;
+  industry_quote?: string | null;
+  /** Null until the AI has read the posting for the buyer. */
+  buyer_checked_at?: string | null;
   /** Where the job is open: any of "US", "CA", "UK". */
   markets?: string[];
   apply_url: string;
@@ -137,7 +144,7 @@ export async function listJobsWithTotal(
 export async function getJob(slug: string): Promise<JobView | null> {
   if (!isSupabaseConfigured()) return SAMPLE_JOBS.find((j) => j.slug === slug) ?? null;
   const db = await serverClient();
-  const { data } = await db.from("visible_jobs").select(`${CARD_COLUMNS}, description_raw, last_seen_at`).eq("slug", slug).maybeSingle();
+  const { data } = await db.from("visible_jobs").select(`${CARD_COLUMNS}, description_raw, last_seen_at, buyer, buyer_quote, industry, industry_quote, buyer_checked_at`).eq("slug", slug).maybeSingle();
   return (data as unknown as JobView) ?? null;
 }
 

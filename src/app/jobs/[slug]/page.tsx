@@ -156,8 +156,42 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
           {tagsFor(job).length > 0 && <p className="mt-2 text-sm text-ink-2">{tagsFor(job).join(" · ")}</p>}
         </Block>
         <Block title="Selling motion">{known(job.sales_motion) ?? <span className="text-ink-3">Not stated in the posting.</span>}</Block>
-        <Block title="Who you are selling to">
-          {known(job.customer_segment) ?? known(job.sales_segment) ?? <span className="text-ink-3">Not stated in the posting.</span>}
+        <Block title="Who you're selling to">
+          <dl className="space-y-2.5">
+            <div>
+              <dt className="inline font-semibold">Buyer: </dt>
+              <dd className="inline">
+                {job.buyer ? (
+                  <>
+                    {job.buyer}
+                    <span className="mt-0.5 block text-sm text-ink-3">In their words: &ldquo;{job.buyer_quote}&rdquo;</span>
+                  </>
+                ) : job.buyer_checked_at ? (
+                  <>
+                    <span className="text-ink-3">Not stated in the posting.</span>
+                    <span className="mt-0.5 block text-sm text-ink-2">Ask: &ldquo;Who&apos;s the economic buyer, and who else is in the deal?&rdquo;</span>
+                  </>
+                ) : (
+                  <span className="text-ink-3">Still reading the posting. Check back within the hour.</span>
+                )}
+              </dd>
+            </div>
+            {job.industry && (
+              <div>
+                <dt className="inline font-semibold">Industry: </dt>
+                <dd className="inline">
+                  {job.industry}
+                  <span className="mt-0.5 block text-sm text-ink-3">In their words: &ldquo;{job.industry_quote}&rdquo;</span>
+                </dd>
+              </div>
+            )}
+            {(known(job.customer_segment) ?? known(job.sales_segment)) && (
+              <div>
+                <dt className="inline font-semibold">Company size: </dt>
+                <dd className="inline">{known(job.customer_segment) ?? known(job.sales_segment)}</dd>
+              </div>
+            )}
+          </dl>
         </Block>
         <Block title="Pipeline expectations">
           {job.self_sourcing_level === "High" && "Mostly self-sourced. Expect a lot of outbound."}

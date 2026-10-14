@@ -11,6 +11,9 @@ export interface QuestionInput {
   disclosures: Partial<Disclosures> | null;
   role_family?: string;
   seniority?: string;
+  /** Set once the posting has been read for its buyer; null buyer then means it isn't stated. */
+  buyer?: string | null;
+  buyer_checked_at?: string | null;
   flags: Flag[];
   company?: { trend?: string; open_roles?: number } | null;
 }
@@ -54,6 +57,7 @@ export function questionsFor(j: QuestionInput, max = 6): Question[] {
   if (j.salary_min == null && j.ote_min == null) add("No pay listed", "What are the base and the OTE for this role?");
   else if (j.ote_min == null) add("No OTE listed", "What's the OTE, and what did the median rep earn last year?");
   else if (j.salary_min == null) add("No base listed", "What's the base, and how is the rest paid out?");
+  if (j.buyer_checked_at && !j.buyer) add("Buyer not in the posting", "Who's the economic buyer, and who else is in the deal?");
   if (!d.quota_size && !has.has("states_quota")) add("Not in the posting", "What's the annual quota, and how was it set?");
   if (j.self_sourcing_level === "Unknown") add("Not in the posting", "Where does pipeline come from: inbound, SDRs, or me?");
   else if (j.self_sourcing_level === "High") add("Mostly self-sourced", "What share of last year's closed deals did reps source themselves?");

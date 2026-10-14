@@ -15,7 +15,7 @@ create or replace view public.visible_jobs with (security_invoker = true) as
     j.classification_overridden, j.created_at, j.updated_at,
     c.name as company_name, c.slug as company_slug, c.logo_url as company_logo_url, c.domain as company_domain,
     j.flags, j.source_posted_at, j.posted_at, j.markets, j.salary_max_usd, j.ote_max_usd, j.attainment,
-    j.buyer, j.buyer_quote, j.industry, j.industry_quote
+    j.buyer, j.buyer_quote, j.industry, j.industry_quote, j.buyer_checked_at
   from public.jobs j
   join public.companies c on c.id = j.company_id
   where j.is_active and not j.is_disabled and j.duplicate_of is null and not c.is_disabled

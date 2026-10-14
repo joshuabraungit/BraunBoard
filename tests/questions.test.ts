@@ -117,3 +117,12 @@ describe("BDR managers", () => {
     expect(classifyTitle("Manager, SDRs")?.role_family).toBe("Sales Manager");
   });
 });
+
+describe("economic buyer question", () => {
+  it("asks only once we've read the posting and found no buyer", () => {
+    const has = (x: object) => questionsFor({ ...base, ...x }, 10).some((q) => /economic buyer/.test(q.text));
+    expect(has({ buyer: null, buyer_checked_at: "2026-10-13T00:00:00Z" })).toBe(true);
+    expect(has({ buyer: "CFOs", buyer_checked_at: "2026-10-13T00:00:00Z" })).toBe(false);
+    expect(has({ buyer: null, buyer_checked_at: null })).toBe(false);
+  });
+});
