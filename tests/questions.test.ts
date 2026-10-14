@@ -23,7 +23,7 @@ describe("questionsFor", () => {
   it("puts red flags first", () => {
     const flags = computeFlags({ ...base, salary_max: null, ote_max: null, description_raw: "Commissions are subject to clawback if the customer churns." });
     const qs = questionsFor({ ...base, flags });
-    expect(qs[0]!.why).toBe("Clawbacks");
+    expect(qs[0]!.text).toMatch(/clawbacks/);
   });
 
   it("skips what the posting already says", () => {
@@ -124,5 +124,16 @@ describe("economic buyer question", () => {
     expect(has({ buyer: null, buyer_checked_at: "2026-10-13T00:00:00Z" })).toBe(true);
     expect(has({ buyer: "CFOs", buyer_checked_at: "2026-10-13T00:00:00Z" })).toBe(false);
     expect(has({ buyer: null, buyer_checked_at: null })).toBe(false);
+  });
+});
+
+describe("why it matters", () => {
+  it("every question explains itself in one short line", () => {
+    const all = questionsFor({ ...base, role_family: "Account Executive", buyer: null, buyer_checked_at: "2026-10-14T00:00:00Z" }, 50);
+    for (const q of all) {
+      expect(q.why.split(/\s+/).length).toBeLessThanOrEqual(16);
+      expect(q.why).not.toMatch(/Not in the posting|Always ask/);
+      expect(q.why).not.toMatch(/—/);
+    }
   });
 });

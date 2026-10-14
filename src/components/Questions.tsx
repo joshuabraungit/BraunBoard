@@ -21,7 +21,7 @@ export function QuestionsPanel({ questions, title, company }: { questions: Quest
             <span className="mt-0.5 w-5 shrink-0 text-right text-sm font-semibold text-ink-3">{i + 1}.</span>
             <div>
               <p className="text-[15px] font-medium leading-snug">{q.text}</p>
-              <p className="mt-0.5 text-xs text-ink-3">{q.why}</p>
+              <p className="mt-0.5 text-sm text-ink-2">{q.why}</p>
             </div>
           </li>
         ))}
