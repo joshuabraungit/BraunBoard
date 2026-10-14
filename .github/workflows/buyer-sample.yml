@@ -1,0 +1,26 @@
+name: Buyer extraction test
+
+# Read-only test: asks the AI who each sampled job sells to, stores answers in buyer_samples. The site is untouched.
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "How many jobs to sample"
+        default: "50"
+
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/buyer-sample.ts ${{ inputs.count }}
