@@ -148,7 +148,7 @@ const RULES: Rule[] = [
     code: "attainment_average",
     tone: "green",
     label: "Shares average attainment",
-    why: "It gives the team's average attainment. Better than nothing, but an average can hide that half the team missed. Ask how many fully ramped reps actually hit.",
+    why: "It gives the team's average attainment. Better than nothing, but a high average can mean two reps are carrying the number for everyone else. Ask how many fully ramped reps actually hit.",
     scored: false, // shown, but not the full credit of saying how many reps hit
     test: (t) => parseAttainment(t)?.kind === "average",
   },

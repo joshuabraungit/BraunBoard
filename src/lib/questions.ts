@@ -49,7 +49,11 @@ export function questionsFor(j: QuestionInput, max = 6): Question[] {
 
   // 2. The numbers that decide whether the job is doable.
   // "Fully ramped" stops the answer hiding behind new hires who were never expected to hit yet.
-  if (has.has("attainment_average")) add("They only share an average", "What percentage of fully ramped reps hit quota last year? An average can hide a lot.");
+  if (has.has("attainment_average")) {
+    add("They only share an average", "What percentage of fully ramped reps hit quota last year?");
+    // A high average can be a couple of top reps carrying everyone else.
+    add("Averages hide who's carrying the team", "How much of last year's number came from your top two reps?");
+  }
   else if (!has.has("shares_attainment")) add("Not in the posting", "What percentage of fully ramped reps hit quota last year?");
   // The answer to this one usually explains the attainment number.
   const isRep = CARRIES_NUMBER.has(j.role_family ?? "") && (j.seniority ?? "Individual Contributor") === "Individual Contributor";

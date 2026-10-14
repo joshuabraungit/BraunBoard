@@ -43,6 +43,7 @@ describe("attainment flags and questions", () => {
     const ask = (d: string) => questionsFor({ ...base, role_family: "Account Executive", flags: computeFlags({ ...base, description_raw: d }) });
     expect(ask("Great team.")[0]!.text).toBe("What percentage of fully ramped reps hit quota last year?");
     expect(ask(VANTA)[0]!.why).toBe("They only share an average");
+    expect(ask(VANTA)[1]!.text).toBe("How much of last year's number came from your top two reps?");
     expect(ask(KONG).some((q) => /fully ramped/.test(q.text))).toBe(false);
   });
 });

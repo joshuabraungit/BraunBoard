@@ -98,11 +98,12 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
                 {job.attainment.kind === "average" && (
                   <>
                     <p className="text-ink-2">
-                      <span className="font-semibold text-ink">Why it matters:</span> that&apos;s an average, not how many reps hit. A few big
-                      years can hide a team where most people missed.
+                      <span className="font-semibold text-ink">Why it matters:</span> that&apos;s an average, not how many reps hit. A{" "}
+                      {job.attainment.pct}% average can mean two reps are carrying the number for everyone else.
                     </p>
                     <p className="text-ink-2">
-                      <span className="font-semibold text-ink">Ask:</span> &ldquo;{ASK_ATTAINMENT}&rdquo;
+                      <span className="font-semibold text-ink">Ask:</span> &ldquo;{ASK_ATTAINMENT}&rdquo; Then: &ldquo;How much of last year&apos;s
+                      number came from your top two reps?&rdquo;
                     </p>
                   </>
                 )}
