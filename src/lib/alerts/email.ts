@@ -30,7 +30,7 @@ export function renderAlert(watchName: string, items: AlertItem[], siteUrl: stri
       // Click goes through our redirect so we can measure alert -> detail clicks (primary V1 metric).
       const href = `${siteUrl}/r/${i.match_id}`;
       return `<tr><td style="padding:14px 0;border-bottom:1px solid #eee">
-        <a href="${href}" style="color:#111;text-decoration:none;font-weight:600">${i.score != null ? `${i.score}% · ` : ""}${esc(i.title)} · ${esc(i.company)}</a>
+        <a href="${href}" style="color:#111;text-decoration:none;font-weight:600">${esc(i.title)} · ${esc(i.company)}</a>
         <div style="color:#555;font-size:14px;margin-top:4px">${esc(meta)}</div></td></tr>`;
     })
     .join("");
@@ -42,7 +42,7 @@ export function renderAlert(watchName: string, items: AlertItem[], siteUrl: stri
   <tr><td style="padding-top:24px;font-size:12px;color:#999">You're getting this because you watch "${esc(watchName)}". <a href="${siteUrl}/alerts" style="color:#999">Change alert frequency</a></td></tr>
   </table></body></html>`;
   const text = `${subject}\n\n${items
-    .map((i) => `${i.score != null ? `${i.score}% - ` : ""}${i.title} - ${i.company}\n${formatComp(i)}\n${siteUrl}/r/${i.match_id}`)
+    .map((i) => `${i.title} - ${i.company}\n${formatComp(i)}\n${siteUrl}/r/${i.match_id}`)
     .join("\n\n")}\n\nSee all matches: ${siteUrl}/watchlist`;
   return { subject, html, text };
 }
