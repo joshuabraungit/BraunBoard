@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { questionsFor, questionsAsText } from "../src/lib/questions";
+import { OFFER_QUESTIONS, questionsFor, questionsAsText } from "../src/lib/questions";
 import { computeFlags } from "../src/lib/flags";
 import { checkedLabel } from "../src/lib/freshness";
 
@@ -148,5 +148,12 @@ describe("why it matters", () => {
     expect(questionsFor({ ...rep, flags: [] }, 20).some((x) => q.test(x.text))).toBe(true);
     expect(questionsFor({ ...rep, flags: [{ code: "accelerators" } as never] }, 20).some((x) => q.test(x.text))).toBe(false);
     expect(questionsFor({ ...rep, role_family: "Sales Engineer", flags: [] }, 20).some((x) => q.test(x.text))).toBe(false);
+  });
+
+  it("offer-stage questions are short, explained, and included when copying", () => {
+    for (const q of OFFER_QUESTIONS) expect(q.why.split(/\s+/).length).toBeLessThanOrEqual(16);
+    const text = questionsAsText("AE", "Acme", [], OFFER_QUESTIONS);
+    expect(text).toContain("When the offer comes");
+    expect(text).toContain("comp distribution");
   });
 });

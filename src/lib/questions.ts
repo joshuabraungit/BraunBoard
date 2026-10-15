@@ -88,7 +88,16 @@ export function questionsFor(j: QuestionInput, max = 6): Question[] {
   return picked;
 }
 
+/** Same for every job: asks that belong once there's an offer, not on a first call. */
+export const OFFER_QUESTIONS: Question[] = [
+  { why: "What's in writing is what gets paid. Read it before you sign.", text: "Can I see the full comp plan in writing, including clawbacks and accelerators?" },
+  { why: "The spread shows what most reps really take home. OTE is just the target.", text: "Can I see the actual comp distribution for the team last year, not just the OTE?" },
+  { why: "Leaving money behind is a fair reason to ask. The worst answer is no.", text: "I'd be walking away from earned commission to join. Is there room for a sign-on bonus to help cover that?" },
+];
+
 /** Plain-text version for copying into notes. */
-export function questionsAsText(title: string, company: string, qs: Question[]): string {
-  return [`Questions for ${company}, ${title}`, "", ...qs.map((q, i) => `${i + 1}. ${q.text}`)].join("\n");
+export function questionsAsText(title: string, company: string, qs: Question[], offer: Question[] = []): string {
+  const lines = [`Questions for ${company}, ${title}`, "", ...qs.map((q, i) => `${i + 1}. ${q.text}`)];
+  if (offer.length) lines.push("", "When the offer comes", ...offer.map((q, i) => `${i + 1}. ${q.text}`));
+  return lines.join("\n");
 }
