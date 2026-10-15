@@ -36,7 +36,7 @@ export function questionsFor(j: QuestionInput, max = 6): Question[] {
   // 1. Red flags first: these are the things most likely to change your mind.
   if (has.has("commission_only")) add("No base means a slow quarter is a quarter with no paycheck.", "What did the median rep take home last year, with no base to fall back on?");
   if (has.has("uncapped_no_numbers")) add("\"Unlimited\" is a ceiling, not a number. You need the median.", "What did the median rep and the top rep actually earn last year?");
-  if (has.has("clawbacks")) add("Money you earned can be taken back. Know the rules before you sign.", "When do clawbacks kick in, and how often has it happened in the last year?");
+  if (has.has("clawbacks")) add("Money you earned can be taken back. Know the rules before you sign.", "Under what circumstances can commissions be clawed back, and for how long after the sale?");
   if (has.has("dial_quotas")) add("Tells you if you'll be judged on deals or on dials.", "Is the daily activity number a hard requirement, or a guide? What happens if you miss it?");
   if (has.has("aggressive_split")) add("When most of the pay is variable, this is your real salary.", "What percent of the variable did reps actually earn last year?");
   if (has.has("hustle_language")) add("Hustle language in a posting often shows up in your calendar.", "What hours do your best reps actually work?");
