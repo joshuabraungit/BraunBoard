@@ -8,7 +8,6 @@ import { useState } from "react";
 import { PeekerOwl } from "./PeekerOwl";
 
 export const INTRO_COOKIE = "bb_intro";
-const REDDIT = "https://www.reddit.com/r/BraunBoard/";
 
 export function IntroBanner({ hasWatch }: { hasWatch: boolean }) {
   const [open, setOpen] = useState(true);
@@ -52,14 +51,6 @@ export function IntroBanner({ hasWatch }: { hasWatch: boolean }) {
             >
               {hasWatch ? "See my matches →" : "Set up my watch →"}
             </Link>
-            <a
-              href={REDDIT}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center rounded-lg border border-line-strong px-4 text-sm font-semibold hover:bg-bg"
-            >
-              Join our community on Reddit
-            </a>
           </div>
         </div>
       </div>
