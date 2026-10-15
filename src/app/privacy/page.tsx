@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "Privacy Policy · Braun Board" };
 
 export default function Privacy() {
   return (
-    <LegalPage title="Privacy Policy" updated="October 13, 2026">
+    <LegalPage title="Privacy Policy" updated="October 14, 2026">
       <p>
         Braun Board helps salespeople find B2B sales jobs and get alerted when relevant ones appear. This page explains what we
         collect and how we use it. Plain version: we only collect what we need to run the job alerts you ask for, and we don&apos;t
@@ -17,6 +17,7 @@ export default function Privacy() {
         <li><strong>Account info:</strong> your email address, and your name and profile photo if you sign in with Google.</li>
         <li><strong>Your preferences:</strong> the answers you give about the sales job you&apos;d take (role, pay, location, dealbreakers), your saved searches, watched companies and saved jobs.</li>
         <li><strong>Alert activity:</strong> which alert emails we sent you and whether you clicked through, so we can tell if alerts are useful.</li>
+        <li><strong>Ask Josh messages:</strong> if you use the Ask Josh form, your email, your name if you give it, your question, any offer details you add, and the job it was about. Josh reads these himself and may reply by email. We never share them with employers or recruiters.</li>
         <li><strong>Basic technical data:</strong> standard server logs and a sign-in cookie that keeps you logged in.</li>
       </ul>
       <p>If you use the site without signing in, your onboarding answers are stored only in a cookie in your browser.</p>

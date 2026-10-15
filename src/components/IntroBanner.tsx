@@ -54,6 +54,12 @@ export function IntroBanner() {
               Find my next sales job →
             </Link>
           </div>
+          <p className="mt-4 text-sm text-ink-2">
+            Got an offer and not sure about it?{" "}
+            <Link href="/ask" className="font-semibold text-ink underline underline-offset-2 hover:no-underline">
+              Ask me →
+            </Link>
+          </p>
         </div>
       </div>
     </section>

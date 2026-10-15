@@ -48,7 +48,11 @@ export function renderAlert(watchName: string, items: AlertItem[], siteUrl: stri
 }
 
 /** Sends through Resend's HTTP API. Swap for any provider with the same signature. */
-export async function sendEmail(to: string, msg: { subject: string; html: string; text: string }) {
+export async function sendEmail(
+  to: string,
+  msg: { subject: string; html: string; text: string },
+  opts: { from?: string; replyTo?: string } = {},
+) {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
     console.log(`[email:dry-run] to=${to} subject="${msg.subject}"`);
@@ -57,7 +61,12 @@ export async function sendEmail(to: string, msg: { subject: string; html: string
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: process.env.ALERTS_FROM ?? "Braun Board <alerts@braunboard.com>", to, ...msg }),
+    body: JSON.stringify({
+      from: opts.from ?? process.env.ALERTS_FROM ?? "Braun Board <alerts@braunboard.com>",
+      to,
+      ...msg,
+      ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
+    }),
   });
   if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);
 }

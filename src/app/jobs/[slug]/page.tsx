@@ -7,6 +7,8 @@ import { checkedLabel, freshnessLabel } from "@/lib/freshness";
 import { questionsFor } from "@/lib/questions";
 import { ATTAINMENT_ROLES, attainmentLabel } from "@/lib/attainment";
 import { QuestionsPanel } from "@/components/Questions";
+import { AskJoshForm } from "@/components/AskJosh";
+import { getUser } from "@/lib/session";
 import { formatComp, formatLocation, money } from "@/lib/format";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { tagsFor } from "@/components/JobCard";
@@ -52,7 +54,7 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
   const { slug } = await params;
   const job = await getJob(slug);
   if (!job) notFound();
-  const [state, watch, stats] = await Promise.all([getUserState(), getActiveWatch(), getCompanyStats(job.company_id)]);
+  const [state, watch, stats, user] = await Promise.all([getUserState(), getActiveWatch(), getCompanyStats(job.company_id), getUser().catch(() => null)]);
   const read = braunRead({ ...job, company: stats });
   const match = watch ? scoreMatch(job, watch.prefs) : null;
   // Attainment is the question for people carrying a number. For SEs and leaders it means something else.
@@ -140,6 +142,20 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
       <BraunReadPanel read={read} />
 
       <QuestionsPanel questions={questions} title={job.title_raw} company={job.company_name} />
+
+      {/* Ask Josh: the job rides along with the message, so he sees exactly which posting it's about. */}
+      <details id="ask" className="group mt-6 rounded-2xl border border-line bg-surface p-5">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 [&::-webkit-details-marker]:hidden">
+          <span>
+            <span className="block font-bold">Got an offer from {job.company_name}? Not sure about it?</span>
+            <span className="mt-0.5 block text-sm text-ink-2">Ask me. I read every message myself. · Josh</span>
+          </span>
+          <span className="shrink-0 rounded-lg border border-line-strong px-3 py-2 text-sm font-semibold group-open:hidden">Ask Josh</span>
+        </summary>
+        <div className="mt-4">
+          <AskJoshForm source="job-page" job={{ slug: job.slug, company: job.company_name }} defaultEmail={user?.email ?? ""} />
+        </div>
+      </details>
 
       {match && match.score != null && (
         <div className="mt-6">
