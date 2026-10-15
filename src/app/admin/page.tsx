@@ -96,11 +96,19 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 export default async function AdminDashboard() {
   await requireAdmin();
   const db = adminClient();
-  const [{ data, error }, { data: aud }] = await Promise.all([db.rpc("admin_overview"), db.rpc("admin_audience")]);
+  const [{ data, error }, { data: aud }, { data: asks }] = await Promise.all([
+    db.rpc("admin_overview"),
+    db.rpc("admin_audience"),
+    db.from("ask_messages").select("email, created_at").range(0, 9999),
+  ]);
   if (error || !data) return <p className="text-red">Couldn&apos;t load the dashboard: {error?.message}</p>;
   const o = data as Overview;
   const a = aud as Audience | null;
   const clickRate = o.alerts_sent_30d ? Math.round((o.alerts_clicked_30d / o.alerts_sent_30d) * 100) : null;
+  // Ask Josh: people = distinct emails that sent the form.
+  const askRows = (asks ?? []) as { email: string; created_at: string }[];
+  const askPeople = (days?: number) =>
+    new Set(askRows.filter((r) => !days || Date.now() - new Date(r.created_at).getTime() < days * 86_400_000).map((r) => r.email)).size;
   const crawlStale = !o.last_crawl_at || Date.now() - new Date(o.last_crawl_at).getTime() > 6 * 3_600_000;
 
   return (
@@ -119,6 +127,13 @@ export default async function AdminDashboard() {
         <Tile label="Job watches" value={o.watches} />
         <Tile label="Company watches" value={o.company_watches} />
         <Tile label="Alerts waiting to send" value={o.alerts_pending} sub="Go out with the next instant run or daily digest" />
+      </Group>
+
+      <Group title="Ask Josh">
+        <Tile label="People who wrote in" value={askPeople()} sub="Gave their email in the Ask Josh form" />
+        <Tile label="This week" value={askPeople(7)} />
+        <Tile label="Last 30 days" value={askPeople(30)} />
+        <Tile label="Messages" value={askRows.length} sub="Some people send more than one" />
       </Group>
 
       {a && (
