@@ -23,7 +23,7 @@ describe("questionsFor", () => {
   it("puts red flags first", () => {
     const flags = computeFlags({ ...base, salary_max: null, ote_max: null, description_raw: "Commissions are subject to clawback if the customer churns." });
     const qs = questionsFor({ ...base, flags });
-    expect(qs[0]!.text).toMatch(/clawbacks/);
+    expect(qs[0]!.text).toMatch(/clawed back/);
   });
 
   it("skips what the posting already says", () => {
