@@ -44,7 +44,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         </p>
       )}
 
-      {showIntro && <IntroBanner hasWatch={!!watch} />}
+      {showIntro && <IntroBanner />}
 
       {forYou ? (
         <Section title={`For You · ${watch!.name}`} href="/for-you">

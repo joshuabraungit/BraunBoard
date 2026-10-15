@@ -9,7 +9,7 @@ import { PeekerOwl } from "./PeekerOwl";
 
 export const INTRO_COOKIE = "bb_intro";
 
-export function IntroBanner({ hasWatch }: { hasWatch: boolean }) {
+export function IntroBanner() {
   const [open, setOpen] = useState(true);
   const router = useRouter();
   if (!open) return null;
@@ -36,20 +36,22 @@ export function IntroBanner({ hasWatch }: { hasWatch: boolean }) {
       {/* Phone: the owl peeks over the headline. Wider: owl sits beside everything. */}
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 sm:gap-x-8">
         <h1 className="col-span-2 row-start-2 text-2xl font-bold tracking-tight sm:col-span-1 sm:col-start-1 sm:row-start-1 sm:self-end sm:pr-8 sm:text-3xl">
-          &ldquo;Uncapped earning potential&rdquo; isn&rsquo;t a number.
+          Great OTE.
+          <br />
+          How many people actually earn it?
         </h1>
         <PeekerOwl className="col-span-2 row-start-1 mb-4 w-28 sm:col-span-1 sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:mb-0 sm:w-44" />
         <div className="col-span-2 row-start-3 sm:col-span-1 sm:col-start-1 sm:row-start-2 sm:self-start">
           <p className="mt-3 max-w-xl text-ink-2">
-            Every job comes straight from the company&apos;s own careers page. We read the fine print for you: the pay, the
-            quota, who you&apos;d be selling to, and the red flags. Then we hand you the questions to ask on the first call.
+            Find B2B sales jobs, see the published pay, and spot what the posting leaves out. We&rsquo;ll give you the
+            questions to ask before you give notice.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link
-              href="/for-you"
+              href="/jobs"
               className="inline-flex min-h-11 items-center rounded-lg bg-ink px-4 text-sm font-semibold text-white hover:opacity-90"
             >
-              {hasWatch ? "See my matches →" : "Set up my watch →"}
+              Find my next sales job →
             </Link>
           </div>
         </div>
