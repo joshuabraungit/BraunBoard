@@ -7,6 +7,8 @@ import { JobGrid, Section } from "@/components/JobCard";
 import { getActiveWatch, getUserState } from "@/lib/session";
 import { rankForWatch } from "@/lib/matching";
 import { marketsFor, visitorMarket } from "@/lib/market";
+import { cookies } from "next/headers";
+import { INTRO_COOKIE, IntroBanner } from "@/components/IntroBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +28,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
     getActiveWatch(),
     listCompanies(),
   ]);
+  // The owl intro shows until it's closed. While it's up, it stands in for the old "set up a watch" box.
+  const showIntro = (await cookies()).get(INTRO_COOKIE)?.value !== "hidden";
   const rampingUp = companies.filter((c) => c.trend === "ramping").sort(byHiringFastest).slice(0, 6);
   const ctx = { savedJobIds: state.savedJobIds, back: "/" };
   const forYou = watch
@@ -40,11 +44,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         </p>
       )}
 
+      {showIntro && <IntroBanner hasWatch={!!watch} />}
+
       {forYou ? (
         <Section title={`For You · ${watch!.name}`} href="/for-you">
           <JobGrid jobs={forYou.jobs.slice(0, 3)} ctx={{ ...ctx, matches: forYou.matches }} empty="No matches yet. We'll tell you when one shows up." />
         </Section>
-      ) : (
+      ) : showIntro ? null : (
       <div className="mb-10 rounded-2xl border border-line bg-surface p-6 sm:p-8">
         <h1 className="max-w-xl text-2xl font-bold tracking-tight sm:text-3xl">
           Tell us the sales job you would take. We will tell you when it shows up.

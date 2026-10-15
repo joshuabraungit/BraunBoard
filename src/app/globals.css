@@ -44,3 +44,39 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+/* The Braun Board owl (components/PeekerOwl.tsx): reads, blinks, tilts, taps. */
+.owl-head { transform-origin: 200px 320px; animation: owl-tilt 9s ease-in-out infinite; }
+.owl-pupils { animation: owl-read 4.5s ease-in-out infinite; }
+.owl-lid { transform-box: fill-box; transform-origin: center; transform: scaleY(0); animation: owl-blink 5s infinite; }
+.owl-claws-l { animation: owl-tap 3s ease-in-out infinite; }
+.owl-claws-r { animation: owl-tap 3s ease-in-out 1.5s infinite; }
+.owl-chip { transform-box: fill-box; transform-origin: center; animation: owl-pop 9s ease-in-out infinite; }
+@keyframes owl-read {
+  0%, 8% { transform: translate(-9px, -2px); }
+  30% { transform: translate(8px, -2px); }
+  34% { transform: translate(-9px, 3px); }
+  58% { transform: translate(8px, 3px); }
+  62%, 100% { transform: translate(-9px, -2px); }
+}
+@keyframes owl-blink {
+  0%, 92%, 100% { transform: scaleY(0); }
+  95% { transform: scaleY(1); }
+}
+@keyframes owl-tilt {
+  0%, 62%, 92%, 100% { transform: rotate(0deg) translateY(0); }
+  68%, 86% { transform: rotate(-7deg) translateY(-6px); }
+}
+@keyframes owl-tap {
+  0%, 70%, 100% { transform: translateY(0); }
+  78% { transform: translateY(-4px); }
+  86% { transform: translateY(0); }
+}
+@keyframes owl-pop {
+  0%, 64%, 92%, 100% { transform: scale(1); }
+  70% { transform: scale(1.08); }
+  76% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .owl-head, .owl-pupils, .owl-lid, .owl-claws-l, .owl-claws-r, .owl-chip { animation: none; }
+}
