@@ -36,7 +36,7 @@ export function IntroBanner({ hasWatch }: { hasWatch: boolean }) {
       {/* Phone: the owl peeks over the headline. Wider: owl sits beside everything. */}
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 sm:gap-x-8">
         <h1 className="col-span-2 row-start-2 text-2xl font-bold tracking-tight sm:col-span-1 sm:col-start-1 sm:row-start-1 sm:self-end sm:pr-8 sm:text-3xl">
-          See who&apos;s hiring, what they pay, and what they&apos;re hiding.
+          &ldquo;Uncapped earning potential&rdquo; isn&rsquo;t a number.
         </h1>
         <PeekerOwl className="col-span-2 row-start-1 mb-4 w-28 sm:col-span-1 sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:mb-0 sm:w-44" />
         <div className="col-span-2 row-start-3 sm:col-span-1 sm:col-start-1 sm:row-start-2 sm:self-start">
