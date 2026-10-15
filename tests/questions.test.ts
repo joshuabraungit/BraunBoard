@@ -85,8 +85,13 @@ describe("coaching", () => {
   it("pairs the attainment question with who coaches, for people carrying a number", () => {
     const qs = questionsFor({ ...base, role_family: "Account Executive" });
     expect(qs[0]!.text).toMatch(/percentage of fully ramped reps hit quota/);
-    expect(qs[1]!.text).toBe("Who sits with reps and reviews calls each week?");
-    expect(questionsFor({ ...base, role_family: "Sales Director" }).some((q) => /reviews calls/.test(q.text))).toBe(false);
+    expect(qs[1]!.text).toMatch(/been here more than 18 months/);
+    expect(qs[2]!.text).toMatch(/comp plan changed in the last 12 to 18 months/);
+    expect(qs[3]!.text).toBe("Who sits with reps and reviews calls each week?");
+    expect(qs.at(-1)!.text).toMatch(/Why is this role open/);
+    expect(qs.length).toBe(6);
+    const director = questionsFor({ ...base, role_family: "Sales Director" });
+    expect(director.some((q) => /reviews calls|18 months|comp plan changed/.test(q.text))).toBe(false);
   });
   it("flags real coaching for reps, not for managers whose job is coaching", () => {
     const t = "You'll get structured weekly coaching and call reviews.";

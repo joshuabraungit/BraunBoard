@@ -57,6 +57,11 @@ export function questionsFor(j: QuestionInput, max = 6): Question[] {
   else if (!has.has("shares_attainment")) add("OTE is what you could earn. This is how likely you are to earn it.", "What percentage of fully ramped reps hit quota last year?");
   // The answer to this one usually explains the attainment number.
   const isRep = CARRIES_NUMBER.has(j.role_family ?? "") && (j.seniority ?? "Individual Contributor") === "Individual Contributor";
+  // Right after attainment: do people stay, and do the goalposts move?
+  if (isRep) {
+    add("Tenure shows whether people stay long enough to get paid.", "What percentage of reps on the team have been here more than 18 months?");
+    add("A plan that changes every year means the goalposts keep moving.", "Has the comp plan changed in the last 12 to 18 months? What changed?");
+  }
   if (isRep && !has.has("coaching")) add("Coaching is often what's behind a good or bad attainment number.", "Who sits with reps and reviews calls each week?");
   if (j.salary_min == null && j.ote_min == null) add("No point investing hours before you know the number.", "What are the base and the OTE for this role?");
   else if (j.ote_min == null) add("Base is what you're guaranteed. OTE and the median show the upside.", "What's the OTE, and what did the median rep earn last year?");
@@ -75,7 +80,7 @@ export function questionsFor(j: QuestionInput, max = 6): Question[] {
       d.sales_cycle ? "What's a typical deal size?" : "What's a typical deal size and sales cycle?",
     );
   }
-  if (j.company?.trend === "ramping" && (j.company.open_roles ?? 0) >= 25) add("Lots of open roles can mean growth, or a revolving door.", "How many reps hired last year are still here?");
+  if (!isRep && j.company?.trend === "ramping" && (j.company.open_roles ?? 0) >= 25) add("Lots of open roles can mean growth, or a revolving door.", "How many reps hired last year are still here?");
 
   // 3. Always worth asking.
   const picked = out.slice(0, max - 1);
