@@ -66,6 +66,8 @@ export function questionsFor(j: QuestionInput, max = 6): Question[] {
   if (j.self_sourcing_level === "Unknown") add("Tells you how much of your week is prospecting versus selling.", "Where does pipeline come from: inbound, SDRs, or me?");
   else if (j.self_sourcing_level === "High") add("Shows how much pipeline you'll have to build on your own.", "What share of last year's closed deals did reps source themselves?");
   if (!has.has("ramp_support")) add("Full quota on day one means you start behind.", "How long is ramp, and what's the quota during it?");
+  // Past 100% is where top reps make their money. Only ask when the posting doesn't already say it pays accelerators.
+  if (isRep && !has.has("accelerators")) add("Past quota is where top reps earn most. Know if the plan pays more or stops.", "Once I hit 100% of quota, how does my commission rate change, and is there a cap on what I can earn?");
   if (!d.territory) add("An existing book is a head start. Greenfield means building from zero.", "Is the territory new or existing? Who had it before?");
   if (!d.average_deal_size && !has.has("states_deal_size")) {
     add(

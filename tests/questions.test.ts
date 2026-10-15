@@ -136,4 +136,12 @@ describe("why it matters", () => {
       expect(q.why).not.toMatch(/—/);
     }
   });
+
+  it("asks about accelerators for reps only when the posting doesn't mention them", () => {
+    const rep = { salary_min: 100000, ote_min: 200000, self_sourcing_level: "Low", disclosures: { quota_size: true, territory: true, average_deal_size: true }, role_family: "Account Executive", seniority: "Individual Contributor" };
+    const q = /how does my commission rate change/;
+    expect(questionsFor({ ...rep, flags: [] }, 20).some((x) => q.test(x.text))).toBe(true);
+    expect(questionsFor({ ...rep, flags: [{ code: "accelerators" } as never] }, 20).some((x) => q.test(x.text))).toBe(false);
+    expect(questionsFor({ ...rep, role_family: "Sales Engineer", flags: [] }, 20).some((x) => q.test(x.text))).toBe(false);
+  });
 });
