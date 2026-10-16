@@ -96,10 +96,11 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 export default async function AdminDashboard() {
   await requireAdmin();
   const db = adminClient();
-  const [{ data, error }, { data: aud }, { data: asks }] = await Promise.all([
+  const [{ data, error }, { data: aud }, { data: asks }, { data: kits }] = await Promise.all([
     db.rpc("admin_overview"),
     db.rpc("admin_audience"),
     db.from("ask_messages").select("email, created_at").range(0, 9999),
+    db.from("kit_downloads").select("created_at, source").range(0, 49999),
   ]);
   if (error || !data) return <p className="text-red">Couldn&apos;t load the dashboard: {error?.message}</p>;
   const o = data as Overview;
@@ -109,6 +110,8 @@ export default async function AdminDashboard() {
   const askRows = (asks ?? []) as { email: string; created_at: string }[];
   const askPeople = (days?: number) =>
     new Set(askRows.filter((r) => !days || Date.now() - new Date(r.created_at).getTime() < days * 86_400_000).map((r) => r.email)).size;
+  const kitRows = (kits ?? []) as { created_at: string; source: string | null }[];
+  const kitSince = (days: number) => kitRows.filter((r) => Date.now() - new Date(r.created_at).getTime() < days * 86_400_000).length;
   const crawlStale = !o.last_crawl_at || Date.now() - new Date(o.last_crawl_at).getTime() > 6 * 3_600_000;
 
   return (
@@ -127,6 +130,13 @@ export default async function AdminDashboard() {
         <Tile label="Job watches" value={o.watches} />
         <Tile label="Company watches" value={o.company_watches} />
         <Tile label="Alerts waiting to send" value={o.alerts_pending} sub="Go out with the next instant run or daily digest" />
+      </Group>
+
+      <Group title="Interview kit downloads">
+        <Tile label="Downloads" value={kitRows.length} sub="Before You Say Yes" />
+        <Tile label="This week" value={kitSince(7)} />
+        <Tile label="Last 30 days" value={kitSince(30)} />
+        <Tile label="From job pages" value={kitRows.filter((r) => r.source === "job-page").length} sub="People who found it through a job's questions box" />
       </Group>
 
       <Group title="Ask Josh">

@@ -39,11 +39,12 @@ export function renderAlert(watchName: string, items: AlertItem[], siteUrl: stri
   <tr><td><div style="font-size:13px;color:#888">Braun Board</div><h1 style="font-size:20px;margin:6px 0 10px">${esc(subject)}</h1></td></tr>
   ${rows}
   <tr><td style="padding-top:18px"><a href="${siteUrl}/watchlist" style="color:#111;font-weight:600">See all matches →</a></td></tr>
+  <tr><td style="padding-top:10px;font-size:14px;color:#555">Interviewing soon? <a href="${siteUrl}/kit?from=alert-email" style="color:#111;font-weight:600">Get the free interview kit →</a></td></tr>
   <tr><td style="padding-top:24px;font-size:12px;color:#999">You're getting this because you watch "${esc(watchName)}". <a href="${siteUrl}/alerts" style="color:#999">Change alert frequency</a></td></tr>
   </table></body></html>`;
   const text = `${subject}\n\n${items
     .map((i) => `${i.title} - ${i.company}\n${formatComp(i)}\n${siteUrl}/r/${i.match_id}`)
-    .join("\n\n")}\n\nSee all matches: ${siteUrl}/watchlist`;
+    .join("\n\n")}\n\nSee all matches: ${siteUrl}/watchlist\nFree interview kit: ${siteUrl}/kit`;
   return { subject, html, text };
 }
 

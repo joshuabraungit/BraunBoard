@@ -32,6 +32,10 @@ export function AskJoshForm({
       <div role="status" className="rounded-lg bg-accent-soft px-4 py-3 text-[15px] text-accent">
         <p className="font-semibold">Got it. It&apos;s in my inbox.</p>
         <p className="mt-1">I read every one. If I reply, it&apos;ll come from my own email, so keep an eye out.</p>
+        <p className="mt-2 text-ink-2">
+          While you wait: the offer comparison and pay scenario pages in my{" "}
+          <a href="/kit?from=ask" className="font-semibold text-ink underline underline-offset-2">free interview kit</a> might help.
+        </p>
       </div>
     );
   }

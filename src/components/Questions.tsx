@@ -1,8 +1,12 @@
+import Link from "next/link";
 import type { Question } from "@/lib/questions";
 import { OFFER_QUESTIONS, questionsAsText } from "@/lib/questions";
 import { CopyButton } from "./CopyButton";
 
-export function QuestionsPanel({ questions, title, company }: { questions: Question[]; title: string; company: string }) {
+// The interview kit is written for SDRs going for their first AE role.
+const KIT_ROLES = new Set(["Account Executive", "SDR/BDR"]);
+
+export function QuestionsPanel({ questions, title, company, roleFamily }: { questions: Question[]; title: string; company: string; roleFamily?: string }) {
   if (!questions.length) return null;
   return (
     <section className="mt-6 rounded-xl border border-line bg-surface p-4 sm:p-5">
@@ -22,6 +26,15 @@ export function QuestionsPanel({ questions, title, company }: { questions: Quest
         <p className="mt-1 text-sm text-ink-3">Save these for later. They land better once they&apos;ve said yes to you.</p>
         <QuestionList questions={OFFER_QUESTIONS} />
       </div>
+      {KIT_ROLES.has(roleFamily ?? "") && (
+        <p className="mt-5 rounded-lg bg-bg px-4 py-3 text-sm text-ink-2">
+          Going for your first AE role?{" "}
+          <Link href="/kit?from=job-page" className="font-semibold text-ink underline underline-offset-2 hover:no-underline">
+            Get the free interview kit →
+          </Link>{" "}
+          19 questions, what good and bad answers sound like, and an offer comparison sheet.
+        </p>
+      )}
     </section>
   );
 }

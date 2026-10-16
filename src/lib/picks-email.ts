@@ -69,6 +69,7 @@ export function renderPicks(issue: IssueContent, items: ItemContent[], opts: { s
       : ""
   }
   <tr><td style="padding-top:20px;font-size:14px"><a href="${siteUrl}/jobs" style="color:#111;font-weight:600">Browse every sales job on Braun Board &rarr;</a></td></tr>
+  <tr><td style="padding-top:10px;font-size:14px;color:#555">Interviewing for your first AE role? <a href="${siteUrl}/kit?from=picks-email" style="color:#111;font-weight:600">Get the free interview kit &rarr;</a></td></tr>
   <tr><td style="padding-top:24px;font-size:12px;line-height:1.5;color:#999">
     You're getting this because you signed up for Braun's Picks at braunboard.com.
     <a href="${unsubscribe}" style="color:#999">Unsubscribe</a> anytime, one click.
@@ -84,6 +85,7 @@ export function renderPicks(issue: IssueContent, items: ItemContent[], opts: { s
     ...(skip ? ["ONE TO SKIP", skip.take, ""] : []),
     ...(issue.stat_line ? ["THIS WEEK'S NUMBER", issue.stat_line, ""] : []),
     `Browse every sales job: ${siteUrl}/jobs`,
+    `Free first-AE interview kit: ${siteUrl}/kit`,
     "",
     `Unsubscribe: ${unsubscribe}`,
     address,
