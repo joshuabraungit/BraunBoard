@@ -45,44 +45,99 @@ Return ONLY a JSON object:
               Null if the posting doesn't say what they sell.
 }
 
-Use ONLY the posting text. Never use anything you know about the company from outside it.
-If the posting is only about the role and never describes the product, return all nulls.`;
+Use ONLY the postings. Never use anything you know about the company from outside them.
+If the postings are only about the role and never describe the product, return all nulls.`;
 
-const BANNED = /\b(platform|solutions?|leverag\w*|seamless\w*|empower\w*|transform\w*|synerg\w*|cutting-edge|best-in-class|AI-native)\b/i;
+const BANNED_RE = /\b(platform|solutions?|leverag\w*|seamless\w*|empower\w*|transform\w*|synerg\w*|cutting-edge|best-in-class|AI-native)\b/gi;
+
+/** What's wrong with a draft, in words the model can act on. Empty means it's fine. */
+export function problemsWith(raw: Partial<ProductInfo> | null | undefined, posting: string): string[] {
+  if (!raw?.story) return [];
+  const out: string[] = [];
+  const banned = [...new Set([...(raw.story + " " + (raw.short ?? "")).matchAll(BANNED_RE)].map((m) => m[0].toLowerCase()))];
+  if (banned.length) out.push(`It uses these banned words: ${banned.join(", ")}. Say what the thing actually does instead.`);
+  if (raw.story.split(/\s+/).length > 70) out.push("The story is too long. Keep it under 60 words.");
+  if (raw.short && raw.short.split(/\s+/).length > 10) out.push("The short line is too long. Use 4 to 8 words.");
+  if (!quoteInPosting(raw.quote, posting)) out.push("The quote isn't copied exactly from the posting. Copy one real sentence character for character.");
+  if (raw.category && !PRODUCT_CATEGORIES.includes(raw.category as ProductCategory)) out.push(`The category must be one of: ${PRODUCT_CATEGORIES.join(", ")}.`);
+  return out;
+}
 
 /** Keep only answers that are plain, short and backed by a real quote. */
 export function cleanProduct(raw: Partial<ProductInfo> | null | undefined, posting: string): ProductInfo {
-  if (!raw) return { ...EMPTY_PRODUCT };
-  const story = raw.story?.trim().replace(/\s*[—–]\s*/g, ", ") ?? "";
-  const short = raw.short?.trim().replace(/[.]$/, "") ?? "";
-  const words = story.split(/\s+/).filter(Boolean).length;
-  const category = PRODUCT_CATEGORIES.includes(raw.category as ProductCategory) ? (raw.category as ProductCategory) : null;
-  const ok = story && words <= 70 && !BANNED.test(story) && quoteInPosting(raw.quote, posting);
+  if (!raw?.story || problemsWith(raw, posting).length) return { ...EMPTY_PRODUCT };
+  const story = raw.story.trim().replace(/\s*[—–]\s*/g, ", ");
+  const short = raw.short?.trim().replace(/[.]$/, "") || null;
   return {
-    story: ok ? story : null,
-    short: ok && short && short.split(/\s+/).length <= 10 && !BANNED.test(short) ? short : null,
-    quote: ok ? raw.quote!.trim() : null,
-    // A category is useful even when the story is thin, as long as the posting describes the product at all.
-    category: ok ? category : null,
+    story,
+    short,
+    quote: raw.quote!.trim(),
+    category: PRODUCT_CATEGORIES.includes(raw.category as ProductCategory) ? (raw.category as ProductCategory) : null,
   };
 }
 
-/** Ask the model. Throws on API errors so callers can retry later. */
-export async function extractProduct(company: string, posting: string, key = process.env.ANTHROPIC_API_KEY): Promise<ProductInfo & { raw: unknown }> {
-  if (!key || !posting.trim()) return { ...EMPTY_PRODUCT, raw: null };
+const CHECK = `You fact-check a short plain-English story about what a company sells, against the company's own job postings.
+A claim is supported only if the postings say it, or it plainly follows from what they say.
+Using a generic example customer is fine ("a restaurant owner", "a bank") only if the postings say the company serves that kind of customer.
+Anything that comes from outside knowledge about the company is unsupported, even if it's true.
+Also pick the ONE best category for what the company sells, from this list exactly: ${PRODUCT_CATEGORIES.join(", ")}.
+
+Return ONLY JSON: {"unsupported": ["each unsupported claim, quoted from the story"], "category": "..."}`;
+
+async function ask(system: string, user: string, key: string): Promise<unknown> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify({
       model: process.env.EXTRACTION_MODEL ?? "claude-haiku-5-5",
-      max_tokens: 1500,
-      system: SYSTEM,
-      messages: [{ role: "user", content: `Company: ${company}\n\nPosting:\n${posting.slice(0, 12_000)}` }],
+      // Room to think plus the JSON, so replies don't get cut off.
+      max_tokens: 3000,
+      system,
+      messages: [{ role: "user", content: user }],
     }),
   });
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const data = (await res.json()) as { content: { type: string; text?: string }[] };
-  const text = data.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("");
-  const raw = firstJsonObject(text) as Partial<ProductInfo>;
-  return { ...cleanProduct(raw, posting), raw };
+  return firstJsonObject(data.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join(""));
+}
+
+/** Several postings from one company, joined. More postings, fewer vague stories. */
+export function joinPostings(postings: string[], max = 3): string {
+  return [...new Set(postings.map((p) => p.trim()).filter(Boolean))]
+    .sort((a, b) => b.length - a.length)
+    .slice(0, max)
+    .map((p, i) => `--- Posting ${i + 1} ---\n${p.slice(0, 5000)}`)
+    .join("\n\n");
+}
+
+/**
+ * Write, then fact-check. A draft with problems gets one rewrite with the problems named.
+ * Throws on API errors so callers can retry later.
+ */
+export async function extractProduct(company: string, postings: string[], key = process.env.ANTHROPIC_API_KEY): Promise<ProductInfo & { raw: unknown }> {
+  const text = joinPostings(postings);
+  if (!key || !text) return { ...EMPTY_PRODUCT, raw: null };
+  const base = `Company: ${company}\n\nPostings:\n${text}`;
+  const log: Record<string, unknown> = {};
+
+  let draft = (await ask(SYSTEM, base, key)) as Partial<ProductInfo>;
+  log.first = draft;
+  for (let round = 1; round <= 2 && draft?.story; round++) {
+    const problems = problemsWith(draft, text);
+    if (!problems.length) {
+      const check = (await ask(CHECK, `${base}\n\nStory: ${draft.story}\nShort line: ${draft.short ?? ""}`, key)) as { unsupported?: string[]; category?: string };
+      log[`check${round}`] = check;
+      if (PRODUCT_CATEGORIES.includes(check.category as ProductCategory)) draft.category = check.category as ProductCategory;
+      if (!check.unsupported?.length) break;
+      problems.push(`These claims aren't in the postings, so remove them: ${check.unsupported.join(" | ")}`);
+    }
+    if (round === 2) {
+      // Still not clean after a rewrite: show nothing rather than something wrong.
+      draft = { story: null };
+      break;
+    }
+    draft = (await ask(SYSTEM, `${base}\n\nYour last draft:\n${JSON.stringify(draft)}\n\nFix these problems and rewrite, keeping every rule:\n- ${problems.join("\n- ")}`, key)) as Partial<ProductInfo>;
+    log[`rewrite${round}`] = draft;
+  }
+  return { ...cleanProduct(draft, text), raw: log };
 }
