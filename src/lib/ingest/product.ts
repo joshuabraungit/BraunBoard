@@ -77,12 +77,20 @@ export function cleanProduct(raw: Partial<ProductInfo> | null | undefined, posti
 }
 
 const CHECK = `You fact-check a short plain-English story about what a company sells, against the company's own job postings.
-A claim is supported only if the postings say it, or it plainly follows from what they say.
-Using a generic example customer is fine ("a restaurant owner", "a bank") only if the postings say the company serves that kind of customer.
-Anything that comes from outside knowledge about the company is unsupported, even if it's true.
+
+Flag only FACTUAL claims about the product or the company that the postings don't support:
+features, what the product does, who uses it, results, numbers, customers. Anything that comes from outside
+knowledge about the company is unsupported, even if it's true.
+
+Do NOT flag:
+- The everyday problem the story opens with, when it's just the plain flip side of what the postings say the product does
+  (postings say "work together in real time" -> "it's hard to keep everyone on the same page" is fine).
+- A generic example customer ("a restaurant owner", "a trucking company") when the postings say the company serves that kind of customer.
+- Simple restatements in plainer words.
+
 Also pick the ONE best category for what the company sells, from this list exactly: ${PRODUCT_CATEGORIES.join(", ")}.
 
-Return ONLY JSON: {"unsupported": ["each unsupported claim, quoted from the story"], "category": "..."}`;
+Return ONLY JSON: {"unsupported": ["each unsupported factual claim, quoted from the story"], "category": "..."}`;
 
 async function ask(system: string, user: string, key: string): Promise<unknown> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -122,22 +130,30 @@ export async function extractProduct(company: string, postings: string[], key = 
 
   let draft = (await ask(SYSTEM, base, key)) as Partial<ProductInfo>;
   log.first = draft;
-  for (let round = 1; round <= 2 && draft?.story; round++) {
+  // Up to 3 rewrites in total. Wording fixes (banned words, length, quote) don't use up a fact-check;
+  // a story only gets two fact-checks, and if the second still finds made-up claims it's dropped.
+  let checks = 0;
+  for (let rewrites = 0; draft?.story; rewrites++) {
     const problems = problemsWith(draft, text);
     if (!problems.length) {
+      checks++;
       const check = (await ask(CHECK, `${base}\n\nStory: ${draft.story}\nShort line: ${draft.short ?? ""}`, key)) as { unsupported?: string[]; category?: string };
-      log[`check${round}`] = check;
+      log[`check${checks}`] = check;
       if (PRODUCT_CATEGORIES.includes(check.category as ProductCategory)) draft.category = check.category as ProductCategory;
       if (!check.unsupported?.length) break;
+      if (checks >= 2) {
+        draft = { story: null };
+        break;
+      }
       problems.push(`These claims aren't in the postings, so remove them: ${check.unsupported.join(" | ")}`);
     }
-    if (round === 2) {
-      // Still not clean after a rewrite: show nothing rather than something wrong.
+    if (rewrites >= 3) {
+      // Still not clean: show nothing rather than something wrong.
       draft = { story: null };
       break;
     }
     draft = (await ask(SYSTEM, `${base}\n\nYour last draft:\n${JSON.stringify(draft)}\n\nFix these problems and rewrite, keeping every rule:\n- ${problems.join("\n- ")}`, key)) as Partial<ProductInfo>;
-    log[`rewrite${round}`] = draft;
+    log[`rewrite${rewrites + 1}`] = draft;
   }
   return { ...cleanProduct(draft, text), raw: log };
 }
