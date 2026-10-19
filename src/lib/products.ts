@@ -77,12 +77,15 @@ async function load(): Promise<{ companies: ProductCompany[]; jobs: ProductJob[]
   for (let from = 0; ; from += 1000) {
     const { data, error } = await db.from("visible_jobs").select(JOB_COLUMNS).order("id").range(from, from + 999);
     if (error) throw new Error(`products jobs: ${error.message}`);
-    jobs.push(...((data ?? []) as unknown as ProductJob[]));
+    for (const j of (data ?? []) as unknown as ProductJob[]) {
+      // location_raw is only shown when there's no city and the role isn't remote.
+      jobs.push({ ...j, location_raw: !j.city && j.remote_type !== "Remote" ? (j.location_raw ?? "").slice(0, 60) || null : null });
+    }
     if (!data || data.length < 1000) break;
   }
   const { data, error } = await db
     .from("company_stats")
-    .select("trend, new_30d, closed_30d, companies!inner(id, slug, name, domain, logo_url, is_disabled, product_story, product_short, product_quote, product_category, product_checked_at)")
+    .select("trend, new_30d, closed_30d, companies!inner(id, slug, name, domain, logo_url, is_disabled, product_story, product_short, product_category, product_checked_at)")
     .gt("open_roles", 0)
     .eq("companies.is_disabled", false)
     .limit(3000);
@@ -96,7 +99,8 @@ async function load(): Promise<{ companies: ProductCompany[]; jobs: ProductJob[]
     logo_url: (c.logo_url as string) ?? null,
     story: (c.product_story as string) ?? null,
     short: (c.product_short as string) ?? null,
-    quote: (c.product_quote as string) ?? null,
+    // The quote isn't shown on the page; leave it out of the cache.
+    quote: null,
     category: isProductCategory(c.product_category) ? c.product_category : null,
     checked: c.product_checked_at != null,
     ...s,
@@ -104,7 +108,7 @@ async function load(): Promise<{ companies: ProductCompany[]; jobs: ProductJob[]
   return { companies, jobs };
 }
 
-export const loadProductData = unstable_cache(load, ["products-v2"], { revalidate: 600 });
+export const loadProductData = unstable_cache(load, ["products-v3"], { revalidate: 600 });
 
 export interface ProductCard extends ProductCompany {
   open: number;
@@ -152,9 +156,9 @@ export function productCards(data: { companies: ProductCompany[]; jobs: ProductJ
 }
 
 /** How many companies (with a story) sell each kind of product, for the chips. */
-export function categoryCounts(data: { companies: ProductCompany[]; jobs: ProductJob[] }, markets?: string[]): Map<ProductCategory, number> {
+export function categoryCounts(data: { companies: ProductCompany[]; jobs: ProductJob[] }, markets?: string[], role?: RoleGroup): Map<ProductCategory, number> {
   const out = new Map<ProductCategory, number>();
-  for (const c of productCards(data, { markets })) if (c.category && c.story) out.set(c.category, (out.get(c.category) ?? 0) + 1);
+  for (const c of productCards(data, { markets, role })) if (c.category && c.story) out.set(c.category, (out.get(c.category) ?? 0) + 1);
   return out;
 }
 

@@ -41,7 +41,7 @@ export default async function Products({ searchParams }: { searchParams: Promise
 
   const [data, state] = await Promise.all([loadProductData(), getUserState()]);
   const cards = productCards(data, { category, role, q, sort, markets });
-  const counts = categoryCounts(data, markets);
+  const counts = categoryCounts(data, markets, role);
 
   // Links keep the other filters as they are.
   const href = (patch: Partial<SP>) => {
@@ -55,7 +55,6 @@ export default async function Products({ searchParams }: { searchParams: Promise
   const chip = "inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-semibold";
   const on = "border-ink bg-ink text-white";
   const off = "border-line-strong bg-surface text-ink hover:border-ink";
-  const withStory = cards.filter((c) => c.story).length;
 
   return (
     <>
@@ -99,7 +98,7 @@ export default async function Products({ searchParams }: { searchParams: Promise
             name="q"
             defaultValue={q}
             placeholder="Search: payments, hospitals, AI…"
-            className="min-h-11 min-w-0 flex-1 rounded-lg border border-line-strong bg-surface px-3 text-sm sm:w-64 sm:flex-none"
+            className="min-h-11 min-w-0 basis-full rounded-lg border border-line-strong bg-surface px-3 text-sm sm:w-64 sm:basis-auto"
           />
           <label htmlFor="products-sort" className="sr-only">Sort</label>
           <select id="products-sort" name="sort" defaultValue={sort} className="min-h-11 rounded-lg border border-line-strong bg-surface px-2 text-sm">
@@ -112,7 +111,7 @@ export default async function Products({ searchParams }: { searchParams: Promise
       </div>
 
       <p className="mt-4 text-sm text-ink-2">
-        {withStory} {withStory === 1 ? "company" : "companies"}
+        {cards.length} {cards.length === 1 ? "company" : "companies"}
         {q && <> matching &ldquo;{q}&rdquo;</>} hiring{market === "all" ? "" : ` in ${MARKET_CHOICES[market].label}`}.{" "}
         {(q || category || role) && (
           <Link href="/products" className="font-semibold text-ink underline underline-offset-2">Clear filters</Link>

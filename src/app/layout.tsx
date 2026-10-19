@@ -15,11 +15,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body className="min-h-screen">
         <header className="sticky top-0 z-20 border-b border-line bg-bg/90 backdrop-blur">
-          <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:gap-6">
+          {/* On phones the menu gets its own scrollable row under the logo, so more than one item shows. */}
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 sm:flex-nowrap sm:gap-6 sm:py-3">
             <Link href="/" className="shrink-0 text-[17px] font-bold tracking-tight">
               Braun Board
             </Link>
-            <Nav />
+            <div className="order-last w-full min-w-0 sm:order-none sm:w-auto sm:flex-1">
+              <Nav />
+            </div>
             <UserMenu />
           </div>
         </header>

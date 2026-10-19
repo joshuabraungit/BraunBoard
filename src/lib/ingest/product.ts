@@ -19,6 +19,21 @@ export const PRODUCT_CATEGORIES = [
 ] as const;
 export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
 
+/** How to pick a category. Shared by every prompt so the categories mean the same thing everywhere. */
+export const CATEGORY_RULES = `Pick the ONE category for what the customer is buying, judged by the job it does for them, from this list exactly:
+- "AI & data": the product IS AI models, AI infrastructure, a database, data pipelines or analytics. NOT apps that merely use AI.
+- "Security": cybersecurity, identity, fraud prevention, privacy and compliance.
+- "Finance & payments": payments, banking, cards, spend, accounting, lending, insurance, retirement plans.
+- "Developer & IT tools": tools for engineers and IT: cloud, hosting, storage, monitoring, APIs, automation for IT and developers.
+- "Sales & marketing": tools for sellers and marketers: sales data, ads, email and texts to customers, reviews, social media, websites and content.
+- "HR & payroll": hiring, background checks, payroll, benefits, employee engagement.
+- "Collaboration & productivity": general work tools any team uses: docs, projects, design, video, forms, workflows.
+- "Customer support": help desks, contact centers, support chat and AI agents for support.
+- "Legal & contracts": legal work and contracts, including AI for lawyers.
+- "Industry-specific software": made for one industry (restaurants, healthcare, construction, manufacturing, government).
+- "Hardware & IoT": the main product is physical: devices, sensors, vehicles, drones, robots.
+An app that uses AI to do one job goes in that job's category (AI for lawyers is "Legal & contracts", AI for support is "Customer support").`;
+
 export interface ProductInfo {
   story: string | null;
   short: string | null;
@@ -40,10 +55,12 @@ Return ONLY a JSON object:
            Null if the posting doesn't say what the product does.
   "short": the same idea in 4 to 8 words, for a job card. Example: "Texts and emails picked for each shopper". Null if story is null.
   "quote": the sentence from the posting that the story is based on, copied character for character (max 300 chars). Null if story is null.
-  "category": the ONE best fit for what the company sells, from this list exactly: ${PRODUCT_CATEGORIES.join(", ")}.
-              "Industry-specific software" means software made for one industry (restaurants, construction, healthcare, legal).
-              Null if the posting doesn't say what they sell.
+  "category": the category name, following the category rules below. Null if the postings don't say what they sell.
 }
+
+Name the company in the story instead of saying "this product" or "this software".
+
+${CATEGORY_RULES}
 
 Use ONLY the postings. Never use anything you know about the company from outside them.
 If the postings are only about the role and never describe the product, return all nulls.`;
@@ -88,7 +105,8 @@ Do NOT flag:
 - A generic example customer ("a restaurant owner", "a trucking company") when the postings say the company serves that kind of customer.
 - Simple restatements in plainer words.
 
-Also pick the ONE best category for what the company sells, from this list exactly: ${PRODUCT_CATEGORIES.join(", ")}.
+Also pick the category.
+${CATEGORY_RULES}
 
 Return ONLY JSON: {"unsupported": ["each unsupported factual claim, quoted from the story"], "category": "..."}`;
 
@@ -156,4 +174,15 @@ export async function extractProduct(company: string, postings: string[], key = 
     log[`rewrite${rewrites + 1}`] = draft;
   }
   return { ...cleanProduct(draft, text), raw: log };
+}
+
+/** Re-pick the category for an existing story. One small call, no rewrite. */
+export async function classifyCategory(company: string, story: string, quote: string | null, key = process.env.ANTHROPIC_API_KEY): Promise<ProductCategory | null> {
+  if (!key) return null;
+  const r = (await ask(
+    `You sort companies by what they sell, for salespeople browsing jobs.\n${CATEGORY_RULES}\n\nReturn ONLY JSON: {"category": "..."}`,
+    `Company: ${company}\nWhat they sell: ${story}${quote ? `\nFrom their posting: ${quote}` : ""}`,
+    key,
+  )) as { category?: string };
+  return PRODUCT_CATEGORIES.includes(r?.category as ProductCategory) ? (r.category as ProductCategory) : null;
 }
