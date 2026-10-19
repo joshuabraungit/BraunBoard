@@ -14,13 +14,7 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<R
   if (!watch || sp.edit !== undefined) {
     return (
       <div className="py-4">
-        <div className="mx-auto mb-8 max-w-2xl">
-          <h1 className="text-3xl font-bold tracking-tight">What sales job would you actually take?</h1>
-          <p className="mt-3 text-lg leading-relaxed text-ink-2">
-            Tell us the job you want. Role, pay, where, and your dealbreakers. We&apos;ll email you when one shows up, so you can stop
-            refreshing job boards.
-          </p>
-        </div>
+        <h1 className="mx-auto mb-8 max-w-2xl text-3xl font-bold tracking-tight">What sales job would you actually take?</h1>
         <OnboardingForm initial={watch?.answers} />
       </div>
     );
