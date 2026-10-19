@@ -43,8 +43,8 @@ export function IntroBanner() {
         <PeekerOwl className="col-span-2 row-start-1 mb-4 w-28 sm:col-span-1 sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:mb-0 sm:w-44" />
         <div className="col-span-2 row-start-3 sm:col-span-1 sm:col-start-1 sm:row-start-2 sm:self-start">
           <p className="mt-3 max-w-xl text-ink-2">
-            Tell us the job you want. Role, pay, where, and your dealbreakers. We&rsquo;ll email you when one shows up, so you
-            can stop refreshing job boards.
+            Job posts show the OTE. They don&rsquo;t show how many reps hit it. Tell us the role, pay, where and your dealbreakers.
+            We&rsquo;ll email you when a match shows up, with the questions to ask before you say yes.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link
