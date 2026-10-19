@@ -96,11 +96,14 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 export default async function AdminDashboard() {
   await requireAdmin();
   const db = adminClient();
-  const [{ data, error }, { data: aud }, { data: asks }, { data: kits }] = await Promise.all([
+  const [{ data, error }, { data: aud }, { data: asks }, { data: kits }, { data: pev }, { count: storyCount }, { data: changed }] = await Promise.all([
     db.rpc("admin_overview"),
     db.rpc("admin_audience"),
     db.from("ask_messages").select("email, created_at").range(0, 9999),
     db.from("kit_downloads").select("created_at, source").range(0, 49999),
+    db.from("product_events").select("created_at, event").gte("created_at", new Date(Date.now() - 30 * 86_400_000).toISOString()).range(0, 49999),
+    db.from("companies").select("id", { count: "exact", head: true }).not("product_story", "is", null),
+    db.from("companies").select("name, slug, product_short, product_category, product_changed_at").not("product_changed_at", "is", null).order("product_changed_at", { ascending: false }).limit(10),
   ]);
   if (error || !data) return <p className="text-red">Couldn&apos;t load the dashboard: {error?.message}</p>;
   const o = data as Overview;
@@ -112,6 +115,9 @@ export default async function AdminDashboard() {
     new Set(askRows.filter((r) => !days || Date.now() - new Date(r.created_at).getTime() < days * 86_400_000).map((r) => r.email)).size;
   const kitRows = (kits ?? []) as { created_at: string; source: string | null }[];
   const kitSince = (days: number) => kitRows.filter((r) => Date.now() - new Date(r.created_at).getTime() < days * 86_400_000).length;
+  const pevRows = (pev ?? []) as { created_at: string; event: string }[];
+  const pevCount = (event: string, days = 30) => pevRows.filter((r) => r.event === event && Date.now() - new Date(r.created_at).getTime() < days * 86_400_000).length;
+  const recentStories = (changed ?? []) as { name: string; slug: string; product_short: string | null; product_category: string | null; product_changed_at: string }[];
   const crawlStale = !o.last_crawl_at || Date.now() - new Date(o.last_crawl_at).getTime() > 6 * 3_600_000;
 
   return (
@@ -131,6 +137,27 @@ export default async function AdminDashboard() {
         <Tile label="Company watches" value={o.company_watches} />
         <Tile label="Alerts waiting to send" value={o.alerts_pending} sub="Go out with the next instant run or daily digest" />
       </Group>
+
+      <Group title="Products page (last 30 days)">
+        <Tile label="Companies with a story" value={storyCount ?? 0} sub="What they sell, in plain English" />
+        <Tile label="See jobs taps" value={pevCount("see_jobs")} sub={`${pevCount("see_jobs", 7)} this week`} />
+        <Tile label="Watches from the page" value={pevCount("watch")} sub={`${pevCount("watch", 7)} this week`} />
+        <Tile label="Something wrong? reports" value={pevCount("report")} sub="They land in your Ask Josh inbox" />
+      </Group>
+      {recentStories.length > 0 && (
+        <section className="mt-4">
+          <h3 className="mb-2 text-sm font-semibold">Recently changed stories (spot-check a few)</h3>
+          <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface text-sm">
+            {recentStories.map((s) => (
+              <li key={s.slug} className="flex flex-wrap gap-x-3 px-4 py-2">
+                <Link href={`/products?q=${encodeURIComponent(s.name)}`} className="font-medium hover:underline">{s.name}</Link>
+                <span className="text-ink-2">{s.product_short}</span>
+                <span className="ml-auto text-ink-3">{s.product_category} · {ago(s.product_changed_at)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <Group title="Interview kit downloads">
         <Tile label="Downloads" value={kitRows.length} sub="Before You Say Yes" />

@@ -7,6 +7,7 @@ import { JobGrid, Section } from "@/components/JobCard";
 import { getActiveWatch, getUserState } from "@/lib/session";
 import { rankForWatch } from "@/lib/matching";
 import { marketsFor, visitorMarket } from "@/lib/market";
+import { PRODUCT_CATEGORIES, categoryCounts, loadProductData } from "@/lib/products";
 import { cookies } from "next/headers";
 import { INTRO_COOKIE, IntroBanner } from "@/components/IntroBanner";
 
@@ -30,6 +31,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   ]);
   // The owl intro shows until it's closed. While it's up, it stands in for the old "set up a watch" box.
   const showIntro = (await cookies()).get(INTRO_COOKIE)?.value !== "hidden";
+  const productCounts = categoryCounts((await loadProductData().catch(() => null)) ?? { companies: [], jobs: [] }, markets);
   const rampingUp = companies.filter((c) => c.trend === "ramping").sort(byHiringFastest).slice(0, 6);
   const ctx = { savedJobIds: state.savedJobIds, back: "/" };
   const forYou = watch
@@ -65,8 +67,25 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
       <Section title="New Today" href="/new">
         <JobGrid jobs={newToday} ctx={ctx} empty="No new sales jobs in the last 24 hours yet." />
       </Section>
+      {productCounts.size > 0 && (
+        <Section title="Explore by product" href="/products">
+          <p className="-mt-1 mb-3 text-sm text-ink-2">Find a product you&apos;d be excited to sell, explained in plain English.</p>
+          <div className="flex flex-wrap gap-2">
+            {PRODUCT_CATEGORIES.filter((c) => productCounts.get(c)).map((c) => (
+              <Link
+                key={c}
+                href={`/products?cat=${encodeURIComponent(c)}`}
+                className="inline-flex min-h-11 items-center rounded-full border border-line-strong bg-surface px-4 text-sm font-semibold hover:border-ink"
+              >
+                {c}
+                <span className="ml-1.5 text-xs font-normal text-ink-3">{productCounts.get(c)}</span>
+              </Link>
+            ))}
+          </div>
+        </Section>
+      )}
       {rampingUp.length > 0 && (
-        <Section title="Hiring fastest" href="/companies">
+        <Section title="Hiring fastest" href="/products?sort=fastest">
           <p className="-mt-1 mb-3 text-sm text-ink-2">Companies posting the most new sales roles in the last 30 days.</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {rampingUp.map((c) => (

@@ -9,6 +9,7 @@ import { ATTAINMENT_ROLES, attainmentLabel } from "@/lib/attainment";
 import { QuestionsPanel } from "@/components/Questions";
 import { AskJoshForm } from "@/components/AskJosh";
 import { getUser } from "@/lib/session";
+import { loadProductData } from "@/lib/products";
 import { formatComp, formatLocation, money } from "@/lib/format";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { tagsFor } from "@/components/JobCard";
@@ -54,7 +55,14 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
   const { slug } = await params;
   const job = await getJob(slug);
   if (!job) notFound();
-  const [state, watch, stats, user] = await Promise.all([getUserState(), getActiveWatch(), getCompanyStats(job.company_id), getUser().catch(() => null)]);
+  const [state, watch, stats, user, products] = await Promise.all([
+    getUserState(),
+    getActiveWatch(),
+    getCompanyStats(job.company_id),
+    getUser().catch(() => null),
+    loadProductData().catch(() => null),
+  ]);
+  const product = products?.companies.find((c) => c.id === job.company_id && c.story) ?? null;
   const read = braunRead({ ...job, company: stats });
   const match = watch ? scoreMatch(job, watch.prefs) : null;
   // Attainment is the question for people carrying a number. For SEs and leaders it means something else.
@@ -82,6 +90,16 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
           </p>
         </div>
       </div>
+      {product?.short && (
+        <p className="mt-3 text-[15px] text-ink-2">
+          <span className="font-semibold text-ink">What they sell:</span> {product.short}.{" "}
+          {product.category && (
+            <Link href={`/products?cat=${encodeURIComponent(product.category)}`} className="whitespace-nowrap font-semibold text-accent hover:underline">
+              More {product.category} companies →
+            </Link>
+          )}
+        </p>
+      )}
 
       <div className="mt-6 rounded-xl border border-line bg-surface">
         <dl className={`grid gap-4 p-4 ${showAttainment ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>

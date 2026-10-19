@@ -76,7 +76,7 @@ export default async function Watchlist({ searchParams }: { searchParams: Promis
         </ul>
       ) : (
         <Empty>
-          Watch a company and we&apos;ll email you when it posts a new sales role. <Link href="/companies" className="underline">Browse companies</Link>
+          Watch a company and we&apos;ll email you when it posts a new sales role. <Link href="/products" className="underline">Browse companies by product</Link>
         </Empty>
       )}
 

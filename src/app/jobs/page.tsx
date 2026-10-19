@@ -97,6 +97,10 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
   return (
     <>
       <h1 className="text-2xl font-bold tracking-tight">All Jobs</h1>
+      <p className="mt-1 text-sm text-ink-2">
+        Not sure what you want to sell?{" "}
+        <Link href="/products" className="font-semibold text-ink underline underline-offset-2 hover:no-underline">Browse by product →</Link>
+      </p>
       <form className="mb-6 mt-4 flex flex-wrap gap-2" action="/jobs">
         <input name="q" defaultValue={sp.q} placeholder="Keyword or company" className="min-w-0 flex-1 basis-48 rounded-md border border-line bg-surface px-3 py-1.5 text-sm" />
         <Select name="role" label="Any role" options={ROLE_FAMILIES} value={sp.role} />

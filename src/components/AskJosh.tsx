@@ -19,10 +19,12 @@ export function AskJoshForm({
   source,
   job,
   defaultEmail = "",
+  defaultMessage = "",
 }: {
   source: string;
   job?: { slug: string; company: string };
   defaultEmail?: string;
+  defaultMessage?: string;
 }) {
   const [status, action, pending] = useActionState<AskStatus | null, FormData>(askJosh, null);
   const id = useId();
@@ -57,6 +59,7 @@ export function AskJoshForm({
           minLength={10}
           maxLength={3000}
           rows={4}
+          defaultValue={defaultMessage}
           className={field}
           placeholder={
             job
