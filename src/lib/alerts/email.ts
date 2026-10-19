@@ -15,6 +15,10 @@ export interface AlertItem {
   location: string | null;
   match_id: string;
   currency?: string | null;
+  /** Red flags from the posting, plain labels. */
+  redFlags?: string[];
+  /** The first questions to ask, same as the job page. */
+  questions?: string[];
 }
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -29,9 +33,15 @@ export function renderAlert(watchName: string, items: AlertItem[], siteUrl: stri
       const meta = [comp, where].filter(Boolean).join(" · ");
       // Click goes through our redirect so we can measure alert -> detail clicks (primary V1 metric).
       const href = `${siteUrl}/r/${i.match_id}`;
+      const flags = (i.redFlags ?? []).length
+        ? `<div style="color:#b42318;font-size:14px;margin-top:8px;font-weight:600">${i.redFlags!.map((f) => `&#9650; ${esc(f)}`).join("<br>")}</div>`
+        : "";
+      const qs = (i.questions ?? []).length
+        ? `<div style="font-size:13px;color:#888;margin-top:8px">Ask before you say yes:</div><ul style="margin:4px 0 0;padding-left:18px;color:#333;font-size:14px;line-height:1.45">${i.questions!.map((q) => `<li>${esc(q)}</li>`).join("")}</ul>`
+        : "";
       return `<tr><td style="padding:14px 0;border-bottom:1px solid #eee">
         <a href="${href}" style="color:#111;text-decoration:none;font-weight:600">${esc(i.title)} · ${esc(i.company)}</a>
-        <div style="color:#555;font-size:14px;margin-top:4px">${esc(meta)}</div></td></tr>`;
+        <div style="color:#555;font-size:14px;margin-top:4px">${esc(meta)}</div>${flags}${qs}</td></tr>`;
     })
     .join("");
   const html = `<!doctype html><html><body style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;background:#faf8f5;padding:24px">
@@ -43,7 +53,17 @@ export function renderAlert(watchName: string, items: AlertItem[], siteUrl: stri
   <tr><td style="padding-top:24px;font-size:12px;color:#999">You're getting this because you watch "${esc(watchName)}". <a href="${siteUrl}/alerts" style="color:#999">Change alert frequency</a></td></tr>
   </table></body></html>`;
   const text = `${subject}\n\n${items
-    .map((i) => `${i.title} - ${i.company}\n${formatComp(i)}\n${siteUrl}/r/${i.match_id}`)
+    .map((i) =>
+      [
+        `${i.title} - ${i.company}`,
+        formatComp(i),
+        ...(i.redFlags ?? []).map((f) => `Red flag: ${f}`),
+        ...((i.questions ?? []).length ? ["Ask before you say yes:", ...i.questions!.map((q) => `- ${q}`)] : []),
+        `${siteUrl}/r/${i.match_id}`,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    )
     .join("\n\n")}\n\nSee all matches: ${siteUrl}/watchlist\nFree interview kit: ${siteUrl}/kit`;
   return { subject, html, text };
 }

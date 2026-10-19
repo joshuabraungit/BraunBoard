@@ -3,12 +3,14 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { renderAlert, sendEmail, type AlertItem } from "./email";
+import { flagsFromCodes, isRedFlag } from "../flags";
+import { questionsFor } from "../questions";
 
 export async function sendPendingAlerts(db: SupabaseClient, frequency: "instant" | "daily"): Promise<number> {
   const { data: pending, error } = await db
     .from("alert_matches")
     .select(
-      "id, user_id, match_score, company_watch, watches(name, alert_frequency), jobs(slug, title_raw, salary_min, salary_max, ote_min, ote_max, currency, markets, remote_type, city, state, is_active, companies(name))",
+      "id, user_id, match_score, company_watch, watches(name, alert_frequency), jobs(slug, title_raw, salary_min, salary_max, ote_min, ote_max, currency, markets, remote_type, city, state, is_active, flags, disclosures, self_sourcing_level, role_family, seniority, buyer, buyer_checked_at, companies(name))",
     )
     .is("sent_at", null)
     .order("match_score", { ascending: false, nullsFirst: false });
@@ -22,6 +24,8 @@ export async function sendPendingAlerts(db: SupabaseClient, frequency: "instant"
       slug: string; title_raw: string; salary_min: number | null; salary_max: number | null;
       ote_min: number | null; ote_max: number | null; currency: string | null; markets: string[] | null; remote_type: string; city: string | null;
       state: string | null; is_active: boolean; companies: { name: string };
+      flags: string[] | null; disclosures: Record<string, boolean> | null; self_sourcing_level: string; role_family: string;
+      seniority: string; buyer: string | null; buyer_checked_at: string | null;
     } | null;
     if (!j?.is_active) continue;
     const freq = w?.alert_frequency ?? "daily"; // company-watch-only matches go in the digest
@@ -42,6 +46,7 @@ export async function sendPendingAlerts(db: SupabaseClient, frequency: "instant"
       currency: j.currency,
       remote_type: j.remote_type,
       location: [j.city, j.state].filter(Boolean).join(", ") || (j.markets?.includes("US") ? null : "Canada"),
+      ...readFor(j),
     });
     g.ids.push(m.id);
     groups.set(key, g);
@@ -57,4 +62,19 @@ export async function sendPendingAlerts(db: SupabaseClient, frequency: "instant"
     sent++;
   }
   return sent;
+}
+
+/** Red flags and the first questions to ask, built the same way as the job page (from the stored flags). */
+function readFor(j: {
+  flags: string[] | null; disclosures: Record<string, boolean> | null; self_sourcing_level: string; role_family: string; seniority: string;
+  buyer: string | null; buyer_checked_at: string | null; salary_min: number | null; ote_min: number | null;
+}): { redFlags: string[]; questions: string[] } {
+  try {
+    const flags = flagsFromCodes(j.flags);
+    // 3 questions: the two most important for this job, then "Why is this role open?"
+    const questions = questionsFor({ ...j, flags, company: null }, 3).map((q) => q.text);
+    return { redFlags: flags.filter(isRedFlag).slice(0, 2).map((f) => f.label), questions };
+  } catch {
+    return { redFlags: [], questions: [] };
+  }
 }

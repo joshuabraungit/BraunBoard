@@ -44,7 +44,7 @@ export function IntroBanner() {
         <div className="col-span-2 row-start-3 sm:col-span-1 sm:col-start-1 sm:row-start-2 sm:self-start">
           <p className="mt-3 max-w-xl text-ink-2">
             Job posts show the OTE. They don&rsquo;t show how many reps hit it. Tell us the role, pay, where and your dealbreakers.
-            We&rsquo;ll email you when a match shows up, with the questions to ask before you say yes.
+            We&rsquo;ll email you when a match shows up, with the red flags and the questions to ask before you say yes.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link
