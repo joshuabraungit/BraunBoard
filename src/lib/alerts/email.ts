@@ -68,7 +68,7 @@ export function renderAlert(watchName: string, items: AlertItem[], siteUrl: stri
   return { subject, html, text };
 }
 
-/** Sends through Resend's HTTP API. Swap for any provider with the same signature. */
+/** Sends through Resend's HTTP API. Returns false when there's no key (nothing was sent). */
 export async function sendEmail(
   to: string,
   msg: { subject: string; html: string; text: string },
@@ -77,7 +77,7 @@ export async function sendEmail(
   const key = process.env.RESEND_API_KEY;
   if (!key) {
     console.log(`[email:dry-run] to=${to} subject="${msg.subject}"`);
-    return;
+    return false;
   }
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -90,4 +90,5 @@ export async function sendEmail(
     }),
   });
   if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);
+  return true;
 }

@@ -130,8 +130,9 @@ export async function submitAsk(input: AskInput, ctx: { ip: string; userId: stri
     return "error";
   }
   try {
-    await sendEmail(to, renderAsk(a, job, siteUrl), { from, replyTo: a.email });
-    await db.from("ask_messages").update({ emailed: true }).eq("id", row.id);
+    const sent = await sendEmail(to, renderAsk(a, job, siteUrl), { from, replyTo: a.email });
+    // No email key on the site: the message is still saved and shows on the Admin page.
+    await db.from("ask_messages").update(sent ? { emailed: true } : { emailed: false, error: "Not emailed: RESEND_API_KEY isn't set on the site" }).eq("id", row.id);
     return "ok";
   } catch (e) {
     // Saved but not emailed: keep the error so nothing gets lost.
