@@ -5,11 +5,11 @@ import { PicksSignup } from "@/components/PicksSignup";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Before You Say Yes · Your first AE job interview kit · Braun Board",
-  description: "A free interview kit for SDRs going for their first AE role: 19 questions, what good and bad answers sound like, and an offer comparison sheet. By Josh Braun.",
+  description: "A free interview kit for SDRs going for their first AE role: 22 questions, what good and bad answers sound like, and an offer comparison sheet. By Josh Braun.",
 };
 
 const INSIDE = [
-  ["19 questions", "for the recruiter, the hiring manager and a current rep, each with why it matters and how to ask one level deeper."],
+  ["22 questions", "for the recruiter, the hiring manager and a current rep, with why each one matters, plus three that show how you sell."],
   ["What good and bad answers sound like", "a green flag and a red flag example for every question."],
   ["When answers get vague", "what to say when you hear \"most people hit quota\" or \"the plan is pretty standard.\""],
   ["Your nonnegotiables", "decide what you'd walk away over before the first call."],
@@ -55,7 +55,7 @@ export default async function KitPage({ searchParams }: { searchParams: Promise<
         >
           Download the kit (PDF) →
         </a>
-        <p className="mt-2 text-xs text-ink-3">Free. No email needed. 27 pages. Fill it in on your computer, or print it and write by hand.</p>
+        <p className="mt-2 text-xs text-ink-3">Free. No email needed. 28 pages. Fill it in on your computer, or print it and write by hand.</p>
       </div>
 
       <p className="mt-10 font-semibold">Want sales jobs that pass these questions, sent to you every Tuesday?</p>
