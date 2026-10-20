@@ -32,7 +32,7 @@ export function QuestionsPanel({ questions, title, company, roleFamily }: { ques
           <Link href="/kit?from=job-page" className="font-semibold text-ink underline underline-offset-2 hover:no-underline">
             Get the free interview kit →
           </Link>{" "}
-          19 questions, what good and bad answers sound like, and an offer comparison sheet.
+          22 questions, what good and bad answers sound like, and an offer comparison sheet.
         </p>
       )}
     </section>
