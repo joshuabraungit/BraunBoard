@@ -72,67 +72,28 @@ function ago(iso: string | null) {
   return h < 48 ? `${h} hr ago` : `${Math.round(h / 24)} days ago`;
 }
 
-function Tile({ label, value, sub, tone }: { label: string; value: string | number; sub?: string; tone?: "good" | "bad" }) {
-  return (
-    <div className="rounded-xl border border-line bg-surface p-4">
+function Tile({ label, value, sub, tone, href }: { label: string; value: string | number; sub?: string; tone?: "good" | "bad"; href?: string }) {
+  const body = (
+    <>
       <p className="text-xs uppercase tracking-wide text-ink-3">{label}</p>
-      <p className={`mt-1 text-2xl font-bold tracking-tight ${tone === "good" ? "text-accent" : tone === "bad" ? "text-red" : ""}`}>
+      <p className={`mt-1 text-2xl font-bold tracking-tight ${tone === "good" ? "text-accent" : tone === "bad" ? "text-red" : ""} ${href ? "underline decoration-2 underline-offset-4" : ""}`}>
         {typeof value === "number" ? value.toLocaleString() : value}
       </p>
       {sub && <p className="mt-0.5 text-xs text-ink-3">{sub}</p>}
-    </div>
+    </>
+  );
+  return href ? (
+    <Link href={href} className="block rounded-xl border border-line bg-surface p-4 hover:border-ink-3">
+      {body}
+    </Link>
+  ) : (
+    <div className="rounded-xl border border-line bg-surface p-4">{body}</div>
   );
 }
 
 interface AskRow {
-  id: number; email: string; name: string | null; message: string; offer: string | null;
-  job_slug: string | null; source: string | null; emailed: boolean | null; created_at: string;
-}
-
-const NY = { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" } as const;
-
-/** The latest messages themselves, so nothing gets lost if an email lands in spam. */
-function AskMessages({ rows }: { rows: AskRow[] }) {
-  if (!rows.length) return null;
-  return (
-    <div className="mt-3 divide-y divide-line rounded-xl border border-line bg-surface">
-      {rows.map((r) => {
-        const subject = encodeURIComponent("Re: your question on Braun Board");
-        return (
-          <div key={r.id} className="p-4">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-              <p className="text-sm font-semibold">
-                {r.name ? `${r.name} · ` : ""}
-                <span className="font-normal text-ink-2">{r.email}</span>
-              </p>
-              <p className="text-xs text-ink-3">
-                {new Date(r.created_at).toLocaleString("en-US", NY)}
-                {r.emailed === false && <span className="ml-2 font-semibold text-red">Email didn&apos;t send</span>}
-              </p>
-            </div>
-            {r.job_slug && (
-              <p className="mt-1 text-xs text-ink-3">
-                About{" "}
-                <a href={`/jobs/${r.job_slug}`} className="underline underline-offset-2">
-                  this job
-                </a>
-              </p>
-            )}
-            <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed">{r.message}</p>
-            {r.offer && (
-              <p className="mt-2 whitespace-pre-wrap text-sm text-ink-2">
-                <span className="font-semibold">Offer details: </span>
-                {r.offer}
-              </p>
-            )}
-            <a href={`mailto:${r.email}?subject=${subject}`} className="mt-2 inline-block text-sm font-semibold text-accent underline underline-offset-2">
-              Reply →
-            </a>
-          </div>
-        );
-      })}
-    </div>
-  );
+  email: string;
+  created_at: string;
 }
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
@@ -150,7 +111,7 @@ export default async function AdminDashboard() {
   const [{ data, error }, { data: aud }, { data: asks }, { data: kits }, { data: pev }, { count: storyCount }, { data: changed }] = await Promise.all([
     db.rpc("admin_overview"),
     db.rpc("admin_audience"),
-    db.from("ask_messages").select("id, email, name, message, offer, job_slug, source, emailed, created_at").order("created_at", { ascending: false }).range(0, 9999),
+    db.from("ask_messages").select("email, created_at").range(0, 9999),
     db.from("kit_downloads").select("created_at, source").range(0, 49999),
     db.from("product_events").select("created_at, event").gte("created_at", new Date(Date.now() - 30 * 86_400_000).toISOString()).range(0, 49999),
     db.from("companies").select("id", { count: "exact", head: true }).not("product_story", "is", null),
@@ -218,12 +179,11 @@ export default async function AdminDashboard() {
       </Group>
 
       <Group title="Ask Josh">
-        <Tile label="People who wrote in" value={askPeople()} sub="Gave their email in the Ask Josh form" />
+        <Tile label="People who wrote in" value={askPeople()} sub="Gave their email in the Ask Josh form" href="/admin/ask" />
         <Tile label="This week" value={askPeople(7)} />
         <Tile label="Last 30 days" value={askPeople(30)} />
-        <Tile label="Messages" value={askRows.length} sub="Some people send more than one" />
+        <Tile label="Messages" value={askRows.length} sub="Click to read them" href="/admin/ask" />
       </Group>
-      <AskMessages rows={askRows.slice(0, 25)} />
 
       {a && (
         <section className="mt-8">
