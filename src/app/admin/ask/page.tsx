@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { adminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin";
+import { deleteAskMessage } from "../actions";
+import { AdminNotice } from "@/components/AdminNotice";
 
 interface AskRow {
   id: number; email: string; name: string | null; message: string; offer: string | null;
@@ -43,9 +45,22 @@ function AskList({ rows }: { rows: AskRow[] }) {
                 {r.offer}
               </p>
             )}
-            <a href={`mailto:${r.email}?subject=${subject}`} className="mt-2 inline-block text-sm font-semibold text-accent underline underline-offset-2">
-              Reply →
-            </a>
+            <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2">
+              <a href={`mailto:${r.email}?subject=${subject}`} className="text-sm font-semibold text-accent underline underline-offset-2">
+                Reply →
+              </a>
+              {/* Two steps so a stray click can't delete anything. */}
+              <details className="text-sm">
+                <summary className="cursor-pointer list-none text-ink-3 hover:text-red">Delete</summary>
+                <form action={deleteAskMessage} className="mt-2 flex items-center gap-3">
+                  <input type="hidden" name="id" value={r.id} />
+                  <span className="text-ink-2">Delete this message for good?</span>
+                  <button type="submit" className="rounded-md bg-red px-3 py-1 text-sm font-semibold text-white hover:opacity-90">
+                    Yes, delete
+                  </button>
+                </form>
+              </details>
+            </div>
           </div>
         );
       })}
@@ -53,7 +68,8 @@ function AskList({ rows }: { rows: AskRow[] }) {
   );
 }
 
-export default async function AdminAsk() {
+export default async function AdminAsk({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
+  const { msg, err } = await searchParams;
   await requireAdmin();
   const { data, error } = await adminClient()
     .from("ask_messages")
@@ -71,6 +87,9 @@ export default async function AdminAsk() {
       <p className="mt-1 text-sm text-ink-2">
         {rows.length ? `${rows.length} message${rows.length === 1 ? "" : "s"}, newest first.` : "No messages yet."}
       </p>
+      <div className="mt-3">
+        <AdminNotice msg={msg} err={err} />
+      </div>
       <AskList rows={rows} />
     </div>
   );

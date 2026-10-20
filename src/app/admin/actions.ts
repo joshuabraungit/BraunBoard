@@ -168,3 +168,14 @@ export async function setIssuePaused(formData: FormData) {
   await adminClient().from("picks_issues").update({ status: pause ? "paused" : "scheduled" }).eq("id", id);
   back(`/admin/picks/${id}`, pause ? "Paused. This issue won't go out unless you resume it." : "Back on schedule.");
 }
+
+export async function deleteAskMessage(formData: FormData) {
+  await requireAdmin();
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id)) back("/admin/ask", "That message wasn't found.", false);
+  const { error } = await adminClient().from("ask_messages").delete().eq("id", id);
+  if (error) back("/admin/ask", error.message, false);
+  revalidatePath("/admin");
+  revalidatePath("/admin/ask");
+  back("/admin/ask", "Message deleted.");
+}
