@@ -90,17 +90,6 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
           </p>
         </div>
       </div>
-      {product?.short && (
-        <p className="mt-3 text-[15px] text-ink-2">
-          <span className="font-semibold text-ink">What they sell:</span> {product.short}.{" "}
-          {product.category && (
-            <Link href={`/products?cat=${encodeURIComponent(product.category)}`} className="whitespace-nowrap font-semibold text-accent hover:underline">
-              More {product.category} companies →
-            </Link>
-          )}
-        </p>
-      )}
-
       <div className="mt-6 rounded-xl border border-line bg-surface">
         <dl className={`grid gap-4 p-4 ${showAttainment ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
           <Fact label="Base" value={range(job.salary_min, job.salary_max, job.currency)} />
@@ -156,6 +145,25 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
         <WatchCompanyButton companyId={job.company_id} on={state.watchedCompanyIds.has(job.company_id)} back={back} className={btn} />
         <SaveJobButton jobId={job.id} saved={saved} back={back} className={btn} />
       </div>
+
+      {product?.story && (
+        <section className="mt-6 rounded-xl border border-line bg-surface p-4">
+          <h2 className="text-xs font-bold uppercase tracking-wide text-ink-3">What {job.company_name} sells</h2>
+          {product.short && <p className="mt-1.5 font-semibold">{product.short}</p>}
+          <p className="mt-1 text-[15px] leading-relaxed text-ink-2">{product.story}</p>
+          <p className="mt-2 text-xs text-ink-3">
+            In plain English, from their own job posts.{" "}
+            <Link href={`/ask?about=${encodeURIComponent(job.company_name)}`} className="underline underline-offset-2 hover:text-ink">
+              Something wrong? Tell us
+            </Link>
+          </p>
+          {product.category && (
+            <Link href={`/products?cat=${encodeURIComponent(product.category)}`} className="mt-3 inline-block text-sm font-semibold text-accent hover:underline">
+              More {product.category} companies →
+            </Link>
+          )}
+        </section>
+      )}
 
       <BraunReadPanel read={read} />
 
