@@ -5,11 +5,11 @@ import { PicksSignup } from "@/components/PicksSignup";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Before You Say Yes · Your first AE job interview kit · Braun Board",
-  description: "A free interview kit for SDRs going for their first AE role: Josh Braun's top four interview questions, 19 more for the recruiter, hiring manager and current reps, what good and bad answers sound like, and an offer comparison sheet.",
+  description: "A free interview kit for SDRs going for their first AE role: Josh Braun's top five interview questions, 19 more for the recruiter, hiring manager and current reps, what good and bad answers sound like, and an offer comparison sheet.",
 };
 
-// The four Josh asks in every sales interview. Same words as page 3 of the kit.
-const TOP_FOUR = [
+// The five Josh asks in every sales interview. Same words as page 3 of the kit.
+const TOP_FIVE = [
   {
     q: "What do your top sellers have in common?",
     why: "You're getting past the job description and learning how people do the job well. If something connects to your experience, share a quick example.",
@@ -23,6 +23,10 @@ const TOP_FOUR = [
     why: "The earnings in the job posting are one thing. How many people actually earned that amount is another.",
   },
   {
+    q: "What does the onboarding and ramp period look like?",
+    why: "It tells you how seriously the company invests in setting new reps up for success from day one, versus expecting them to figure things out on their own.",
+  },
+  {
     q: "When are you looking to make a decision?",
     then: "Then: \u201cIs there anything preventing you from moving me forward to the next round?\u201d",
     why: "Sales takes leadership. You don't have to keep telling them you'd be good at sales. Give them a little preview.",
@@ -30,7 +34,7 @@ const TOP_FOUR = [
 ] as const;
 
 const INSIDE = [
-  ["My top four, plus 19 more questions", "for the recruiter, the hiring manager and a current rep, with why each one matters."],
+  ["My top five, plus 19 more questions", "for the recruiter, the hiring manager and a current rep, with why each one matters."],
   ["What good and bad answers sound like", "a green flag and a red flag example for each recruiter, manager and rep question."],
   ["Culture signals", "how they talk about their reps, the last person in the role and your time, and what to listen for."],
   ["When answers get vague", "what to say when you hear \"most people hit quota\" or \"the plan is pretty standard.\""],
@@ -56,11 +60,11 @@ export default async function KitPage({ searchParams }: { searchParams: Promise<
         say yes.
       </p>
 
-      <section id="top-four" className="mt-8 scroll-mt-24">
+      <section id="top-five" className="mt-8 scroll-mt-24">
         <h2 className="text-xl font-bold tracking-tight">&ldquo;Do you have any questions for us?&rdquo;</h2>
-        <p className="mt-1 text-[15px] text-ink-2">If you&apos;re interviewing for a sales job, here are the four I always ask.</p>
+        <p className="mt-1 text-[15px] text-ink-2">If you&apos;re interviewing for a sales job, here are the five I always ask.</p>
         <ol className="mt-4 space-y-4">
-          {TOP_FOUR.map((t, i) => (
+          {TOP_FIVE.map((t, i) => (
             <li key={t.q} className="flex gap-3">
               <span className="mt-0.5 font-serif text-xl font-bold leading-none text-accent">{i + 1}</span>
               <div>
@@ -85,7 +89,7 @@ export default async function KitPage({ searchParams }: { searchParams: Promise<
             </li>
           ))}
         </ul>
-        <p className="mt-4 text-sm text-ink-2">You won&apos;t ask all 23. Start with the top four, then pick the few that fit you and the conversation.</p>
+        <p className="mt-4 text-sm text-ink-2">You won&apos;t ask all 24. Start with the top five, then pick the few that fit you and the conversation.</p>
         {/* A plain link, not <Link>, so prefetching never counts as a download. */}
         <a
           href={`/kit/download?from=${source}`}

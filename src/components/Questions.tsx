@@ -27,8 +27,8 @@ export function QuestionsPanel({ questions, title, company, roleFamily }: { ques
         <QuestionList questions={OFFER_QUESTIONS} />
       </div>
       <p className="mt-5 text-sm">
-        <Link href="/kit?from=job-page#top-four" className="font-semibold text-accent hover:underline">
-          Josh&apos;s top four questions for any sales interview →
+        <Link href="/kit?from=job-page#top-five" className="font-semibold text-accent hover:underline">
+          Josh&apos;s top five questions for any sales interview →
         </Link>
       </p>
       {KIT_ROLES.has(roleFamily ?? "") && (
@@ -37,7 +37,7 @@ export function QuestionsPanel({ questions, title, company, roleFamily }: { ques
           <Link href="/kit?from=job-page" className="font-semibold text-ink underline underline-offset-2 hover:no-underline">
             Get the free interview kit →
           </Link>{" "}
-          23 questions, what good and bad answers sound like, and an offer comparison sheet.
+          24 questions, what good and bad answers sound like, and an offer comparison sheet.
         </p>
       )}
     </section>
