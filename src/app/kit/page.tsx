@@ -47,6 +47,7 @@ export default async function KitPage({ searchParams }: { searchParams: Promise<
             </li>
           ))}
         </ul>
+        <p className="mt-4 text-sm text-ink-2">You won&apos;t ask all 22. Pick the few that fit you and the conversation.</p>
         {/* A plain link, not <Link>, so prefetching never counts as a download. */}
         <a
           href={`/kit/download?from=${source}`}
