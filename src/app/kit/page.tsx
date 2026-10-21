@@ -5,11 +5,32 @@ import { PicksSignup } from "@/components/PicksSignup";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Before You Say Yes · Your first AE job interview kit · Braun Board",
-  description: "A free interview kit for SDRs going for their first AE role: 22 questions, what good and bad answers sound like, and an offer comparison sheet. By Josh Braun.",
+  description: "A free interview kit for SDRs going for their first AE role: Josh Braun's top four interview questions, 19 more for the recruiter, hiring manager and current reps, what good and bad answers sound like, and an offer comparison sheet.",
 };
 
+// The four Josh asks in every sales interview. Same words as page 3 of the kit.
+const TOP_FOUR = [
+  {
+    q: "What do your top sellers have in common?",
+    why: "You're getting past the job description and learning how people do the job well. If something connects to your experience, share a quick example.",
+  },
+  {
+    q: "Six months from now, what would make you say hiring me was a great decision?",
+    why: "You're finding out what matters to the person hiring you. Now you can share a relevant story, and decide whether the expectations sound reasonable.",
+  },
+  {
+    q: "What percentage of fully ramped reps earned their full OTE last year?",
+    why: "The earnings in the job posting are one thing. How many people actually earned that amount is another.",
+  },
+  {
+    q: "When are you looking to make a decision?",
+    then: "Then: \u201cIs there anything preventing you from moving me forward to the next round?\u201d",
+    why: "Sales takes leadership. You don't have to keep telling them you'd be good at sales. Give them a little preview.",
+  },
+] as const;
+
 const INSIDE = [
-  ["22 questions", "for the recruiter, the hiring manager and a current rep, with why each one matters, plus three that show how you sell."],
+  ["My top four, plus 19 more questions", "for the recruiter, the hiring manager and a current rep, with why each one matters."],
   ["What good and bad answers sound like", "a green flag and a red flag example for each recruiter, manager and rep question."],
   ["Culture signals", "how they talk about their reps, the last person in the role and your time, and what to listen for."],
   ["When answers get vague", "what to say when you hear \"most people hit quota\" or \"the plan is pretty standard.\""],
@@ -35,8 +56,25 @@ export default async function KitPage({ searchParams }: { searchParams: Promise<
         say yes.
       </p>
 
-      <div className="mt-6 rounded-2xl border border-line bg-surface p-5 sm:p-6">
-        <h2 className="font-bold">What&apos;s inside</h2>
+      <section id="top-four" className="mt-8 scroll-mt-24">
+        <h2 className="text-xl font-bold tracking-tight">&ldquo;Do you have any questions for us?&rdquo;</h2>
+        <p className="mt-1 text-[15px] text-ink-2">If you&apos;re interviewing for a sales job, here are the four I always ask.</p>
+        <ol className="mt-4 space-y-4">
+          {TOP_FOUR.map((t, i) => (
+            <li key={t.q} className="flex gap-3">
+              <span className="mt-0.5 font-serif text-xl font-bold leading-none text-accent">{i + 1}</span>
+              <div>
+                <p className="font-semibold">&ldquo;{t.q}&rdquo;</p>
+                {"then" in t && <p className="mt-1 text-[15px] text-ink">{t.then}</p>}
+                <p className="mt-1 text-[15px] leading-relaxed text-ink-2">{t.why}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <div className="mt-8 rounded-2xl border border-line bg-surface p-5 sm:p-6">
+        <h2 className="font-bold">What&apos;s inside the kit</h2>
         <ul className="mt-3 space-y-2.5 text-[15px]">
           {INSIDE.map(([title, rest]) => (
             <li key={title} className="flex gap-2.5">
@@ -47,7 +85,7 @@ export default async function KitPage({ searchParams }: { searchParams: Promise<
             </li>
           ))}
         </ul>
-        <p className="mt-4 text-sm text-ink-2">You won&apos;t ask all 22. Pick the few that fit you and the conversation.</p>
+        <p className="mt-4 text-sm text-ink-2">You won&apos;t ask all 23. Start with the top four, then pick the few that fit you and the conversation.</p>
         {/* A plain link, not <Link>, so prefetching never counts as a download. */}
         <a
           href={`/kit/download?from=${source}`}

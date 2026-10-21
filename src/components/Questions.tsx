@@ -26,13 +26,18 @@ export function QuestionsPanel({ questions, title, company, roleFamily }: { ques
         <p className="mt-1 text-sm text-ink-3">Save these for later. They land better once they&apos;ve said yes to you.</p>
         <QuestionList questions={OFFER_QUESTIONS} />
       </div>
+      <p className="mt-5 text-sm">
+        <Link href="/kit?from=job-page#top-four" className="font-semibold text-accent hover:underline">
+          Josh&apos;s top four questions for any sales interview →
+        </Link>
+      </p>
       {KIT_ROLES.has(roleFamily ?? "") && (
         <p className="mt-5 rounded-lg bg-bg px-4 py-3 text-sm text-ink-2">
           Going for your first AE role?{" "}
           <Link href="/kit?from=job-page" className="font-semibold text-ink underline underline-offset-2 hover:no-underline">
             Get the free interview kit →
           </Link>{" "}
-          22 questions, what good and bad answers sound like, and an offer comparison sheet.
+          23 questions, what good and bad answers sound like, and an offer comparison sheet.
         </p>
       )}
     </section>
