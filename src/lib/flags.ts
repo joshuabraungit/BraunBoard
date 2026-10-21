@@ -64,8 +64,8 @@ const RULES: Rule[] = [
     code: "hustle_language",
     tone: "red",
     label: "Hustle-culture language",
-    why: "Words like rockstar, ninja, grind, or work hard / play hard usually mean long hours and high turnover.",
-    test: (t) => /\b(rock ?star|ninja|work hard,? play hard|grind(ing)?|killer instinct|hungry to crush|crush(ing)? (your )?quota|thick[- ]skinned)\b/.test(t),
+    why: "Words like rockstar, grind, work hard / play hard, or \"no excuses\" usually mean long hours and high turnover.",
+    test: (t) => /\b(rock ?star|ninja|work hard,? play hard|grind(ing)?|killer instinct|hungry to crush|crush(ing)? (your )?quota|thick[- ]skinned|no[- ]excuses?|all gas,? no brakes)\b/.test(t),
   },
   {
     code: "dial_quotas",
@@ -188,6 +188,17 @@ const RULES: Rule[] = [
     label: "Pays accelerators",
     why: "Higher commission rates once you pass quota. Overperformance actually pays.",
     test: (t) => /\baccelerators?\b/.test(t),
+  },
+  {
+    code: "promotion_path",
+    tone: "green",
+    label: "Clear path to promotion",
+    why: "The posting spells out a path to the next role, like SDR to AE. Ask how long it took the last few people and what they had to hit.",
+    // Only for reps. A manager "building career paths" for their team is part of the job, not a promise to you.
+    test: (t, j) =>
+      IC_ROLES.has(j.role_family ?? "") &&
+      (j.seniority ?? "Individual Contributor") === "Individual Contributor" &&
+      /\b((path|track|pathway) (to|toward|into) (becoming )?(an? )?(full |full-cycle )?(ae|account executive|eae|enterprise ae)\b|ae track\b|promotion path(way)?\b|(sdr|bdr) career path\b|career path to (ae|eae|account executive)\b)/.test(t),
   },
   {
     code: "coaching",

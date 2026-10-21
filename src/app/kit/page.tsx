@@ -10,7 +10,8 @@ export const metadata: Metadata = {
 
 const INSIDE = [
   ["22 questions", "for the recruiter, the hiring manager and a current rep, with why each one matters, plus three that show how you sell."],
-  ["What good and bad answers sound like", "a green flag and a red flag example for every question."],
+  ["What good and bad answers sound like", "a green flag and a red flag example for each recruiter, manager and rep question."],
+  ["Culture signals", "how they talk about their reps, the last person in the role and your time, and what to listen for."],
   ["When answers get vague", "what to say when you hear \"most people hit quota\" or \"the plan is pretty standard.\""],
   ["Your nonnegotiables", "decide what you'd walk away over before the first call."],
   ["Offer comparison and pay scenarios", "put two offers side by side and see what you'd earn at 50%, 100% and 125% of quota."],
@@ -55,7 +56,7 @@ export default async function KitPage({ searchParams }: { searchParams: Promise<
         >
           Download the kit (PDF) →
         </a>
-        <p className="mt-2 text-xs text-ink-3">Free. No email needed. 28 pages. Fill it in on your computer, or print it and write by hand.</p>
+        <p className="mt-2 text-xs text-ink-3">Free. No email needed. 29 pages. Fill it in on your computer, or print it and write by hand.</p>
       </div>
 
       <p className="mt-10 font-semibold">Want sales jobs that pass these questions, sent to you every Tuesday?</p>

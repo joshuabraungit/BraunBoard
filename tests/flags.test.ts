@@ -24,6 +24,19 @@ describe("computeFlags", () => {
   it("catches hustle language but not ordinary words", () => {
     expect(codes({ description_raw: "We want a sales rockstar who can work hard, play hard." })).toContain("hustle_language");
     expect(codes({ description_raw: "Relentlessly focused on customers. Fast-paced team." })).not.toContain("hustle_language");
+    expect(codes({ description_raw: "A desire to take on a bigger challenge and a no excuses mindset." })).toContain("hustle_language");
+    expect(codes({ description_raw: "Life here is all gas, no brakes." })).toContain("hustle_language");
+  });
+
+  it("credits a spelled-out promotion path for reps only", () => {
+    const sdr = { role_family: "SDR/BDR", seniority: "Individual Contributor" };
+    expect(codes({ ...sdr, description_raw: "Why join us? Clear path to AE within a year." })).toContain("promotion_path");
+    expect(codes({ ...sdr, description_raw: "A clear path to becoming an account executive through training." })).toContain("promotion_path");
+    expect(codes({ ...sdr, description_raw: "Structured, performance-based promotion pathway." })).toContain("promotion_path");
+    // Sales phrases that aren't about your career.
+    expect(codes({ role_family: "Account Executive", description_raw: "Confirm a clear path to purchase and a clear path to expansion." })).not.toContain("promotion_path");
+    // A manager building career paths for their team isn't a promise to the reader.
+    expect(codes({ role_family: "Sales Manager", seniority: "Manager", description_raw: "Build a clear path to AE for every rep." })).not.toContain("promotion_path");
   });
 
   it("catches dial quotas, clawbacks and many hats", () => {
