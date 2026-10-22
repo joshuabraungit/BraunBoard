@@ -4,7 +4,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { renderAlert, sendEmail, type AlertItem } from "./email";
 import { flagsFromCodes, isRedFlag } from "../flags";
-import { questionsFor } from "../questions";
+import { FLAG_QUESTIONS } from "../questions";
 
 export async function sendPendingAlerts(db: SupabaseClient, frequency: "instant" | "daily"): Promise<number> {
   const { data: pending, error } = await db
@@ -64,17 +64,8 @@ export async function sendPendingAlerts(db: SupabaseClient, frequency: "instant"
   return sent;
 }
 
-/** Red flags and the first questions to ask, built the same way as the job page (from the stored flags). */
-function readFor(j: {
-  flags: string[] | null; disclosures: Record<string, boolean> | null; self_sourcing_level: string; role_family: string; seniority: string;
-  buyer: string | null; buyer_checked_at: string | null; salary_min: number | null; ote_min: number | null;
-}): { redFlags: string[]; questions: string[] } {
-  try {
-    const flags = flagsFromCodes(j.flags);
-    // 3 questions: the two most important for this job, then "Why is this role open?"
-    const questions = questionsFor({ ...j, flags, company: null }, 3).map((q) => q.text);
-    return { redFlags: flags.filter(isRedFlag).slice(0, 2).map((f) => f.label), questions };
-  } catch {
-    return { redFlags: [], questions: [] };
-  }
+/** The job's top red flags, each with the question that answers it. Generic questions live on the job page. */
+function readFor(j: { flags: string[] | null }): { redFlags: string[]; questions: string[] } {
+  const red = flagsFromCodes(j.flags).filter(isRedFlag).slice(0, 2);
+  return { redFlags: red.map((f) => f.label), questions: red.map((f) => FLAG_QUESTIONS[f.code]?.text).filter((q): q is string => !!q) };
 }

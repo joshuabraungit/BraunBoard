@@ -12,12 +12,12 @@ describe("renderAlert", () => {
     for (const body of [msg.html, msg.text]) {
       expect(body).toContain("No quota attainment shared");
       expect(body).toContain("What percentage of reps hit quota last year?");
-      expect(body).toContain("Ask before you say yes");
+      expect(body).toContain("Ask:");
     }
   });
   it("leaves them out when there are none", () => {
     const msg = renderAlert("My watch", [item()], "https://x.test");
-    expect(msg.html).not.toContain("Ask before you say yes");
+    expect(msg.html).not.toContain("Ask:");
     expect(msg.text).not.toContain("Red flag:");
   });
 });

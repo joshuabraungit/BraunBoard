@@ -37,7 +37,7 @@ export function renderAlert(watchName: string, items: AlertItem[], siteUrl: stri
         ? `<div style="color:#b42318;font-size:14px;margin-top:8px;font-weight:600">${i.redFlags!.map((f) => `&#9650; ${esc(f)}`).join("<br>")}</div>`
         : "";
       const qs = (i.questions ?? []).length
-        ? `<div style="font-size:13px;color:#888;margin-top:8px">Ask before you say yes:</div><ul style="margin:4px 0 0;padding-left:18px;color:#333;font-size:14px;line-height:1.45">${i.questions!.map((q) => `<li>${esc(q)}</li>`).join("")}</ul>`
+        ? `<div style="font-size:13px;color:#888;margin-top:8px">Ask:</div><ul style="margin:4px 0 0;padding-left:18px;color:#333;font-size:14px;line-height:1.45">${i.questions!.map((q) => `<li>${esc(q)}</li>`).join("")}</ul>`
         : "";
       return `<tr><td style="padding:14px 0;border-bottom:1px solid #eee">
         <a href="${href}" style="color:#111;text-decoration:none;font-weight:600">${esc(i.title)} · ${esc(i.company)}</a>
@@ -49,7 +49,7 @@ export function renderAlert(watchName: string, items: AlertItem[], siteUrl: stri
   <tr><td><div style="font-size:13px;color:#888">Braun Board</div><h1 style="font-size:20px;margin:6px 0 10px">${esc(subject)}</h1></td></tr>
   ${rows}
   <tr><td style="padding-top:18px"><a href="${siteUrl}/watchlist" style="color:#111;font-weight:600">See all matches →</a></td></tr>
-  <tr><td style="padding-top:10px;font-size:14px;color:#555">Interviewing soon? <a href="${siteUrl}/kit?from=alert-email" style="color:#111;font-weight:600">Get the free interview kit →</a></td></tr>
+  <tr><td style="padding-top:10px;font-size:14px;color:#555">Before any first call: <a href="${siteUrl}/kit?from=alert-email#top-five" style="color:#111;font-weight:600">Josh's top five questions →</a></td></tr>
   <tr><td style="padding-top:24px;font-size:12px;color:#999">You're getting this because you watch "${esc(watchName)}". <a href="${siteUrl}/alerts" style="color:#999">Change alert frequency</a></td></tr>
   </table></body></html>`;
   const text = `${subject}\n\n${items
@@ -58,13 +58,13 @@ export function renderAlert(watchName: string, items: AlertItem[], siteUrl: stri
         `${i.title} - ${i.company}`,
         formatComp(i),
         ...(i.redFlags ?? []).map((f) => `Red flag: ${f}`),
-        ...((i.questions ?? []).length ? ["Ask before you say yes:", ...i.questions!.map((q) => `- ${q}`)] : []),
+        ...((i.questions ?? []).length ? ["Ask:", ...i.questions!.map((q) => `- ${q}`)] : []),
         `${siteUrl}/r/${i.match_id}`,
       ]
         .filter(Boolean)
         .join("\n"),
     )
-    .join("\n\n")}\n\nSee all matches: ${siteUrl}/watchlist\nFree interview kit: ${siteUrl}/kit`;
+    .join("\n\n")}\n\nSee all matches: ${siteUrl}/watchlist\nBefore any first call, Josh's top five questions: ${siteUrl}/kit#top-five`;
   return { subject, html, text };
 }
 

@@ -24,6 +24,21 @@ export interface Question {
   text: string;
 }
 
+/** The question that answers each red flag. Used on job pages and, one per flag, in alert emails. */
+export const FLAG_QUESTIONS: Readonly<Record<string, Question>> = {
+  commission_only: { why: "No base means a slow quarter is a quarter with no paycheck.", text: "What did the median rep take home last year, with no base to fall back on?" },
+  uncapped_no_numbers: { why: "\"Unlimited\" is a ceiling, not a number. You need the median.", text: "What did the median rep and the top rep actually earn last year?" },
+  clawbacks: { why: "Money you earned can be taken back. Know the rules before you sign.", text: "Under what circumstances can commissions be clawed back, and for how long after the sale?" },
+  dial_quotas: { why: "Tells you if you'll be judged on deals or on dials.", text: "Is the daily activity number a hard requirement, or a guide? What happens if you miss it?" },
+  aggressive_split: { why: "When most of the pay is variable, this is your real salary.", text: "What percent of the variable did reps actually earn last year?" },
+  hustle_language: { why: "Hustle language in a posting often shows up in your calendar.", text: "What hours do your best reps actually work?" },
+  many_hats: { why: "\"Many hats\" can mean half your week isn't selling.", text: "What does a typical week look like? How much of it is selling?" },
+  player_coach: { why: "Two jobs, one paycheck. Find out which one wins when time runs out.", text: "How is time split between managing the team and carrying your own number?" },
+  wide_pay_range: { why: "A wide range means the top number may not be your number.", text: "Where in the range would someone with my background land, and why?" },
+  mass_posting: { why: "Hiring a lot can mean growth, or people leaving.", text: "How many reps are you hiring for this, and how many from last year's class are still here?" },
+  open_90_days: { why: "The answer tells you what candidates saw that made them walk.", text: "This role has been open a while. What's made it hard to fill?" },
+};
+
 const CARRIES_NUMBER = new Set(["SDR/BDR", "Account Executive", "Account Manager", "Customer Expansion"]);
 
 /** Up to `max` questions, most important first. */
@@ -34,17 +49,7 @@ export function questionsFor(j: QuestionInput, max = 6): Question[] {
   const add = (why: string, text: string) => out.push({ why, text });
 
   // 1. Red flags first: these are the things most likely to change your mind.
-  if (has.has("commission_only")) add("No base means a slow quarter is a quarter with no paycheck.", "What did the median rep take home last year, with no base to fall back on?");
-  if (has.has("uncapped_no_numbers")) add("\"Unlimited\" is a ceiling, not a number. You need the median.", "What did the median rep and the top rep actually earn last year?");
-  if (has.has("clawbacks")) add("Money you earned can be taken back. Know the rules before you sign.", "Under what circumstances can commissions be clawed back, and for how long after the sale?");
-  if (has.has("dial_quotas")) add("Tells you if you'll be judged on deals or on dials.", "Is the daily activity number a hard requirement, or a guide? What happens if you miss it?");
-  if (has.has("aggressive_split")) add("When most of the pay is variable, this is your real salary.", "What percent of the variable did reps actually earn last year?");
-  if (has.has("hustle_language")) add("Hustle language in a posting often shows up in your calendar.", "What hours do your best reps actually work?");
-  if (has.has("many_hats")) add("\"Many hats\" can mean half your week isn't selling.", "What does a typical week look like? How much of it is selling?");
-  if (has.has("player_coach")) add("Two jobs, one paycheck. Find out which one wins when time runs out.", "How is time split between managing the team and carrying your own number?");
-  if (has.has("wide_pay_range")) add("A wide range means the top number may not be your number.", "Where in the range would someone with my background land, and why?");
-  if (has.has("mass_posting")) add("Hiring a lot can mean growth, or people leaving.", "How many reps are you hiring for this, and how many from last year's class are still here?");
-  if (has.has("open_90_days")) add("The answer tells you what candidates saw that made them walk.", "This role has been open a while. What's made it hard to fill?");
+  for (const code of Object.keys(FLAG_QUESTIONS)) if (has.has(code)) out.push(FLAG_QUESTIONS[code]!);
   if (j.company?.trend === "pulling_back") add("Fewer openings can mean cuts. Better to hear it now.", "I noticed fewer open sales roles lately. What changed?");
 
   // 2. The numbers that decide whether the job is doable.
