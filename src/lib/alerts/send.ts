@@ -3,6 +3,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { renderAlert, sendEmail, type AlertItem } from "./email";
+import { offUrl } from "./off";
 import { flagsFromCodes, isRedFlag } from "../flags";
 import { FLAG_QUESTIONS } from "../questions";
 
@@ -10,14 +11,14 @@ export async function sendPendingAlerts(db: SupabaseClient, frequency: "instant"
   const { data: pending, error } = await db
     .from("alert_matches")
     .select(
-      "id, user_id, match_score, company_watch, watches(name, alert_frequency), jobs(slug, title_raw, salary_min, salary_max, ote_min, ote_max, currency, markets, remote_type, city, state, is_active, flags, disclosures, self_sourcing_level, role_family, seniority, buyer, buyer_checked_at, companies(name))",
+      "id, user_id, match_score, company_watch, watch_id, watches(name, alert_frequency), jobs(slug, title_raw, salary_min, salary_max, ote_min, ote_max, currency, markets, remote_type, city, state, is_active, flags, disclosures, self_sourcing_level, role_family, seniority, buyer, buyer_checked_at, companies(name))",
     )
     .is("sent_at", null)
     .order("match_score", { ascending: false, nullsFirst: false });
   if (error) throw error;
 
   // Group by user + watch name
-  const groups = new Map<string, { user_id: string; watch: string; items: AlertItem[]; ids: string[] }>();
+  const groups = new Map<string, { user_id: string; watch: string; watch_id: string | null; items: AlertItem[]; ids: string[] }>();
   for (const m of pending ?? []) {
     const w = m.watches as unknown as { name: string; alert_frequency: string } | null;
     const j = m.jobs as unknown as {
@@ -32,7 +33,7 @@ export async function sendPendingAlerts(db: SupabaseClient, frequency: "instant"
     if (freq !== frequency) continue;
     const watchName = w?.name ?? `${j.companies.name}`;
     const key = `${m.user_id}|${watchName}`;
-    const g = groups.get(key) ?? { user_id: m.user_id as string, watch: watchName, items: [] as AlertItem[], ids: [] as string[] };
+    const g = groups.get(key) ?? { user_id: m.user_id as string, watch: watchName, watch_id: w ? ((m as { watch_id?: string | null }).watch_id ?? null) : null, items: [] as AlertItem[], ids: [] as string[] };
     g.items.push({
       match_id: m.id,
       job_slug: j.slug,
@@ -55,9 +56,14 @@ export async function sendPendingAlerts(db: SupabaseClient, frequency: "instant"
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   let sent = 0;
   for (const g of groups.values()) {
-    const { data: profile } = await db.from("profiles").select("email").eq("id", g.user_id).single();
+    const { data: profile } = await db.from("profiles").select("email, alert_frequency").eq("id", g.user_id).single();
     if (!profile?.email) continue;
-    await sendEmail(profile.email, renderAlert(g.watch, g.items.slice(0, 10), site));
+    // Watched-company matches follow the person's own setting; "off" means skip them for good.
+    if (!g.watch_id && profile.alert_frequency === "off") {
+      await db.from("alert_matches").update({ sent_at: new Date().toISOString() }).in("id", g.ids);
+      continue;
+    }
+    await sendEmail(profile.email, renderAlert(g.watch, g.items.slice(0, 10), site, offUrl(site, g.user_id, g.watch_id)));
     await db.from("alert_matches").update({ sent_at: new Date().toISOString() }).in("id", g.ids);
     sent++;
   }

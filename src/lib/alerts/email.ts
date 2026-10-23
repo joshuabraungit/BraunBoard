@@ -23,7 +23,7 @@ export interface AlertItem {
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
-export function renderAlert(watchName: string, items: AlertItem[], siteUrl: string) {
+export function renderAlert(watchName: string, items: AlertItem[], siteUrl: string, offLink?: string) {
   const n = items.length;
   const subject = `${n} new job${n === 1 ? "" : "s"} match${n === 1 ? "es" : ""} your ${watchName} watch`;
   const rows = items
@@ -50,7 +50,7 @@ export function renderAlert(watchName: string, items: AlertItem[], siteUrl: stri
   ${rows}
   <tr><td style="padding-top:18px"><a href="${siteUrl}/watchlist" style="color:#111;font-weight:600">See all matches →</a></td></tr>
   <tr><td style="padding-top:10px;font-size:14px;color:#555">Before any first call: <a href="${siteUrl}/kit?from=alert-email#top-five" style="color:#111;font-weight:600">Josh's top five questions →</a></td></tr>
-  <tr><td style="padding-top:24px;font-size:12px;color:#999">You're getting this because you watch "${esc(watchName)}". <a href="${siteUrl}/alerts" style="color:#999">Change alert frequency</a></td></tr>
+  <tr><td style="padding-top:24px;font-size:12px;color:#999">You're getting this because you watch "${esc(watchName)}". ${offLink ? `<a href="${offLink}" style="color:#999">Turn off these alerts</a> · ` : ""}<a href="${siteUrl}/alerts" style="color:#999">Change alert frequency</a></td></tr>
   </table></body></html>`;
   const text = `${subject}\n\n${items
     .map((i) =>
@@ -64,7 +64,7 @@ export function renderAlert(watchName: string, items: AlertItem[], siteUrl: stri
         .filter(Boolean)
         .join("\n"),
     )
-    .join("\n\n")}\n\nSee all matches: ${siteUrl}/watchlist\nBefore any first call, Josh's top five questions: ${siteUrl}/kit#top-five`;
+    .join("\n\n")}\n\nSee all matches: ${siteUrl}/watchlist\nBefore any first call, Josh's top five questions: ${siteUrl}/kit#top-five${offLink ? `\n\nTurn off these alerts: ${offLink}` : ""}`;
   return { subject, html, text };
 }
 

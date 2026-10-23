@@ -27,6 +27,7 @@ jobs:
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ALERTS_LINK_SECRET: ${{ secrets.ALERTS_LINK_SECRET }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       ALERTS_FROM: ${{ secrets.ALERTS_FROM }}
