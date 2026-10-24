@@ -55,6 +55,8 @@ function plausible(n: number) {
 }
 
 interface Found {
+  /** Where the figure starts in the text. */
+  at: number;
   min: number;
   max: number;
   label: "ote" | "base" | "unlabeled";
@@ -72,7 +74,7 @@ export function findPayInText(text: string, sym: "$" | "£" = "$"): Found[] {
     // Label directly after the figure: "$300K OTE", "$150K base"
     // A label right after a figure that is itself followed by another figure is the next figure's label:
     // "Base salary: $71K - $77K On-target earnings (OTE): $102K - $111K".
-    const labelsNext = /[$£]|\d{2,3},\d{3}/.test(after);
+    const labelsNext = /^[\s,.;|]*[a-z -]{1,45}(\([a-z]+\))?\s*:\s*(USD\s*)?[$£]?\d/i.test(after);
     const nearAfter = labelsNext ? "" : after.match(/^[\s(]*([a-z -]{0,50})/i)?.[1] ?? "";
     if (new RegExp("^" + OTE_WORDS.source, "i").test(nearAfter)) return "ote";
     // "$74K - $112K total target cash", "$240K-$300K potential total on target earnings"
@@ -99,7 +101,7 @@ export function findPayInText(text: string, sym: "$" | "£" = "$"): Found[] {
     const min = toNumber(m[1]);
     const max = toNumber(m[2]);
     if (!plausible(min) || !plausible(max) || max < min) continue;
-    out.push({ min, max, label: label(m.index!, m[0].length) });
+    out.push({ at: m.index!, min, max, label: label(m.index!, m[0].length) });
     for (let i = m.index!; i < m.index! + m[0].length; i++) seen.add(i);
   }
   for (const m of text.matchAll(SINGLE)) {
@@ -109,9 +111,9 @@ export function findPayInText(text: string, sym: "$" | "£" = "$"): Found[] {
     const l = label(m.index!, m[0].length);
     // Single figures are only trusted when explicitly labeled: OTE anywhere before, or base right before
     // ("an annual salary of $60,000 and total on-target earnings of $120,000-$275,000").
-    if (l === "ote") out.push({ min: n, max: n, label: "ote" });
+    if (l === "ote") out.push({ at: m.index!, min: n, max: n, label: "ote" });
     else if (l === "base" && /\b(salary|base pay|base)\s*(of|is|:)?\s*(USD\s*)?$/i.test(text.slice(Math.max(0, m.index! - 30), m.index!)))
-      out.push({ min: n, max: n, label: "base" });
+      out.push({ at: m.index!, min: n, max: n, label: "base" });
   }
   return out;
 }
@@ -133,7 +135,7 @@ export function resolveCompensation(
 ): Compensation {
   const found = findPayInText(description, sym);
   // "The estimated annual salary range includes the on-target incentive compensation": the "salary" is OTE.
-  const salaryIsTotal = /\b(salary|pay)( range)?\b[^.]{0,60}\bincludes?\b[^.]{0,60}\b(on[- ]target|incentive|commission|variable)/i.test(description);
+  const salaryIsTotal = /\b(salary|pay|compensation) range\b[^.]{0,30}\bincludes\b[^.]{0,40}\b(on[- ]target|incentive|commission|variable)/i.test(description);
   if (salaryIsTotal && !found.some((f) => f.label === "ote")) for (const f of found) if (f.label === "base") f.label = "ote";
   const ote = found.find((f) => f.label === "ote");
   const base = found.find((f) => f.label === "base");
@@ -143,7 +145,12 @@ export function resolveCompensation(
   if (structured.min && structured.max && plausibleRange(structured.min, structured.max)) {
     const sameAsOte = near(ote);
     // The posting's own words beat the job system's label: a range the text calls base is base.
-    const textSaysBase = found.some((f) => f.label === "base" && near(f));
+    // Only when it's unmistakable: the word "base" right before it, or a separate OTE range in the text.
+    // ("Salary range $185K-$280K" under a paragraph explaining it's the OTE range stays OTE.)
+    const separateOte = !!ote && !near(ote);
+    const textSaysBase = found.some(
+      (f) => f.label === "base" && near(f) && (separateOte || /\bbase\b[^$£]{0,40}$/i.test(description.slice(Math.max(0, f.at - 60), f.at))),
+    );
     if (((structured.isOte && !textSaysBase) || sameAsOte) || (salaryIsTotal && !ote)) {
       result.ote_min = structured.min;
       result.ote_max = structured.max;

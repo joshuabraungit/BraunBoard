@@ -146,3 +146,24 @@ describe("pay labels from real postings (Oct 2026 report check)", () => {
     expect(resolveCompensation({ min: null, max: null, currency: null }, t)).toMatchObject({ salary_min: 60000, salary_max: 60000, ote_min: 120000, ote_max: 275000 });
   });
 });
+
+describe("pay labels: cases the first fix got wrong", () => {
+  it("keeps a 'salary range' that the posting explains is OTE (Netskope)", () => {
+    const t = "The on target earnings (OTE) range for the role, which is the sum of base salary and target commission amount at 100% goal achievement. In addition to salary, candidates may be eligible for a stock award program. Salary Range $185,000-$280,500 USD Netskope is committed";
+    expect(resolveCompensation({ min: 185000, max: 280500, currency: "USD", isOte: true }, t)).toMatchObject({ salary_min: null, ote_min: 185000, ote_max: 280500 });
+  });
+  it("doesn't read 'may include variable compensation' as OTE (Datadog)", () => {
+    const t = "Datadog offers a competitive salary and equity package, and may include variable compensation. The reasonably estimated yearly salary for this role at Datadog is: $98,000-$130,000 USD";
+    expect(resolveCompensation({ min: 98000, max: 130000, currency: "USD" }, t)).toMatchObject({ salary_min: 98000, ote_min: null });
+  });
+  it("keeps a single OTE figure with more numbers after it (Carta, Owner.com)", () => {
+    const c = "Our cash compensation (salary + commission) range for this role is: - $150K OTE in New York City, NY (equivalent to an hourly rate of $36.06).";
+    expect(resolveCompensation({ min: null, max: null, currency: null }, c)).toMatchObject({ ote_min: 150000, ote_max: 150000 });
+    const o = "The compensation range for this role is $270,000 OTE CAD (135,000k salary + 135,000k variable) plus equity.";
+    expect(resolveCompensation({ min: null, max: null, currency: null }, o)).toMatchObject({ ote_min: 270000 });
+  });
+  it("reads base and OTE when both are spelled out (Trulioo)", () => {
+    const t = "The expected base salary range for this position is $90,000–$110,000 CAD, with an on-target earnings (OTE) range of approximately $150,000–$183,333 CAD.";
+    expect(resolveCompensation({ min: 90000, max: 110000, currency: "CAD", isOte: true }, t)).toMatchObject({ salary_min: 90000, salary_max: 110000, ote_min: 150000, ote_max: 183333 });
+  });
+});

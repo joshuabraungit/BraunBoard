@@ -99,7 +99,11 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
         if (opts.reprocess && !prior.classification_overridden) {
           const comp = await payFor(company, job, loc);
           const k = (x: { salary_min: unknown; salary_max: unknown; ote_min: unknown; ote_max: unknown }) => `${x.salary_min ?? "-"}-${x.salary_max ?? "-"}/${x.ote_min ?? "-"}-${x.ote_max ?? "-"}`;
-          if (prior.is_active && k(prior as never) !== k(comp)) PAY_CHANGES.push(`${company.name} · ${prior.title_raw}: base/OTE ${k(prior as never)} -> ${k(comp)}`);
+          if (prior.is_active && k(prior as never) !== k(comp)) {
+            PAY_CHANGES.push(`${company.name} · ${prior.title_raw}: base/OTE ${k(prior as never)} -> ${k(comp)}`);
+            const pick = (x: Record<string, unknown>) => ({ salary_min: x.salary_min ?? null, salary_max: x.salary_max ?? null, ote_min: x.ote_min ?? null, ote_max: x.ote_max ?? null });
+            await db.from("pay_audit").insert({ job_id: prior.id, company: company.name, title: prior.title_raw, before: pick(prior), after: pick(comp) });
+          }
           Object.assign(refresh, comp, {
             markets: loc.markets,
             role_family: cls.role_family,
