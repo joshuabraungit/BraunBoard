@@ -12,6 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE}/salaries`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE}/salaries/uk`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE}/kit`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${SITE}/report/october-2026`, lastModified: new Date("2026-10-24"), changeFrequency: "yearly", priority: 0.7 },
     { url: `${SITE}/ask`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE}/picks`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     ...allSalaryPages().map((p) => ({ url: `${SITE}/salaries/${p.slug}`, lastModified: now, changeFrequency: "daily" as const, priority: 0.8 })),
