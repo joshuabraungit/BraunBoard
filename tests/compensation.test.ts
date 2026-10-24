@@ -167,3 +167,20 @@ describe("pay labels: cases the first fix got wrong", () => {
     expect(resolveCompensation({ min: 90000, max: 110000, currency: "CAD", isOte: true }, t)).toMatchObject({ salary_min: 90000, salary_max: 110000, ote_min: 150000, ote_max: 183333 });
   });
 });
+
+describe("pay labels: second review", () => {
+  it("doesn't give a salary range the OTE label that follows it (EliseAI)", () => {
+    const t = "Job compensation range: The salary for this role is $60,000 - 70,000 (OTE $108,600 - 118,600). EliseAI offers a competitive total rewards package.";
+    const c = resolveCompensation({ min: null, max: null, currency: null }, t);
+    expect(c.ote_min).toBe(108600);
+    expect(c.ote_max).toBe(118600);
+  });
+  it("reads OTE then a base salary range heading (Chainguard)", () => {
+    const t = "Ability to thrive in an agile environment. On-target earnings: $250,000 Base Salary Range $125,000-$125,000 USD About us";
+    expect(resolveCompensation({ min: 125000, max: 125000, currency: "USD" }, t)).toMatchObject({ salary_min: 125000, ote_min: 250000 });
+  });
+  it("reads OTE with base and incentive in brackets (Owner.com SDR)", () => {
+    const t = "The salary for this role is $75,000 CAD OTE ($60,000 base $15,000 incentive with uncapped commission & accelerators), plus equity.";
+    expect(resolveCompensation({ min: null, max: null, currency: null }, t)).toMatchObject({ salary_min: 60000, ote_min: 75000 });
+  });
+});

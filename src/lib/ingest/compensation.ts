@@ -74,8 +74,11 @@ export function findPayInText(text: string, sym: "$" | "£" = "$"): Found[] {
     // Label directly after the figure: "$300K OTE", "$150K base"
     // A label right after a figure that is itself followed by another figure is the next figure's label:
     // "Base salary: $71K - $77K On-target earnings (OTE): $102K - $111K".
-    const labelsNext = /^[\s,.;|]*[a-z -]{1,45}(\([a-z]+\))?\s*:\s*(USD\s*)?[$£]?\d/i.test(after);
-    const nearAfter = labelsNext ? "" : after.match(/^[\s(]*([a-z -]{0,50})/i)?.[1] ?? "";
+    // A heading-style label: "... range", "OTE", "on-target earnings", or anything ending in a colon.
+    const labelsNext =
+      /^[\s,.;|(]*[a-z -]{0,30}\b(range|ote|on[- ]target earnings?)\b\s*(\([a-z]+\))?\s*:?\s*(USD\s*)?[$£]?\d/i.test(after) ||
+      /^[\s,.;|]*[a-z -]{1,45}(\([a-z]+\))?\s*:\s*(USD\s*)?[$£]?\d/i.test(after);
+    const nearAfter = labelsNext ? "" : after.match(/^[\s(]*(?:(?:usd|cad|gbp)\s+)?([a-z -]{0,50})/i)?.[1] ?? "";
     if (new RegExp("^" + OTE_WORDS.source, "i").test(nearAfter)) return "ote";
     // "$74K - $112K total target cash", "$240K-$300K potential total on target earnings"
     if (new RegExp("^(potential |estimated |annual )?(total )?" + OTE_WORDS.source, "i").test(nearAfter)) return "ote";
@@ -112,7 +115,11 @@ export function findPayInText(text: string, sym: "$" | "£" = "$"): Found[] {
     // Single figures are only trusted when explicitly labeled: OTE anywhere before, or base right before
     // ("an annual salary of $60,000 and total on-target earnings of $120,000-$275,000").
     if (l === "ote") out.push({ at: m.index!, min: n, max: n, label: "ote" });
-    else if (l === "base" && /\b(salary|base pay|base)\s*(of|is|:)?\s*(USD\s*)?$/i.test(text.slice(Math.max(0, m.index! - 30), m.index!)))
+    else if (
+      l === "base" &&
+      (/\b(salary|base pay|base)\s*(of|is|:)?\s*(USD\s*)?$/i.test(text.slice(Math.max(0, m.index! - 30), m.index!)) ||
+        /^\s*base\b/i.test(text.slice(m.index! + m[0].length, m.index! + m[0].length + 12)))
+    )
       out.push({ at: m.index!, min: n, max: n, label: "base" });
   }
   return out;
