@@ -121,3 +121,28 @@ describe("payCurrency", () => {
     expect(payCurrency(null, "Base $120,000 - $140,000", ["US"])).toBe("USD");
   });
 });
+
+describe("pay labels from real postings (Oct 2026 report check)", () => {
+  it("doesn't take the next figure's label (Help Scout)", () => {
+    const t = "pay is the same no matter where in the u.s. you live. Base salary: $71,000 - $77,000 On-target earnings (OTE): $102,000 - $111,000 Company equity";
+    expect(resolveCompensation({ min: 71000, max: 77000, currency: "USD", isOte: true }, t)).toMatchObject({ salary_min: 71000, salary_max: 77000, ote_min: 102000, ote_max: 111000 });
+  });
+  it("lets the posting's words beat the job system's OTE label (Elastic, Klaviyo)", () => {
+    const e = "The typical starting salary range for this role is: $46,200-$73,000 USD The typical starting target variable range for this role is: $19,700-$31,200 USD The typical starting on-target earnings (OTE) range for this role is: $65,900-$104,200 USD";
+    expect(resolveCompensation({ min: 46200, max: 73000, currency: "USD", isOte: true }, e)).toMatchObject({ salary_min: 46200, salary_max: 73000, ote_min: 65900, ote_max: 104200 });
+    const k = "Base pay range for US locations: $164,000-$246,000 USD This role may require up to 10% travel";
+    expect(resolveCompensation({ min: 164000, max: 246000, currency: "USD", isOte: true }, k)).toMatchObject({ salary_min: 164000, ote_min: null });
+  });
+  it("reads a salary that includes incentive as OTE (Cloudflare)", () => {
+    const t = "For Bay Area based hires: Estimated annual salary of $284,000 - $360,000. This role is eligible to earn incentive compensation under Cloudflare's Sales Compensation Plan. The estimated annual salary range includes the on-target incentive compensation that may be attained in this role.";
+    expect(resolveCompensation({ min: 284000, max: 360000, currency: "USD" }, t)).toMatchObject({ salary_min: null, ote_min: 284000, ote_max: 360000 });
+  });
+  it("reads ranges explained as starting salary just after them (Twilio)", () => {
+    const t = "Compensation The estimated pay ranges for this role are as follows: Based in New York: $167,440 - $209,300. This role may be eligible to participate in Twilio's equity plan and corporate bonus plan. The successful candidate's starting salary will be determined based on permissible, non-discriminatory factors.";
+    expect(resolveCompensation({ min: null, max: null, currency: null }, t)).toMatchObject({ salary_min: 167440, salary_max: 209300 });
+  });
+  it("keeps a single base figure that's clearly labeled (SpotOn)", () => {
+    const t = "Compensation: A full-time, W2 position with an annual salary of $60,000 and total on-target earnings of up to $120,000-$275,000.";
+    expect(resolveCompensation({ min: null, max: null, currency: null }, t)).toMatchObject({ salary_min: 60000, salary_max: 60000, ote_min: 120000, ote_max: 275000 });
+  });
+});

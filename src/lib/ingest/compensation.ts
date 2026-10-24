@@ -70,7 +70,10 @@ export function findPayInText(text: string, sym: "$" | "£" = "$"): Found[] {
     const before = text.slice(Math.max(0, idx - 300), idx);
     const after = text.slice(idx + len, idx + len + 60);
     // Label directly after the figure: "$300K OTE", "$150K base"
-    const nearAfter = after.match(/^[\s(]*([a-z -]{0,50})/i)?.[1] ?? "";
+    // A label right after a figure that is itself followed by another figure is the next figure's label:
+    // "Base salary: $71K - $77K On-target earnings (OTE): $102K - $111K".
+    const labelsNext = /[$£]|\d{2,3},\d{3}/.test(after);
+    const nearAfter = labelsNext ? "" : after.match(/^[\s(]*([a-z -]{0,50})/i)?.[1] ?? "";
     if (new RegExp("^" + OTE_WORDS.source, "i").test(nearAfter)) return "ote";
     // "$74K - $112K total target cash", "$240K-$300K potential total on target earnings"
     if (new RegExp("^(potential |estimated |annual )?(total )?" + OTE_WORDS.source, "i").test(nearAfter)) return "ote";
@@ -85,6 +88,10 @@ export function findPayInText(text: string, sym: "$" | "£" = "$"): Found[] {
     const wide = text.slice(Math.max(0, idx - 900), idx);
     const farOte = lastIndexOf(wide, OTE_WORDS);
     if (farOte >= 0 && farOte > lastIndexOf(wide, BASE_WORDS)) return "ote";
+    // "Estimated pay ranges: ... The successful candidate's starting salary will be determined by ...":
+    // the ranges are explained as salary just after them.
+    const later = text.slice(idx + len, idx + len + 700);
+    if (/\bstarting (base )?salary\b|\bbase salary will be\b/i.test(later) && !OTE_WORDS.test(later)) return "base";
     return "unlabeled";
   };
 
@@ -100,8 +107,11 @@ export function findPayInText(text: string, sym: "$" | "£" = "$"): Found[] {
     const n = toNumber(m[1]);
     if (!plausible(n)) continue;
     const l = label(m.index!, m[0].length);
-    // Single figures are only trusted when explicitly labeled OTE.
+    // Single figures are only trusted when explicitly labeled: OTE anywhere before, or base right before
+    // ("an annual salary of $60,000 and total on-target earnings of $120,000-$275,000").
     if (l === "ote") out.push({ min: n, max: n, label: "ote" });
+    else if (l === "base" && /\b(salary|base pay|base)\s*(of|is|:)?\s*(USD\s*)?$/i.test(text.slice(Math.max(0, m.index! - 30), m.index!)))
+      out.push({ min: n, max: n, label: "base" });
   }
   return out;
 }
@@ -122,13 +132,19 @@ export function resolveCompensation(
   sym: "$" | "£" = "$",
 ): Compensation {
   const found = findPayInText(description, sym);
+  // "The estimated annual salary range includes the on-target incentive compensation": the "salary" is OTE.
+  const salaryIsTotal = /\b(salary|pay)( range)?\b[^.]{0,60}\bincludes?\b[^.]{0,60}\b(on[- ]target|incentive|commission|variable)/i.test(description);
+  if (salaryIsTotal && !found.some((f) => f.label === "ote")) for (const f of found) if (f.label === "base") f.label = "ote";
   const ote = found.find((f) => f.label === "ote");
   const base = found.find((f) => f.label === "base");
   const result: Compensation = { ...EMPTY };
+  const near = (f: Found | undefined) => !!f && Math.abs(f.min - structured.min!) < 1000 && Math.abs(f.max - structured.max!) < 1000;
 
   if (structured.min && structured.max && plausibleRange(structured.min, structured.max)) {
-    const sameAsOte = ote && Math.abs(ote.min - structured.min) < 1000 && Math.abs(ote.max - structured.max) < 1000;
-    if (structured.isOte || sameAsOte) {
+    const sameAsOte = near(ote);
+    // The posting's own words beat the job system's label: a range the text calls base is base.
+    const textSaysBase = found.some((f) => f.label === "base" && near(f));
+    if (((structured.isOte && !textSaysBase) || sameAsOte) || (salaryIsTotal && !ote)) {
       result.ote_min = structured.min;
       result.ote_max = structured.max;
     } else {
