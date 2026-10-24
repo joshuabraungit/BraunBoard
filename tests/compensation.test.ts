@@ -208,3 +208,10 @@ describe("pay labels: single base then OTE in brackets (EliseAI AE)", () => {
     expect(resolveCompensation({ min: null, max: null, currency: null }, t)).toMatchObject({ salary_min: 200000, ote_min: 540000 });
   });
 });
+
+describe("pay labels: job system says OTE, text shows a separate OTE (Fivetran)", () => {
+  it("treats the job system's range as base", () => {
+    const t = "during the hiring process. Pay Range $151,351-$189,189 USD OTE (On Target Earning) $302,702-$378,378 USD Perks";
+    expect(resolveCompensation({ min: 151351, max: 189189, currency: "USD", isOte: true }, t)).toMatchObject({ salary_min: 151351, ote_min: 302702 });
+  });
+});

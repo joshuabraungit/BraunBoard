@@ -160,7 +160,9 @@ export function resolveCompensation(
     const textSaysBase = found.some(
       (f) => f.label === "base" && near(f) && (separateOte || /\bbase\b[^$£]{0,40}$/i.test(description.slice(Math.max(0, f.at - 60), f.at))),
     );
-    if (((structured.isOte && !textSaysBase) || sameAsOte) || (salaryIsTotal && !ote)) {
+    // The text has its own, different OTE range and calls this one anything but OTE: this one is the base.
+    const otherIsOte = separateOte && found.some((f) => f.label !== "ote" && near(f));
+    if (((structured.isOte && !textSaysBase && !otherIsOte) || sameAsOte) || (salaryIsTotal && !ote)) {
       result.ote_min = structured.min;
       result.ote_max = structured.max;
     } else {
