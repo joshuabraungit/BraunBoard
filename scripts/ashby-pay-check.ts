@@ -5,6 +5,7 @@ const jobs: [string, string][] = [
   ["taktile", "0862c6a1-cf8f-41c3-a88c-eafaec03bc15"],
   ["uipath", "153746e3-5302-4163-8f53-8550d9a15fc9"],
   ["vanta", "0ab177a8-3ea8-4b91-9a55-bfef435b0cfc"],
+  ["creatoriq", "ce50a415-ad32-46fa-af6c-d8fffa4e9a8a"],
 ];
 async function main() {
   for (const [org, id] of jobs) {
