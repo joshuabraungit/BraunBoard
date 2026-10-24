@@ -5,7 +5,7 @@
 //        npm run ingest -- --stale 3.5  (only companies not crawled in 3.5h; used by the hourly runner)
 
 import { adminClient } from "../src/lib/supabase/admin";
-import { ingestAll } from "../src/lib/ingest/pipeline";
+import { ingestAll, PAY_CHANGES } from "../src/lib/ingest/pipeline";
 import { sendPendingAlerts } from "../src/lib/alerts/send";
 import { recomputeFlags } from "../src/lib/flags-db";
 import { fail, notice, requireEnv } from "./report";
@@ -19,6 +19,10 @@ async function main() {
   const stale = staleArg > 0 ? Number(process.argv[staleArg + 1]) : 4;
   const { companies, totals } = await ingestAll(db, { staleAfterHours: all || reprocess ? 0 : stale, reprocess });
   notice(`Ingest: crawled ${companies} companies, ${totals.kept} sales jobs seen (US, Canada, UK), ${totals.new} new, ${totals.removed} removed`);
+  if (reprocess) {
+    notice(`Pay changed on ${PAY_CHANGES.length} live jobs`);
+    for (let i = 0; i < Math.min(PAY_CHANGES.length, 400); i += 20) notice(PAY_CHANGES.slice(i, i + 20).join(" | "));
+  }
   const f = await recomputeFlags(db);
   notice(`Flags: ${f.changed} of ${f.checked} jobs updated`);
   const { error: statsErr } = await db.rpc("refresh_company_stats");

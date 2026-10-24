@@ -22,6 +22,9 @@ export interface CompanyRow extends CompanyRef {
   slug: string;
 }
 
+/** Pay that changed during a reprocess run, for the run log. */
+export const PAY_CHANGES: string[] = [];
+
 export interface RunStats {
   seen: number;
   kept: number;
@@ -42,7 +45,7 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
   try {
     const { data: existingRows, error: exErr } = await db
       .from("jobs")
-      .select("id, source_job_id, is_active, missed_checks, classification_overridden")
+      .select("id, source_job_id, is_active, missed_checks, classification_overridden, title_raw, salary_min, salary_max, ote_min, ote_max")
       .eq("company_id", company.id);
     if (exErr) throw exErr;
     const existing = new Map((existingRows ?? []).map((r) => [r.source_job_id as string, r]));
@@ -95,6 +98,8 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
         if (job.posted_at) refresh.source_posted_at = job.posted_at;
         if (opts.reprocess && !prior.classification_overridden) {
           const comp = await payFor(company, job, loc);
+          const k = (x: { salary_min: unknown; salary_max: unknown; ote_min: unknown; ote_max: unknown }) => `${x.salary_min ?? "-"}-${x.salary_max ?? "-"}/${x.ote_min ?? "-"}-${x.ote_max ?? "-"}`;
+          if (prior.is_active && k(prior as never) !== k(comp)) PAY_CHANGES.push(`${company.name} · ${prior.title_raw}: base/OTE ${k(prior as never)} -> ${k(comp)}`);
           Object.assign(refresh, comp, {
             markets: loc.markets,
             role_family: cls.role_family,
