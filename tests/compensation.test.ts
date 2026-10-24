@@ -215,3 +215,10 @@ describe("pay labels: job system says OTE, text shows a separate OTE (Fivetran)"
     expect(resolveCompensation({ min: 151351, max: 189189, currency: "USD", isOte: true }, t)).toMatchObject({ salary_min: 151351, ote_min: 302702 });
   });
 });
+
+describe("pay labels across line breaks (Fivetran, as stored)", () => {
+  it("reads base and OTE", () => {
+    const t = "The compensation range is subject to change.\n\nPay Range\n$151,351-$189,189 USD\n\nOTE (On Target Earning)\n$302,702-$378,378 USD\n\nPerks and Benefits";
+    expect(resolveCompensation({ min: 151351, max: 189189, currency: "USD", isOte: true }, t)).toMatchObject({ salary_min: 151351, ote_min: 302702 });
+  });
+});

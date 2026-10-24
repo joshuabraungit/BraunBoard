@@ -63,7 +63,9 @@ interface Found {
 }
 
 /** Finds explicitly labeled pay figures in description text. */
-export function findPayInText(text: string, sym: "$" | "£" = "$"): Found[] {
+export function findPayInText(raw: string, sym: "$" | "£" = "$"): Found[] {
+  // Line breaks sit between labels and figures ("Pay Range\n$151,351"): read it as one line.
+  const text = raw.replace(/\s+/g, " ");
   const { range: RANGE, single: SINGLE } = PAY[sym];
   const out: Found[] = [];
   const seen = new Set<number>();
@@ -142,6 +144,7 @@ export function resolveCompensation(
   description: string,
   sym: "$" | "£" = "$",
 ): Compensation {
+  description = description.replace(/\s+/g, " ");
   const found = findPayInText(description, sym);
   // "The estimated annual salary range includes the on-target incentive compensation": the "salary" is OTE.
   const salaryIsTotal = /\b(salary|pay|compensation) range\b[^.]{0,30}\bincludes\b[^.]{0,40}\b(on[- ]target|incentive|commission|variable)/i.test(description);
