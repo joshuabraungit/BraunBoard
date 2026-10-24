@@ -184,3 +184,27 @@ describe("pay labels: second review", () => {
     expect(resolveCompensation({ min: null, max: null, currency: null }, t)).toMatchObject({ salary_min: 60000, ote_min: 75000 });
   });
 });
+
+describe("pay labels: third review", () => {
+  it("keeps base and OTE apart when the OTE label has words in brackets (Fivetran)", () => {
+    const t = "during the hiring process. Pay Range $151,351-$189,189 USD OTE (On Target Earning) $302,702-$378,378 USD Perks";
+    expect(resolveCompensation({ min: 151351, max: 189189, currency: "USD" }, t)).toMatchObject({ salary_min: 151351, ote_min: 302702 });
+  });
+  it("doesn't split 'OTE or base' ranges into both (Checkr)", () => {
+    const t = "On-Target Earnings or Base Salary Range (Chicago, IL) $265,037-$311,808 USD On-Target Earnings or Base Salary Range (Atlanta, GA) $240,943-$283,462 USD What we offer";
+    const c = resolveCompensation({ min: 265037, max: 311808, currency: "USD" }, t);
+    expect(c.salary_min).toBe(265037);
+    expect(c.ote_min).toBeNull();
+  });
+  it("reads 'salary range ... CAD OTE' as OTE (Zip)", () => {
+    const t = "The salary range for this role is $170,000-$175,000 CAD OTE. The salary for this position is determined based on a variety of factors.";
+    expect(resolveCompensation({ min: null, max: null, currency: null }, t)).toMatchObject({ ote_min: 170000, salary_min: null });
+  });
+});
+
+describe("pay labels: single base then OTE in brackets (EliseAI AE)", () => {
+  it("reads both", () => {
+    const t = "Job compensation range: The base salary for this role is $200,000 (OTE $540,000). EliseAI offers a competitive total rewards package.";
+    expect(resolveCompensation({ min: null, max: null, currency: null }, t)).toMatchObject({ salary_min: 200000, ote_min: 540000 });
+  });
+});

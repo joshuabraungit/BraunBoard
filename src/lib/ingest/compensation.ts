@@ -70,13 +70,13 @@ export function findPayInText(text: string, sym: "$" | "£" = "$"): Found[] {
   const label = (idx: number, len: number): Found["label"] => {
     // Look at a small window around the figure for the label.
     const before = text.slice(Math.max(0, idx - 300), idx);
-    const after = text.slice(idx + len, idx + len + 60);
+    const after = text.slice(idx + len, idx + len + 90);
     // Label directly after the figure: "$300K OTE", "$150K base"
     // A label right after a figure that is itself followed by another figure is the next figure's label:
     // "Base salary: $71K - $77K On-target earnings (OTE): $102K - $111K".
     // A heading-style label: "... range", "OTE", "on-target earnings", or anything ending in a colon.
     const labelsNext =
-      /^[\s,.;|(]*[a-z -]{0,30}\b(range|ote|on[- ]target earnings?)\b\s*(\([a-z]+\))?\s*:?\s*(USD\s*)?[$£]?\d/i.test(after) ||
+      /^[\s,.;|(]*[a-z -]{0,40}\b(range|ote|on[- ]target earnings?)\b\s*(\([^()$£]{0,30}\))?\s*:?\s*(USD\s*)?[$£]?\d/i.test(after) ||
       /^[\s,.;|]*[a-z -]{1,45}(\([a-z]+\))?\s*:\s*(USD\s*)?[$£]?\d/i.test(after);
     const nearAfter = labelsNext ? "" : after.match(/^[\s(]*(?:(?:usd|cad|gbp)\s+)?([a-z -]{0,50})/i)?.[1] ?? "";
     if (new RegExp("^" + OTE_WORDS.source, "i").test(nearAfter)) return "ote";
@@ -84,6 +84,8 @@ export function findPayInText(text: string, sym: "$" | "£" = "$"): Found[] {
     if (new RegExp("^(potential |estimated |annual )?(total )?" + OTE_WORDS.source, "i").test(nearAfter)) return "ote";
     // "$130K-$160K base" right after the number beats any label further back.
     if (new RegExp("^" + BASE_WORDS.source, "i").test(nearAfter)) return "base";
+    // "On-Target Earnings or Base Salary Range": the posting won't say which, so neither can we.
+    if (/\b(ote|on[- ]target earnings?)\s+or\s+base\b|\bbase( salary)?\s+or\s+(ote|on[- ]target)\b/i.test(before.slice(-90))) return "unlabeled";
     // The closest label before the number wins
     const lastOte = lastIndexOf(before, OTE_WORDS);
     const lastBase = lastIndexOf(before, BASE_WORDS);
@@ -117,7 +119,7 @@ export function findPayInText(text: string, sym: "$" | "£" = "$"): Found[] {
     if (l === "ote") out.push({ at: m.index!, min: n, max: n, label: "ote" });
     else if (
       l === "base" &&
-      (/\b(salary|base pay|base)\s*(of|is|:)?\s*(USD\s*)?$/i.test(text.slice(Math.max(0, m.index! - 30), m.index!)) ||
+      (/\b(salary|base pay|base)( for this (role|position))?\s*(of|is|:)?\s*(USD\s*)?$/i.test(text.slice(Math.max(0, m.index! - 45), m.index!)) ||
         /^\s*base\b/i.test(text.slice(m.index! + m[0].length, m.index! + m[0].length + 12)))
     )
       out.push({ at: m.index!, min: n, max: n, label: "base" });
