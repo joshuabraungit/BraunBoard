@@ -10,7 +10,7 @@ import { fail, notice, requireEnv } from "./report";
 async function main() {
   requireEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "ANTHROPIC_API_KEY");
   const arg = process.argv[2] ?? "50";
-  const n = arg === "same" ? 0 : Number(arg);
+  const n = arg === "same" || arg.startsWith("names=") ? 0 : Number(arg);
   const db = adminClient();
   const { data: jobs, error } = await db
     .from("visible_jobs")
@@ -36,7 +36,11 @@ async function main() {
     byCat.set(k, [...(byCat.get(k) ?? []), id]);
   }
   let picked: string[] = [];
-  if (arg === "same") {
+  if (arg.startsWith("names=")) {
+    // Named companies only, e.g. names=Stripe,Asana
+    const want = new Set(arg.slice(6).split(",").map((x) => x.trim().toLowerCase()));
+    picked = [...best.keys()].filter((id) => want.has(best.get(id)!.company_name.toLowerCase()));
+  } else if (arg === "same") {
     const { data: first } = await db.from("product_samples").select("run_at").order("run_at").limit(1);
     const t0 = new Date(first![0]!.run_at as string).getTime();
     const { data: prev } = await db.from("product_samples").select("company_id").lte("run_at", new Date(t0 + 30 * 60_000).toISOString());
