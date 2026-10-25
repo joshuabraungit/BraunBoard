@@ -1,6 +1,6 @@
 // "What they sell": write (and fact-check) the plain-English story for companies that need one.
-// A company needs one when it has never been checked, when it posted new jobs since the last check
-// (at most once a week), or when the story is more than a month old.
+// A company needs one when it has never been checked, when the last check came back empty (after 2 days),
+// when it posted new jobs since the last check (at most once a week), or when the story is more than a month old.
 // Usage: npx tsx scripts/product-backfill.ts [max companies, default 40]
 
 import { adminClient } from "../src/lib/supabase/admin";
@@ -46,7 +46,9 @@ async function main() {
     .map((id) => {
       const c = byCo.get(id)!;
       const at = checked.get(id)?.at ?? null;
-      const why = at == null ? 0 : now - at > 30 * DAY ? 2 : c.newest > at && now - at > 7 * DAY ? 1 : null;
+      const noStory = !checked.get(id)?.story;
+      // A check that came back empty is retried after 2 days, not left blank for a month.
+      const why = at == null ? 0 : noStory && now - at > 2 * DAY ? 0.5 : now - at > 30 * DAY ? 2 : c.newest > at && now - at > 7 * DAY ? 1 : null;
       return { id, c, why };
     })
     .filter((x) => x.why != null)
