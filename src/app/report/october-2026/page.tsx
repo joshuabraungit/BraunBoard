@@ -6,6 +6,7 @@ import Link from "next/link";
 // The 25-posting table was read entirely by hand on Oct 24. Postings change; this page doesn't.
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/report/october-2026" },
   title: "Job Market Report, October 2026 · Braun Board",
   description:
     "I analyzed all 1,473 live sales rep postings on Braun Board. 75% showed a pay number. 19% showed both base and commission. 1% said what the quota is. One said how many reps hit it.",

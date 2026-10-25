@@ -4,6 +4,7 @@ import { PicksSignup } from "@/components/PicksSignup";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
+  alternates: { canonical: "/kit" },
   title: "Before You Say Yes · Your first AE job interview kit · Braun Board",
   description: "A free interview kit for SDRs going for their first AE role: Josh Braun's top five interview questions, 19 more for the recruiter, hiring manager and current reps, what good and bad answers sound like, and an offer comparison sheet.",
 };

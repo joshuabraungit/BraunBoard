@@ -4,6 +4,7 @@ import { getUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
+  alternates: { canonical: "/ask" },
   title: "Ask Josh · Braun Board",
   description: "Got a sales job offer and not sure about it? Send Josh Braun your question.",
 };

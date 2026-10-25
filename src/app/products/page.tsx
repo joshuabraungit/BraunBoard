@@ -24,6 +24,7 @@ import { getUserState } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
+  alternates: { canonical: "/products" },
   title: "Browse sales jobs by product · Braun Board",
   description: "Find a product you'd be excited to sell. Every company's product in plain English, with its open sales roles.",
 };

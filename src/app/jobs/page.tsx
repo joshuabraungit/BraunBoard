@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { listJobsWithTotal, type JobFilters } from "@/lib/data";
@@ -8,6 +9,7 @@ import { watchSearch } from "@/app/actions";
 import { REMOTE_TYPES, ROLE_FAMILIES, SALES_MOTIONS, SALES_SEGMENTS } from "@/lib/ingest/types";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { alternates: { canonical: "/jobs" } };
 
 type SP = Record<string, string | undefined>;
 

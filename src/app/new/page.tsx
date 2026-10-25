@@ -1,9 +1,11 @@
+import type { Metadata } from "next";
 import { listJobs } from "@/lib/data";
 import { JobGrid } from "@/components/JobCard";
 import { getUserState } from "@/lib/session";
 import { MARKET_CHOICES, marketsFor, visitorMarket } from "@/lib/market";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { alternates: { canonical: "/new" } };
 
 export default async function NewToday() {
   const market = await visitorMarket();

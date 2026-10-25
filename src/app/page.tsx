@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { byHiringFastest, listCompanies, listJobs } from "@/lib/data";
 import { HiringRow } from "@/components/Hiring";
@@ -12,6 +13,7 @@ import { cookies } from "next/headers";
 import { INTRO_COOKIE, IntroBanner } from "@/components/IntroBanner";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ picks?: string }> }) {
   const { picks } = await searchParams;

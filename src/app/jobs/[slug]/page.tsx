@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCompanyStats, getJob } from "@/lib/data";
@@ -19,6 +21,21 @@ import { getActiveWatch, getUserState } from "@/lib/session";
 import { scoreMatch } from "@/lib/match";
 
 export const dynamic = "force-dynamic";
+
+// One database read shared by the page and its metadata.
+const loadJob = cache(getJob);
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const job = await loadJob(slug);
+  if (!job) return { title: "Job not found · Braun Board" };
+  const pay = formatComp(job);
+  return {
+    title: `${job.title_raw} at ${job.company_name} · Braun Board`,
+    description: `${job.title_raw} at ${job.company_name}${pay ? `, ${pay}` : ""}. See what the posting leaves out and the questions to ask on the first call.`,
+    alternates: { canonical: `/jobs/${job.slug}` },
+  };
+}
 
 const DISCLOSURE_LABELS: Record<string, string> = {
   quota_size: "Quota size",
@@ -53,7 +70,7 @@ const known = (v: string) => (v === "Unknown" ? null : v);
 
 export default async function JobPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const job = await getJob(slug);
+  const job = await loadJob(slug);
   if (!job) notFound();
   const [state, watch, stats, user, products] = await Promise.all([
     getUserState(),

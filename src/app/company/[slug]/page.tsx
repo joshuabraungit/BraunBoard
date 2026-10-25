@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { getCompany, getCompanyStats } from "@/lib/data";
 import { TrendBadge, hiringSentence } from "@/components/Hiring";
@@ -8,9 +10,22 @@ import { getUserState } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
+const loadCompany = cache(getCompany);
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const data = await loadCompany(slug);
+  if (!data) return { title: "Company not found · Braun Board" };
+  return {
+    title: `${data.company.name} sales jobs · Braun Board`,
+    description: `Open sales jobs at ${data.company.name}, with the pay they publish and what each posting leaves out.`,
+    alternates: { canonical: `/company/${data.company.slug}` },
+  };
+}
+
 export default async function CompanyPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const data = await getCompany(slug);
+  const data = await loadCompany(slug);
   if (!data) notFound();
   const { company, jobs, added7, added30 } = data;
   const [state, stats] = await Promise.all([getUserState(), getCompanyStats(company.id)]);

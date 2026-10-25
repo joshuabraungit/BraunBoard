@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { listJobs } from "@/lib/data";
 import { getActiveWatch, getUserState, listWatches } from "@/lib/session";
@@ -6,6 +7,7 @@ import { JobGrid } from "@/components/JobCard";
 import { OnboardingForm } from "./OnboardingForm";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { alternates: { canonical: "/for-you" } };
 
 export default async function ForYou({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
