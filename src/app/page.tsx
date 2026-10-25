@@ -13,7 +13,10 @@ import { cookies } from "next/headers";
 import { INTRO_COOKIE, IntroBanner } from "@/components/IntroBanner";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { alternates: { canonical: "/" } };
+export const metadata: Metadata = {
+  title: "Braun Board · B2B sales jobs, with the pay and what the posting leaves out",
+  alternates: { canonical: "/" },
+};
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ picks?: string }> }) {
   const { picks } = await searchParams;

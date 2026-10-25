@@ -9,7 +9,11 @@ import { watchSearch } from "@/app/actions";
 import { REMOTE_TYPES, ROLE_FAMILIES, SALES_MOTIONS, SALES_SEGMENTS } from "@/lib/ingest/types";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { alternates: { canonical: "/jobs" } };
+export const metadata: Metadata = {
+  title: "B2B sales jobs: AE, SDR, SE and sales leadership · Braun Board",
+  description: "Every open B2B sales job in one list, with the pay, what the company sells in plain English, and the questions to ask before you say yes.",
+  alternates: { canonical: "/jobs" },
+};
 
 type SP = Record<string, string | undefined>;
 

@@ -5,7 +5,11 @@ import { getUserState } from "@/lib/session";
 import { MARKET_CHOICES, marketsFor, visitorMarket } from "@/lib/market";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { alternates: { canonical: "/new" } };
+export const metadata: Metadata = {
+  title: "New sales jobs posted today · Braun Board",
+  description: "B2B sales jobs posted in the last day, with the pay and what the company sells in plain English.",
+  alternates: { canonical: "/new" },
+};
 
 export default async function NewToday() {
   const market = await visitorMarket();
