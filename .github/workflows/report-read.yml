@@ -1,0 +1,33 @@
+name: Report read
+
+# Job Market Report: read rep postings for pay and the details behind it.
+on:
+  workflow_dispatch:
+    inputs:
+      report:
+        description: "Report id"
+        default: "2026-10"
+      max:
+        description: "Max postings this run"
+        default: "50"
+      sample:
+        description: "Random sample (for checking accuracy)"
+        type: boolean
+        default: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/report-read.ts ${{ inputs.report }} ${{ inputs.max }} ${{ inputs.sample && '--sample' || '' }}
