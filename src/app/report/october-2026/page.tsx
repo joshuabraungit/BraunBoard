@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-// Braun Board Job Market Report #1. A snapshot: every number below was read from the 25 postings
-// on Oct 24, 2026, and pay is labeled the way each posting labels it. Postings change; this page doesn't.
+// Braun Board Job Market Report #1. A snapshot. The full-set numbers come from reading all 1,473 live rep
+// postings on Oct 25, 2026 (quote-backed AI read, counted only when the posting gives a number, reviewed by hand).
+// The 25-posting table was read entirely by hand on Oct 24. Postings change; this page doesn't.
 
 export const metadata: Metadata = {
   title: "Job Market Report, October 2026 · Braun Board",
   description:
-    "We read 25 new B2B sales job postings. 23 showed a pay number. 9 showed both base and commission. None said what the quota is or how many reps hit it.",
+    "We read all 1,473 live sales rep postings on Braun Board. 75% showed a pay number. 19% showed both base and commission. 1% said what the quota is. One said how many reps hit it.",
 };
 
 type Pay = "split" | "total" | "base" | "unlabeled" | "none";
@@ -48,40 +49,59 @@ const ROWS: { company: string; role: string; pay: Pay; shown: string }[] = [
   { company: "OneTrust", role: "Strategic Account Executive", pay: "base", shown: "Salary $129K–$173K" },
 ];
 
-const ORDER: Pay[] = ["split", "total", "base", "unlabeled", "none"];
 const count = (p: Pay) => ROWS.filter((r) => r.pay === p).length;
 
-const MISSING = [
-  { n: 0, what: "said what the quota is" },
-  { n: 0, what: "said how many reps hit quota" },
-  { n: 1, what: "gave a typical deal size" },
-  { n: 0, what: "gave a sales cycle length" },
-  { n: 0, what: "mentioned a ramp period" },
-  { n: 0, what: "mentioned accelerators or clawbacks" },
+// All 1,473 live rep postings (SDR, AE, AM; individual contributors) from 229 companies, Oct 25, 2026.
+const FULL = { postings: 1473, companies: 229 };
+const FULL_PAY: { label: string; n: number; tone: string; note: string }[] = [
+  { label: "Base and commission", n: 274, tone: "bg-accent", note: "You can see both parts of the paycheck." },
+  { label: "OTE or commission only", n: 408, tone: "bg-accent/60", note: "A total or variable number, but no base." },
+  { label: "Base only", n: 419, tone: "bg-amber/70", note: "A salary, but nothing about commission." },
+  { label: "Unclear", n: 4, tone: "bg-ink-3/60", note: "" },
+  { label: "No pay at all", n: 368, tone: "bg-red/70", note: "" },
 ];
+const FULL_MISSING: { what: string; n: number; cos: number }[] = [
+  { what: "said how many reps hit quota", n: 1, cos: 1 },
+  { what: "gave a number for the quota", n: 15, cos: 8 },
+  { what: "described a ramp or onboarding timeline", n: 7, cos: 5 },
+  { what: "gave a sales cycle length", n: 30, cos: 18 },
+  { what: "mentioned accelerators", n: 52, cos: 13 },
+  { what: "gave a deal size, even roughly", n: 62, cos: 19 },
+  { what: "mentioned clawbacks", n: 0, cos: 0 },
+];
+const pct = (n: number) => (n === 0 ? "0%" : n / FULL.postings < 0.01 ? "under 1%" : `${Math.round((n / FULL.postings) * 100)}%`);
 
 export default function Report() {
   const total = ROWS.length;
-  const anyPay = total - count("none");
+  const anyPay = FULL.postings - 368;
   return (
     <article className="mx-auto max-w-3xl">
-      <p className="text-xs font-bold uppercase tracking-wide text-accent">Braun Board Job Market Report · No. 1</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-accent">Braun Board Job Market Report · No. 1 · October 2026</p>
       <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Most sales jobs show a number. Few show the one that matters.</h1>
       <p className="mt-3 text-[15px] leading-relaxed text-ink-2">
-        We read 25 new B2B sales job postings, line by line. {anyPay} showed a pay number. Only {count("split")} showed both the base and the
-        commission. None said what the quota is or how many reps hit it. By Josh Braun, October 24, 2026.
+        We read every live sales rep posting on Braun Board: {FULL.postings.toLocaleString()} SDR, AE and account manager jobs from {FULL.companies}{" "}
+        companies. Three in four showed a pay number. Fewer than one in five showed both the base and the commission. And only one said how many
+        reps hit quota. By Josh Braun, October 25, 2026.
       </p>
+      <a
+        href="/report/braun-board-job-market-report-october-2026.pdf"
+        download
+        className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-line-strong bg-surface px-4 text-sm font-semibold hover:border-ink"
+      >
+        Download the PDF →
+      </a>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          [`${anyPay} of ${total}`, "showed a pay number"],
-          [`${count("split")} of ${total}`, "showed base and commission"],
-          ["0 of 25", "said what the quota is"],
-          ["0 of 25", "said how many reps hit quota"],
-        ].map(([n, t]) => (
+          [pct(anyPay), "showed a pay number", "206 of 229 companies, in at least one posting"],
+          [pct(274), "showed base and commission", "53 of 229 companies"],
+          ["1%", "gave a number for the quota", "8 of 229 companies"],
+          ["1", "said how many reps hit quota", "out of 1,473 postings"],
+        ].map(([n, t, c]) => (
           <div key={t} className="rounded-xl border border-line bg-surface p-4">
             <p className="text-2xl font-bold tracking-tight">{n}</p>
             <p className="mt-0.5 text-sm text-ink-2">{t}</p>
+            <p className="mt-1 text-xs text-ink-3">{c}</p>
           </div>
         ))}
       </div>
@@ -89,23 +109,24 @@ export default function Report() {
       <section className="mt-10">
         <h2 className="text-xl font-bold tracking-tight">Pay: a number, but not the whole picture</h2>
         <p className="mt-2 text-[15px] leading-relaxed text-ink-2">
-          Pay transparency is real progress. But for a commission job, a salary range alone can leave out a big part of the paycheck. {count("base")} of the 25
-          postings showed a base salary and nothing about commission.
+          Pay transparency is real progress. But for a commission job, one number rarely tells you what you&apos;d take home. 419 postings showed a
+          base salary and nothing about commission. Another 408 showed an OTE or commission figure with no base, so you can&apos;t see how much
+          of the pay is guaranteed.
         </p>
-        <div className="mt-4 flex h-4 overflow-hidden rounded-full" role="img" aria-label="How the 25 postings showed pay">
-          {ORDER.map((p) => (
-            <div key={p} className={PAY[p].tone} style={{ width: `${(count(p) / total) * 100}%` }} />
+        <div className="mt-4 flex h-4 overflow-hidden rounded-full" role="img" aria-label={`How the ${FULL.postings} postings showed pay`}>
+          {FULL_PAY.map((p) => (
+            <div key={p.label} className={p.tone} style={{ width: `${(p.n / FULL.postings) * 100}%` }} />
           ))}
         </div>
         <ul className="mt-4 space-y-2.5">
-          {ORDER.map((p) => (
-            <li key={p} className="flex items-start gap-3 text-[15px]">
-              <span className={`mt-1.5 h-3 w-3 shrink-0 rounded-sm ${PAY[p].tone}`} aria-hidden />
+          {FULL_PAY.map((p) => (
+            <li key={p.label} className="flex items-start gap-3 text-[15px]">
+              <span className={`mt-1.5 h-3 w-3 shrink-0 rounded-sm ${p.tone}`} aria-hidden />
               <span>
                 <span className="font-semibold">
-                  {PAY[p].label}: {count(p)}
+                  {p.label}: {p.n.toLocaleString()} ({pct(p.n)})
                 </span>
-                {PAY[p].note && <span className="text-ink-2"> · {PAY[p].note}</span>}
+                {p.note && <span className="text-ink-2"> · {p.note}</span>}
               </span>
             </li>
           ))}
@@ -114,18 +135,37 @@ export default function Report() {
 
       <section className="mt-10">
         <h2 className="text-xl font-bold tracking-tight">What the postings left out</h2>
-        <p className="mt-2 text-[15px] leading-relaxed text-ink-2">The details that decide whether the pay is reachable were almost never there. Of the 25 postings:</p>
-        <ul className="mt-4 divide-y divide-line rounded-xl border border-line bg-surface">
-          {MISSING.map((m) => (
-            <li key={m.what} className="flex items-baseline gap-4 px-4 py-3">
-              <span className="w-10 shrink-0 text-xl font-bold tabular-nums">{m.n}</span>
+        <p className="mt-2 text-[15px] leading-relaxed text-ink-2">
+          The details that decide whether the pay is reachable were almost never there. Of {FULL.postings.toLocaleString()} postings:
+        </p>
+        <div className="mt-4 overflow-hidden rounded-xl border border-line bg-surface">
+          <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 border-b border-line px-4 py-2 text-xs uppercase tracking-wide text-ink-3">
+            <span>Details</span>
+            <span className="w-20 text-right">Postings</span>
+            <span className="w-24 text-right">Companies</span>
+          </div>
+          {FULL_MISSING.map((m) => (
+            <div key={m.what} className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-4 border-b border-line px-4 py-3 last:border-b-0">
               <span className="text-[15px]">{m.what}</span>
-            </li>
+              <span className="w-20 text-right font-bold tabular-nums">{m.n.toLocaleString()}</span>
+              <span className="w-24 text-right text-sm tabular-nums text-ink-2">{m.cos} of {FULL.companies}</span>
+            </div>
           ))}
-        </ul>
-        <p className="mt-4 text-[15px] leading-relaxed text-ink-2">
-          One more thing stood out. Two postings asked candidates for a <span className="font-semibold text-ink">consistent history of quota attainment</span>.
-          None of the 25 shared how their own team is doing.
+        </div>
+        <p className="mt-3 text-sm text-ink-3">
+          Quota numbers that did appear were mostly meeting or deal targets, like &ldquo;6 qualified demos per month.&rdquo; None of the 15 gave a
+          dollar quota.
+        </p>
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-accent/30 bg-accent-soft p-5 sm:p-6">
+        <h2 className="text-lg font-bold">The one that said it</h2>
+        <p className="mt-2 text-[15px] leading-relaxed text-ink">
+          Out of 1,473 postings, one told you how the team is actually doing. Kong: &ldquo;49% of reps are achieving 100%+ of quota and fully ramped
+          reps are averaging 117% attainment.&rdquo;
+        </p>
+        <p className="mt-2 text-sm text-ink-2">
+          Two others shared a team result without saying how many reps hit: Ramp&apos;s top 20% of reps, and Samsara&apos;s DACH team.
         </p>
       </section>
 
@@ -141,8 +181,12 @@ export default function Report() {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-xl font-bold tracking-tight">All 25 postings</h2>
-        <p className="mt-2 text-sm text-ink-3">Pay is written the way each posting labeled it. This isn&apos;t a ranking.</p>
+        <h2 className="text-xl font-bold tracking-tight">A closer look: 25 postings we read by hand</h2>
+        <p className="mt-2 text-sm text-ink-3">
+          The 25 newest US rep openings, one per company, posted October 22 to 24. {total - count("none")} showed a pay number, {count("split")} showed
+          base and commission, and none gave a quota or said how many reps hit it. Pay is written the way each posting labeled it. This isn&apos;t a
+          ranking.
+        </p>
         <div className="mt-4 overflow-x-auto rounded-xl border border-line">
           <table className="w-full min-w-[560px] text-left text-sm">
             <thead className="bg-surface text-xs uppercase tracking-wide text-ink-3">
@@ -175,11 +219,17 @@ export default function Report() {
       </section>
 
       <section className="mt-10 text-sm leading-relaxed text-ink-3">
-        <h2 className="font-bold text-ink-2">How we picked the 25</h2>
+        <h2 className="font-bold text-ink-2">How we did it</h2>
         <p className="mt-1">
-          The 25 newest openings on Braun Board for individual SDRs, AEs and account managers in the US, one per company, posted October 22 to 24,
-          2026. Every posting comes straight from the company&apos;s own careers page. We read each one in full, including the pay details the job
-          system shows. Postings change after they go up, so this is a snapshot of what they said on October 24.
+          We read every live posting on Braun Board for individual SDRs, AEs and account managers on October 25, 2026: {FULL.postings.toLocaleString()}{" "}
+          postings from {FULL.companies} companies in the US, Canada and the UK. Every posting comes straight from the company&apos;s own careers page.
+          Pay comes from the posting text and the pay fields the company&apos;s job system shows. For everything else, AI read each posting, and a
+          detail only counted when it quoted the posting word for word and gave a number where one was needed. Requirements about a candidate&apos;s
+          past, like &ldquo;a history of quota attainment,&rdquo; don&apos;t count.
+        </p>
+        <p className="mt-2">
+          We hand-checked 50 random postings against the reading: no false &ldquo;yes&rdquo; calls, and one borderline miss. We also reviewed every
+          quota, attainment and ramp result by hand. Postings change after they go up, so this is a snapshot.
         </p>
       </section>
 
