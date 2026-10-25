@@ -8,7 +8,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Job Market Report, October 2026 · Braun Board",
   description:
-    "We read all 1,473 live sales rep postings on Braun Board. 75% showed a pay number. 19% showed both base and commission. 1% said what the quota is. One said how many reps hit it.",
+    "We analyzed all 1,473 live sales rep postings on Braun Board. 75% showed a pay number. 19% showed both base and commission. 1% said what the quota is. One said how many reps hit it.",
 };
 
 type Pay = "split" | "total" | "base" | "unlabeled" | "none";
@@ -79,7 +79,7 @@ export default function Report() {
       <p className="text-xs font-bold uppercase tracking-wide text-accent">Braun Board Job Market Report · No. 1 · October 2026</p>
       <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Most sales jobs show a number. Few show the one that matters.</h1>
       <p className="mt-3 text-[15px] leading-relaxed text-ink-2">
-        We read every live sales rep posting on Braun Board: {FULL.postings.toLocaleString()} SDR, AE and account manager jobs from {FULL.companies}{" "}
+        We analyzed every live sales rep posting on Braun Board: {FULL.postings.toLocaleString()} SDR, AE and account manager jobs from {FULL.companies}{" "}
         companies. Three in four showed a pay number. Fewer than one in five showed both the base and the commission. And only one said how many
         reps hit quota. By Josh Braun, October 25, 2026.
       </p>
@@ -181,7 +181,7 @@ export default function Report() {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-xl font-bold tracking-tight">A closer look: 25 postings we read by hand</h2>
+        <h2 className="text-xl font-bold tracking-tight">A closer look: 25 postings, checked line by line</h2>
         <p className="mt-2 text-sm text-ink-3">
           The 25 newest US rep openings, one per company, posted October 22 to 24. {total - count("none")} showed a pay number, {count("split")} showed
           base and commission, and none gave a quota or said how many reps hit it. Pay is written the way each posting labeled it. This isn&apos;t a
@@ -221,15 +221,15 @@ export default function Report() {
       <section className="mt-10 text-sm leading-relaxed text-ink-3">
         <h2 className="font-bold text-ink-2">How we did it</h2>
         <p className="mt-1">
-          We read every live posting on Braun Board for individual SDRs, AEs and account managers on October 25, 2026: {FULL.postings.toLocaleString()}{" "}
+          We analyzed every live posting on Braun Board for individual SDRs, AEs and account managers on October 25, 2026: {FULL.postings.toLocaleString()}{" "}
           postings from {FULL.companies} companies in the US, Canada and the UK. Every posting comes straight from the company&apos;s own careers page.
           Pay comes from the posting text and the pay fields the company&apos;s job system shows. For everything else, AI read each posting, and a
           detail only counted when it quoted the posting word for word and gave a number where one was needed. Requirements about a candidate&apos;s
           past, like &ldquo;a history of quota attainment,&rdquo; don&apos;t count.
         </p>
         <p className="mt-2">
-          We hand-checked 50 random postings against the reading: no false &ldquo;yes&rdquo; calls, and one borderline miss. We also reviewed every
-          quota, attainment and ramp result by hand. Postings change after they go up, so this is a snapshot.
+          We checked 50 random postings line by line against the reading: no false &ldquo;yes&rdquo; calls, and one borderline miss. We also reviewed every
+          quota, attainment and ramp result individually. Postings change after they go up, so this is a snapshot.
         </p>
       </section>
 
