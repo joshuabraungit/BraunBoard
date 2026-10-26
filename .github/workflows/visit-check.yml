@@ -1,0 +1,12 @@
+name: visit-check
+on: workflow_dispatch
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"
+          code=$(curl -s -o /dev/null -w "%{http_code}" -X POST https://www.braunboard.com/api/v -H "content-type: application/json" -H "user-agent: $UA" -d '{"p":"/qa-visit-check","r":""}')
+          echo "::notice::api/v returned $code"
+          home=$(curl -s -A "$UA" https://www.braunboard.com/ | grep -o 'insights/script.js\|/_next/static/chunks/app/layout[^"]*' | head -3 | tr '\n' ' ')
+          echo "::notice::home scripts: $home"
