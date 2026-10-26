@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { adminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin";
+import type { Traffic } from "./visitors/page";
 
 interface Overview {
   jobs_live: number;
@@ -108,8 +109,9 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 export default async function AdminDashboard() {
   await requireAdmin();
   const db = adminClient();
-  const [{ data, error }, { data: aud }, { data: asks }, { data: kits }, { data: pev }, { count: storyCount }, { data: changed }] = await Promise.all([
+  const [{ data, error }, { data: traffic }, { data: aud }, { data: asks }, { data: kits }, { data: pev }, { count: storyCount }, { data: changed }] = await Promise.all([
     db.rpc("admin_overview"),
+    db.rpc("admin_traffic", { days: 30 }),
     db.rpc("admin_audience"),
     db.from("ask_messages").select("email, created_at").range(0, 9999),
     db.from("kit_downloads").select("created_at, source").range(0, 49999),
@@ -119,6 +121,7 @@ export default async function AdminDashboard() {
   ]);
   if (error || !data) return <p className="text-red">Couldn&apos;t load the dashboard: {error?.message}</p>;
   const o = data as Overview;
+  const tr = traffic as Traffic | null;
   const a = aud as Audience | null;
   const clickRate = o.alerts_sent_30d ? Math.round((o.alerts_clicked_30d / o.alerts_sent_30d) * 100) : null;
   // Ask Josh: people = distinct emails that sent the form.
@@ -135,6 +138,15 @@ export default async function AdminDashboard() {
   return (
     <>
       <h1 className="mb-6 text-2xl font-bold tracking-tight">Dashboard</h1>
+
+      {tr && (
+        <Group title="Visitors">
+          <Tile label="Today" value={tr.today_visitors} sub={`${tr.today_views.toLocaleString()} page views`} href="/admin/visitors" />
+          <Tile label="Last 7 days" value={tr.week_visitors} sub={`${tr.week_views.toLocaleString()} page views`} href="/admin/visitors?days=7" />
+          <Tile label="Last 30 days" value={tr.month_visitors} sub={`${tr.month_views.toLocaleString()} page views`} href="/admin/visitors" />
+          <Tile label="Top source, 30 days" value={tr.sources[0]?.label ?? "None yet"} sub={tr.sources[0] ? `${tr.sources[0].n.toLocaleString()} visitors` : "Click a number for the full breakdown"} />
+        </Group>
+      )}
 
       <Group title="Jobs">
         <Tile label="Live jobs" value={o.jobs_live} />

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import Link from "next/link";
+import { Suspense } from "react";
+import { PageView } from "@/components/PageView";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
 import { UserMenu } from "@/components/UserMenu";
@@ -37,6 +39,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         </footer>
         {/* Visitor counts and where they came from. No cookies. */}
         <Analytics />
+        <Suspense fallback={null}>
+          <PageView />
+        </Suspense>
       </body>
     </html>
   );
