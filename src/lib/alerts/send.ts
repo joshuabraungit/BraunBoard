@@ -3,7 +3,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { renderAlert, sendEmail, type AlertItem } from "./email";
-import { offUrl } from "./off";
+import { offUrl, oneClickUrl } from "./off";
 import { flagsFromCodes, isRedFlag } from "../flags";
 import { FLAG_QUESTIONS } from "../questions";
 
@@ -63,7 +63,10 @@ export async function sendPendingAlerts(db: SupabaseClient, frequency: "instant"
       await db.from("alert_matches").update({ sent_at: new Date().toISOString() }).in("id", g.ids);
       continue;
     }
-    await sendEmail(profile.email, renderAlert(g.watch, g.items.slice(0, 10), site, offUrl(site, g.user_id, g.watch_id)));
+    // The header gives Gmail and Apple Mail their own "Unsubscribe" button, which turns off just this alert.
+    await sendEmail(profile.email, renderAlert(g.watch, g.items.slice(0, 10), site, offUrl(site, g.user_id, g.watch_id)), {
+      headers: { "List-Unsubscribe": `<${oneClickUrl(site, g.user_id, g.watch_id)}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+    });
     await db.from("alert_matches").update({ sent_at: new Date().toISOString() }).in("id", g.ids);
     sent++;
   }

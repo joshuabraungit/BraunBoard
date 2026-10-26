@@ -8,7 +8,7 @@ import { decodeWatchCookie, ONBOARDING_COOKIE } from "@/lib/watch-prefs";
 import { upsertPrimaryWatch } from "@/lib/watches-db";
 
 function safeNext(n: string | null): string {
-  return n && n.startsWith("/") && !n.startsWith("//") ? n : "/for-you";
+  return n && n.startsWith("/") && !n.startsWith("//") && !n.startsWith("/\\") ? n : "/for-you";
 }
 
 export async function GET(request: Request) {

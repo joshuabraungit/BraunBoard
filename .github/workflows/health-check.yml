@@ -1,0 +1,30 @@
+name: Health check
+
+# Once a day: load the live site's main pages and check the job data is fresh.
+# Emails the admins only if something is wrong. Run it by hand with "test" to get an all-good email.
+on:
+  schedule:
+    - cron: "41 11 * * *"
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Send the email even if everything is fine (type yes)"
+        default: "no"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      ALERTS_FROM: ${{ secrets.ALERTS_FROM }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/health-check.ts ${{ inputs.test == 'yes' && '--test' || '' }}

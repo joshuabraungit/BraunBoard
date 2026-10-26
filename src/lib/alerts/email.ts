@@ -72,7 +72,7 @@ export function renderAlert(watchName: string, items: AlertItem[], siteUrl: stri
 export async function sendEmail(
   to: string,
   msg: { subject: string; html: string; text: string },
-  opts: { from?: string; replyTo?: string } = {},
+  opts: { from?: string; replyTo?: string; headers?: Record<string, string> } = {},
 ) {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
@@ -87,6 +87,7 @@ export async function sendEmail(
       to,
       ...msg,
       ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
+      ...(opts.headers ? { headers: opts.headers } : {}),
     }),
   });
   if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);

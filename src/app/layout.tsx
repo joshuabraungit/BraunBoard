@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import Link from "next/link";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
@@ -34,6 +35,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <span className="mx-2">·</span>
           <Link href="/terms" className="hover:text-ink">Terms</Link>
         </footer>
+        {/* Visitor counts and where they came from. No cookies. */}
+        <Analytics />
       </body>
     </html>
   );

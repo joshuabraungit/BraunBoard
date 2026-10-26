@@ -4,7 +4,9 @@ import { subscribe } from "@/lib/picks-subscribe";
 import { unsubscribe } from "@/lib/picks-subscribe";
 
 export async function joinPicks(formData: FormData) {
-  const back = String(formData.get("back") || "/picks");
+  // Only send people back to a page on this site, never to another website.
+  const raw = String(formData.get("back") || "/picks");
+  const back = raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/\\") ? raw : "/picks";
   // Honeypot: real people never fill this hidden field.
   if (String(formData.get("website") ?? "")) redirect(`${back}${back.includes("?") ? "&" : "?"}picks=ok#picks`);
   const r = await subscribe(String(formData.get("email") ?? ""), String(formData.get("source") ?? "site"));

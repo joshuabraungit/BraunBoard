@@ -25,3 +25,6 @@ export function readOffToken(token: string | null | undefined): { userId: string
 }
 
 export const offUrl = (siteUrl: string, userId: string, watchId: string | null) => `${siteUrl}/alerts/off?t=${offToken(userId, watchId)}`;
+
+/** For the List-Unsubscribe header: mail apps POST here when someone taps "Unsubscribe" next to the sender. */
+export const oneClickUrl = (siteUrl: string, userId: string, watchId: string | null) => `${siteUrl}/api/alerts/unsubscribe?t=${offToken(userId, watchId)}`;

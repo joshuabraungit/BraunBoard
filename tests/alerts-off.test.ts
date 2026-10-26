@@ -25,3 +25,13 @@ describe("turn-off links", () => {
     expect(msg.text).toContain("https://x.test/alerts/off?t=abc");
   });
 });
+
+describe("one-click unsubscribe link", () => {
+  it("carries the same signed code as the turn-off link", async () => {
+    const { oneClickUrl, readOffToken } = await import("../src/lib/alerts/off");
+    process.env.ALERTS_LINK_SECRET ||= "test-secret";
+    const u = new URL(oneClickUrl("https://www.braunboard.com", "user-1", "watch-9"));
+    expect(u.pathname).toBe("/api/alerts/unsubscribe");
+    expect(readOffToken(u.searchParams.get("t"))).toEqual({ userId: "user-1", watchId: "watch-9" });
+  });
+});

@@ -5,7 +5,7 @@ export const metadata: Metadata = { alternates: { canonical: "/privacy" }, title
 
 export default function Privacy() {
   return (
-    <LegalPage title="Privacy Policy" updated="October 14, 2026">
+    <LegalPage title="Privacy Policy" updated="October 26, 2026">
       <p>
         Braun Board helps salespeople find B2B sales jobs and get alerted when relevant ones appear. This page explains what we
         collect and how we use it. Plain version: we only collect what we need to run the job alerts you ask for, and we don&apos;t
@@ -19,6 +19,7 @@ export default function Privacy() {
         <li><strong>Alert activity:</strong> which alert emails we sent you and whether you clicked through, so we can tell if alerts are useful.</li>
         <li><strong>Ask Josh messages:</strong> if you use the Ask Josh form, your email, your name if you give it, your question, any offer details you add, and the job it was about. Josh reads these himself and may reply by email. We never share them with employers or recruiters.</li>
         <li><strong>Basic technical data:</strong> standard server logs and a sign-in cookie that keeps you logged in.</li>
+        <li><strong>Visit counts:</strong> Vercel Web Analytics counts page views and which site sent you (like LinkedIn or Google). It uses no cookies and doesn&apos;t identify you.</li>
       </ul>
       <p>If you use the site without signing in, your onboarding answers are stored only in a cookie in your browser.</p>
 
