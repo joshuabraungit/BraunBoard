@@ -20,6 +20,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: `${data.company.name} sales jobs · Braun Board`,
     description: `Open sales jobs at ${data.company.name}, with the pay they publish and what each posting leaves out.`,
     alternates: { canonical: `/company/${data.company.slug}` },
+    openGraph: {
+      type: "website",
+      siteName: "Braun Board",
+      url: `/company/${data.company.slug}`,
+      images: ["/opengraph-image"],
+      title: `${data.company.name} sales jobs`,
+      description: `${data.jobs.length} open sales ${data.jobs.length === 1 ? "job" : "jobs"} at ${data.company.name}, with the pay they publish and what each posting leaves out.`,
+    },
   };
 }
 

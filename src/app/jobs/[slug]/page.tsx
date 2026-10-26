@@ -19,6 +19,7 @@ import { SaveJobButton, WatchCompanyButton } from "@/components/Actions";
 import { MatchBadge } from "@/components/MatchBadge";
 import { getActiveWatch, getUserState } from "@/lib/session";
 import { scoreMatch } from "@/lib/match";
+import { jsonLd, jobPostingSchema } from "@/lib/job-schema";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: `${job.title_raw} at ${job.company_name} · Braun Board`,
     description: `${job.title_raw} at ${job.company_name}${pay ? `, ${pay}` : ""}. See what the posting leaves out and the questions to ask on the first call.`,
     alternates: { canonical: `/jobs/${job.slug}` },
+    openGraph: {
+      type: "website",
+      siteName: "Braun Board",
+      url: `/jobs/${job.slug}`,
+      title: `${job.title_raw} at ${job.company_name}`,
+      description: pay ? `${pay}. Plus what the posting leaves out and the questions to ask.` : "See what the posting leaves out and the questions to ask on the first call.",
+    },
+    twitter: { card: "summary_large_image" },
   };
 }
 
@@ -98,6 +107,8 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
 
   return (
     <div className="mx-auto max-w-3xl">
+      {/* Lets Google show this job in its jobs search. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(jobPostingSchema(job, process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.braunboard.com")) }} />
       <div className="flex items-center gap-3">
         <CompanyLogo name={job.company_name} logoUrl={job.company_logo_url} domain={job.company_domain} size={44} />
         <div>

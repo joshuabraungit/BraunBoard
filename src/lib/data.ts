@@ -44,6 +44,8 @@ export interface JobView {
   /** Where the job is open: any of "US", "CA", "UK". */
   markets?: string[];
   apply_url: string;
+  /** As the careers site wrote it, e.g. "FullTime" (job page only). */
+  employment_type?: string | null;
   /** When the employer posted it (falls back to when we first saw it). */
   first_seen_at: string;
   /** Last time our crawler saw it live on the company's careers page (job page only). */
@@ -144,7 +146,7 @@ export async function listJobsWithTotal(
 export async function getJob(slug: string): Promise<JobView | null> {
   if (!isSupabaseConfigured()) return SAMPLE_JOBS.find((j) => j.slug === slug) ?? null;
   const db = await serverClient();
-  const { data } = await db.from("visible_jobs").select(`${CARD_COLUMNS}, description_raw, last_seen_at, buyer, buyer_quote, industry, industry_quote, buyer_checked_at`).eq("slug", slug).maybeSingle();
+  const { data } = await db.from("visible_jobs").select(`${CARD_COLUMNS}, description_raw, employment_type, last_seen_at, buyer, buyer_quote, industry, industry_quote, buyer_checked_at`).eq("slug", slug).maybeSingle();
   return (data as unknown as JobView) ?? null;
 }
 
