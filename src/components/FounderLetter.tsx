@@ -20,28 +20,32 @@ export function FounderLetter() {
           <p>Sales can be a great job. You get paid to be curious. You help people fix real problems. When it goes well, you earn a good living.</p>
           <p>But finding a good sales job is hard.</p>
           <p>
-            The postings all sound the same. &ldquo;Competitive compensation.&rdquo; &ldquo;Uncapped commission.&rdquo; What you actually need to know is missing.
-            What&apos;s the quota? How many reps hit it?
+            The postings all sound the same. &ldquo;Competitive compensation.&rdquo; &ldquo;Uncapped commission.&rdquo; What you need to know is missing. What&apos;s the
+            quota? How many reps hit it?
           </p>
           <p>
             This October I had AI read 1,473 rep postings.{" "}
             <Link href="/report/october-2026" className="underline decoration-line-strong underline-offset-2 hover:decoration-ink">One said how many reps hit quota.</Link>{" "}
             One.
           </p>
-          <p>And then there&apos;s the product.</p>
           <p>
-            Most job searches start with the title. But the product is the job. It&apos;s what you&apos;ll talk about on every call, in every email, to every person who
-            says &ldquo;we&apos;re fine with what we have.&rdquo;
+            And then there&apos;s the product. The product is the job. It&apos;s what you&apos;ll talk about on every call, to every person who says &ldquo;we&apos;re
+            fine with what we have.&rdquo; If you can&apos;t explain it, you can&apos;t sell it.
           </p>
-          <p>If you don&apos;t understand it, you can&apos;t explain it. If you can&apos;t explain it, you can&apos;t sell it. And if you don&apos;t believe in it, buyers can tell.</p>
           <p>Yet half the time you can&apos;t figure out what a company sells, even after reading the posting twice.</p>
           <p>That&apos;s why I built Braun Board.</p>
           <p>
-            It&apos;s a job board just for B2B salespeople. You can{" "}
-            <Link href="/products" className="underline decoration-line-strong underline-offset-2 hover:decoration-ink">shop by product</Link>, not just title. Every
-            company gets a short note on what it sells, in plain English. So you can ask the most important question first: would I be excited to sell this?
+            You can <Link href="/products" className="underline decoration-line-strong underline-offset-2 hover:decoration-ink">shop by product</Link>, not just title. Every company gets a short note on what it sells, in plain English. So you ask
+            the most important question first: would I be excited to sell this?
           </p>
-          <p>Then you get the pay when it&apos;s posted, what the posting leaves out, and the questions to ask before you say yes.</p>
+          <p>
+            Then every job gets the Braun Read. It&apos;s what I&apos;d look for if you sent me the posting. A verdict, from &ldquo;strong posting&rdquo; to &ldquo;proceed
+            with caution.&rdquo; The pay, when it&apos;s posted. The red flags and the green ones. What the posting leaves out. And the questions to ask on the first
+            call.
+          </p>
+          <p>
+            The job you take shapes your next few years. You should know what you&apos;re walking into before the first interview, not after the first quarter.
+          </p>
           <p>It&apos;s free. Hope it helps.</p>
         </div>
         <div className="mt-8 rotate-[0.6deg]">
