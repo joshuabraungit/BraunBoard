@@ -40,19 +40,22 @@ Return ONLY a JSON object:
                      Only employee or team size counts ("over 1,200 employees", "a team of 300", "10,000+ people worldwide").
                      NOT customers, users, countries, offices, revenue or funding.
   "headcount": the number of employees that sentence states (use the lower bound for "1,000+"). Null if no quote.
-  "estimate": if no posting says, your best estimate of the company's current employee count from what you know, as a number. Null if you don't know this company well enough to say.
-  "confident": true only if you know this specific company well (not just its name).
-}`;
+  "estimate": if no posting says, your best estimate of the company's current employee count, as a number. Use what you know about this specific company: its funding stage, when it was founded, how fast it has grown. Null if you don't recognize this company at all.
+  "confidence": "high" if you know this company well, "medium" if you know roughly what stage it's at (for example, a seed or Series A startup), "low" if you're mostly guessing from the name or the postings.
+}
+
+A company you only know from these postings is "low". Don't confuse it with a different company that has a similar name.`;
 
 /** Keep only what checks out: a real quote with a number, or a confident estimate. */
-export function cleanSize(raw: { headcount_quote?: unknown; headcount?: unknown; estimate?: unknown; confident?: unknown } | null | undefined, postings: string): SizeInfo {
+export function cleanSize(raw: { headcount_quote?: unknown; headcount?: unknown; estimate?: unknown; confident?: unknown; confidence?: unknown } | null | undefined, postings: string): SizeInfo {
   const empty: SizeInfo = { bucket: null, source: null, quote: null };
   if (!raw) return empty;
   const quote = typeof raw.headcount_quote === "string" ? raw.headcount_quote.trim() : null;
   const n = Number(raw.headcount);
   if (quote && n > 0 && /\d/.test(quote) && quoteInPosting(quote, postings)) return { bucket: bucketFor(n), source: "posting", quote };
   const est = Number(raw.estimate);
-  if (raw.confident === true && est > 0) return { bucket: bucketFor(est), source: "estimate", quote: null };
+  const sure = raw.confident === true || raw.confidence === "high" || raw.confidence === "medium";
+  if (sure && est > 0) return { bucket: bucketFor(est), source: "estimate", quote: null };
   return empty;
 }
 

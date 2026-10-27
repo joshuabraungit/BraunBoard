@@ -11,6 +11,8 @@ const DAY = 86_400_000;
 async function main() {
   requireEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "ANTHROPIC_API_KEY");
   const max = Number(process.argv[2] ?? 40);
+  // --retry-unknown: ask again about companies we couldn't size, however recently we tried.
+  const retryUnknown = process.argv.includes("--retry-unknown");
   const db = adminClient();
 
   const byCo = new Map<string, { name: string; postings: string[] }>();
@@ -28,12 +30,12 @@ async function main() {
   const ids = [...byCo.keys()];
   const due: string[] = [];
   for (let i = 0; i < ids.length; i += 300) {
-    const { data, error } = await db.from("companies").select("id, size_source, size_checked_at").in("id", ids.slice(i, i + 300));
+    const { data, error } = await db.from("companies").select("id, size_bucket, size_source, size_checked_at").in("id", ids.slice(i, i + 300));
     if (error) throw error;
     for (const c of data ?? []) {
       if (c.size_source === "admin" || c.size_source === "careers" || c.size_source === "posting") continue;
       const at = c.size_checked_at ? new Date(c.size_checked_at as string).getTime() : null;
-      if (at == null || Date.now() - at > 90 * DAY) due.push(c.id as string);
+      if (at == null || Date.now() - at > 90 * DAY || (retryUnknown && !c.size_bucket)) due.push(c.id as string);
     }
   }
   const batch = due.slice(0, max);

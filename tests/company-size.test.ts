@@ -63,3 +63,12 @@ describe("openings sanity check", () => {
     expect(checkSize("large", "estimate", null).flag).toBeNull();
   });
 });
+
+describe("rough estimates for startups", () => {
+  it("takes a medium-confidence estimate, never a low one", () => {
+    const p = "We sell software.";
+    expect(cleanSize({ estimate: 60, confidence: "medium" }, p)).toEqual({ bucket: "startup", source: "estimate", quote: null });
+    expect(cleanSize({ estimate: 60, confidence: "low" }, p).bucket).toBeNull();
+    expect(cleanSize({ estimate: 3000, confidence: "high" }, p).bucket).toBe("large");
+  });
+});
