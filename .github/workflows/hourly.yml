@@ -49,6 +49,9 @@ jobs:
       - name: What they sell (new and stale companies)
         if: always()
         run: npx tsx scripts/product-backfill.ts 40
+      - name: Company size (new companies)
+        if: always()
+        run: npx tsx scripts/size-backfill.ts 40
       - name: Daily digest (if due)
         if: always()
         run: npm run digest -- --if-due

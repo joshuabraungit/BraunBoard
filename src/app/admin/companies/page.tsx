@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { adminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin";
-import { addCompany, setCompanyEnabled } from "../actions";
+import { addCompany, setCompanyEnabled, setCompanySize } from "../actions";
+import { SIZE_BUCKETS, SIZE_LABELS } from "@/lib/ingest/size";
 import { AdminNotice } from "@/components/AdminNotice";
 import { ENABLED_PROVIDERS } from "@/lib/ingest/providers";
 
@@ -25,6 +26,9 @@ interface Row {
   ats_identifier: string | null;
   last_crawled_at: string | null;
   is_disabled: boolean;
+  size_bucket: string | null;
+  size_source: string | null;
+  size_quote: string | null;
   company_stats: { open_roles: number; new_30d: number; trend: string } | null;
 }
 
@@ -54,7 +58,7 @@ export default async function AdminCompanies({ searchParams }: { searchParams: P
   const [{ data: companies }, { data: errs }] = await Promise.all([
     db
       .from("companies")
-      .select("id, slug, name, domain, ats_provider, ats_identifier, last_crawled_at, is_disabled, company_stats(open_roles, new_30d, trend)")
+      .select("id, slug, name, domain, ats_provider, ats_identifier, last_crawled_at, is_disabled, size_bucket, size_source, size_quote, company_stats(open_roles, new_30d, trend)")
       .order("name")
       .limit(3000),
     db.from("crawl_runs").select("company_id, error, started_at").not("error", "is", null).gte("started_at", new Date(Date.now() - 86_400_000).toISOString()),
@@ -126,6 +130,7 @@ export default async function AdminCompanies({ searchParams }: { searchParams: P
             <tr>
               <th className="px-4 py-2.5 font-semibold">Company</th>
               <th className="px-4 py-2.5 font-semibold">Open sales roles</th>
+              <th className="px-4 py-2.5 font-semibold">Size</th>
               <th className="px-4 py-2.5 font-semibold">Job board</th>
               <th className="px-4 py-2.5 font-semibold">Last crawl</th>
               <th className="px-4 py-2.5" />
@@ -144,6 +149,22 @@ export default async function AdminCompanies({ searchParams }: { searchParams: P
                   <td className="px-4 py-2.5">
                     {open(r)}
                     {(r.company_stats?.new_30d ?? 0) > 0 && <span className="text-xs text-ink-3"> · {r.company_stats!.new_30d} new in 30d</span>}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <form action={setCompanySize} className="flex items-center gap-1">
+                      <input type="hidden" name="id" value={r.id} />
+                      <input type="hidden" name="returnTo" value={here} />
+                      <select name="size" defaultValue={r.size_bucket ?? ""} className="rounded border border-line bg-bg px-1 py-0.5 text-xs" aria-label={`Size of ${r.name}`}>
+                        <option value="">Unknown</option>
+                        {SIZE_BUCKETS.map((b) => <option key={b} value={b}>{SIZE_LABELS[b].label}</option>)}
+                      </select>
+                      <button className="rounded border border-line px-1.5 py-0.5 text-xs font-semibold hover:border-line-strong">Save</button>
+                    </form>
+                    {r.size_source && (
+                      <span className="block text-xs text-ink-3" title={r.size_quote ?? undefined}>
+                        {{ posting: "from a posting", estimate: "AI estimate", admin: "set by you", careers: "from careers site" }[r.size_source] ?? r.size_source}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-2.5">
                     {url ? (

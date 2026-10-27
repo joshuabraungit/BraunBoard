@@ -10,6 +10,7 @@ import { adapters } from "@/lib/ingest/adapters";
 import { detectByProbing, detectFromUrl } from "@/lib/ingest/detect-ats";
 import { ENABLED_PROVIDERS } from "@/lib/ingest/providers";
 import { slugify } from "@/lib/slug";
+import { isSizeBucket, SIZE_LABELS } from "@/lib/ingest/size";
 
 const back = (path: string, msg: string, ok = true) => redirect(`${path}${path.includes("?") ? "&" : "?"}${ok ? "msg" : "err"}=${encodeURIComponent(msg)}`);
 
@@ -24,6 +25,21 @@ export async function setCompanyEnabled(formData: FormData) {
   await db.rpc("refresh_company_stats");
   revalidatePath("/admin/companies");
   back(returnTo, `${data!.name} ${enable ? "is back on. Its jobs show again." : "is switched off. Its jobs are hidden."}`);
+}
+
+export async function setCompanySize(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  const size = String(formData.get("size") ?? "");
+  const returnTo = String(formData.get("returnTo") || "/admin/companies");
+  const db = adminClient();
+  const patch = isSizeBucket(size)
+    ? { size_bucket: size, size_source: "admin", size_quote: null, size_checked_at: new Date().toISOString() }
+    : { size_bucket: null, size_source: "admin", size_quote: null, size_checked_at: new Date().toISOString() };
+  const { data, error } = await db.from("companies").update(patch).eq("id", id).select("name").single();
+  if (error) back(returnTo, error.message, false);
+  revalidatePath("/admin/companies");
+  back(returnTo, `${data!.name} is now ${isSizeBucket(size) ? SIZE_LABELS[size].label : "unknown size"}. The AI won't change it.`);
 }
 
 export async function addCompany(formData: FormData) {

@@ -7,6 +7,7 @@ import { JobGrid } from "@/components/JobCard";
 import { getUserState } from "@/lib/session";
 import { watchSearch } from "@/app/actions";
 import { REMOTE_TYPES, ROLE_FAMILIES, SALES_MOTIONS, SALES_SEGMENTS } from "@/lib/ingest/types";
+import { isSizeBucket, SIZE_BUCKETS, SIZE_LABELS } from "@/lib/ingest/size";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -32,6 +33,7 @@ function toFilters(sp: SP, market: MarketChoice): JobFilters {
     markets: marketsFor(market),
     minBase: num(sp.minBase),
     minOte: num(sp.minOte),
+    size: isSizeBucket(sp.size) ? sp.size : undefined,
     // Default to the last 90 days so old postings don't bury fresh ones. "all" means any time.
     postedWithinDays: sp.posted === "all" ? undefined : (num(sp.posted) ?? DEFAULT_POSTED_DAYS),
   };
@@ -97,7 +99,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
     if (!p.get("country")) p.set("country", market);
     return p.toString();
   })();
-  const suggestedName = [sp.segment, sp.role === "Account Executive" ? "AE" : sp.role, sp.remote, market === "CA" ? "Canada" : market === "UK" ? "UK" : null, sp.minOte && payOptions(market, "ote", sp.minOte).find((p) => String(p.value) === sp.minOte)?.label, sp.q]
+  const suggestedName = [isSizeBucket(sp.size) ? SIZE_LABELS[sp.size].label : null, sp.segment, sp.role === "Account Executive" ? "AE" : sp.role, sp.remote, market === "CA" ? "Canada" : market === "UK" ? "UK" : null, sp.minOte && payOptions(market, "ote", sp.minOte).find((p) => String(p.value) === sp.minOte)?.label, sp.q]
     .filter(Boolean)
     .join(" · ");
   return (
@@ -113,6 +115,14 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
         <Select name="segment" label="Any segment" options={SALES_SEGMENTS} value={sp.segment} />
         <Select name="motion" label="Any motion" options={SALES_MOTIONS.filter((m) => m !== "Channel")} value={sp.motion} />
         <Select name="remote" label="Any workplace" options={REMOTE_TYPES} value={sp.remote} />
+        <select name="size" defaultValue={isSizeBucket(sp.size) ? sp.size : ""} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label="Company size">
+          <option value="">Any company size</option>
+          {SIZE_BUCKETS.map((b) => (
+            <option key={b} value={b}>
+              {SIZE_LABELS[b].label} ({SIZE_LABELS[b].range})
+            </option>
+          ))}
+        </select>
         <select name="country" defaultValue={market} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label="Country">
           {(Object.keys(MARKET_CHOICES) as MarketChoice[]).map((m) => (
             <option key={m} value={m}>

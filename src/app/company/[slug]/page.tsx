@@ -7,6 +7,7 @@ import { CompanyLogo } from "@/components/CompanyLogo";
 import { JobGrid } from "@/components/JobCard";
 import { WatchCompanyButton } from "@/components/Actions";
 import { getUserState } from "@/lib/session";
+import { isSizeBucket, SIZE_LABELS } from "@/lib/ingest/size";
 
 export const dynamic = "force-dynamic";
 
@@ -45,11 +46,22 @@ export default async function CompanyPage({ params }: { params: Promise<{ slug: 
         <CompanyLogo name={company.name} logoUrl={company.logo_url} domain={company.domain} size={56} />
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold tracking-tight">{company.name}</h1>
-          {company.website_url && (
-            <a href={company.website_url} target="_blank" rel="noopener" className="text-sm text-ink-2 hover:underline">
-              {company.domain}
-            </a>
-          )}
+          <p className="text-sm text-ink-2">
+            {company.website_url && (
+              <a href={company.website_url} target="_blank" rel="noopener" className="hover:underline">
+                {company.domain}
+              </a>
+            )}
+            {isSizeBucket(company.size_bucket) && (
+              <>
+                {company.website_url && " · "}
+                <span title={company.size_quote ? `From their posting: "${company.size_quote}"` : company.size_source === "estimate" ? "Our best estimate. Not from the company." : undefined}>
+                  {SIZE_LABELS[company.size_bucket].label}, {SIZE_LABELS[company.size_bucket].range}
+                  {company.size_source === "estimate" ? " (our estimate)" : ""}
+                </span>
+              </>
+            )}
+          </p>
         </div>
         <WatchCompanyButton companyId={company.id} on={state.watchedCompanyIds.has(company.id)} back={back} className="rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white aria-pressed:bg-surface aria-pressed:text-fresh aria-pressed:ring-1 aria-pressed:ring-fresh" />
       </div>

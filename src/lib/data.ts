@@ -55,6 +55,8 @@ export interface JobView {
   company_slug: string;
   company_logo_url: string | null;
   company_domain: string | null;
+  /** Size bucket of the company ("startup"...), when known. */
+  company_size?: string | null;
 }
 
 export interface CompanyView {
@@ -65,6 +67,9 @@ export interface CompanyView {
   logo_url: string | null;
   website_url: string | null;
   industry: string | null;
+  size_bucket?: string | null;
+  size_source?: string | null;
+  size_quote?: string | null;
 }
 
 export interface JobFilters {
@@ -79,10 +84,12 @@ export interface JobFilters {
   minOte?: number;
   postedWithinDays?: number;
   companySlug?: string;
+  /** "startup", "growth", "large" or "enterprise". */
+  size?: string;
 }
 
 const CARD_COLUMNS =
-  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags, currency, markets, attainment";
+  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags, currency, markets, attainment, company_size";
 
 function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
   const since = f.postedWithinDays ? Date.now() - f.postedWithinDays * 86_400_000 : 0;
@@ -97,6 +104,7 @@ function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
       (!f.minBase || (j.salary_max ?? j.salary_min ?? 0) >= f.minBase) &&
       (!f.minOte || (j.ote_max ?? j.ote_min ?? 0) >= f.minOte) &&
       (!f.companySlug || j.company_slug === f.companySlug) &&
+      (!f.size || j.company_size === f.size) &&
       (!since || new Date(j.first_seen_at).getTime() >= since),
   );
 }
@@ -134,6 +142,7 @@ export async function listJobsWithTotal(
   if (f.minBase) q = q.gte("salary_max_usd", f.minBase);
   if (f.minOte) q = q.gte("ote_max_usd", f.minOte);
   if (f.companySlug) q = q.eq("company_slug", f.companySlug);
+  if (f.size) q = q.eq("company_size", f.size);
   if (f.postedWithinDays) q = q.gte("posted_at", new Date(Date.now() - f.postedWithinDays * 86_400_000).toISOString());
   const { data, error, count } = await q;
   // Asking for a page past the end is not an error, just an empty page.
@@ -156,7 +165,7 @@ export async function getCompany(slug: string): Promise<{ company: CompanyView; 
     company = SAMPLE_COMPANIES.find((c) => c.slug === slug) ?? null;
   } else {
     const db = await serverClient();
-    const { data } = await db.from("companies").select("id, slug, name, domain, logo_url, website_url, industry").eq("slug", slug).maybeSingle();
+    const { data } = await db.from("companies").select("id, slug, name, domain, logo_url, website_url, industry, size_bucket, size_source, size_quote").eq("slug", slug).maybeSingle();
     company = data as CompanyView | null;
   }
   if (!company) return null;
