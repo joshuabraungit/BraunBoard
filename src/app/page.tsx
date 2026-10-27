@@ -3,6 +3,7 @@ import Link from "next/link";
 import { byHiringFastest, listCompanies, listJobs } from "@/lib/data";
 import { HiringRow } from "@/components/Hiring";
 import { PicksSignup } from "@/components/PicksSignup";
+import { FounderLetter } from "@/components/FounderLetter";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { JobGrid, Section } from "@/components/JobCard";
 import { getActiveWatch, getUserState } from "@/lib/session";
@@ -108,6 +109,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
       <Section title="Remote Enterprise AE" href={`/jobs?role=Account+Executive&segment=Enterprise&remote=Remote&country=${market}`}>
         <JobGrid jobs={remoteEnt} ctx={ctx} />
       </Section>
+      <FounderLetter />
     </>
   );
 }
