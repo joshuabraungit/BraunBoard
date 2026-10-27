@@ -3,10 +3,14 @@ import Link from "next/link";
 // Josh's letter on why he built Braun Board. Bottom of the home page.
 export function FounderLetter() {
   return (
-    <section aria-labelledby="letter-title" className="mx-auto mt-16 max-w-2xl">
+    <section aria-labelledby="letter-title" className="mx-auto mt-20 max-w-2xl px-2 sm:px-0">
       <h2 id="letter-title" className="sr-only">Why I built Braun Board</h2>
-      <div className="rotate-[-0.4deg] rounded-sm border border-line bg-surface px-6 py-10 shadow-[0_10px_30px_-12px_rgba(22,20,15,0.25)] sm:px-14 sm:py-14">
-        <div className="rotate-[0.4deg] space-y-5 text-[17px] leading-relaxed text-ink">
+      {/* A small stack of paper: two sheets peeking out behind the letter, each at its own angle. */}
+      <div className="relative">
+        <div aria-hidden className="absolute inset-0 translate-x-[-6px] translate-y-[10px] rotate-[-2.2deg] rounded-[3px] bg-surface shadow-[0_2px_10px_rgba(22,20,15,0.10)]" />
+        <div aria-hidden className="absolute inset-0 translate-x-[5px] translate-y-[4px] rotate-[1.4deg] rounded-[3px] bg-surface shadow-[0_2px_12px_rgba(22,20,15,0.10)]" />
+      <div className="relative rotate-[-0.6deg] rounded-[3px] bg-surface px-6 py-10 shadow-[0_18px_40px_-18px_rgba(22,20,15,0.35),0_2px_6px_rgba(22,20,15,0.06)] sm:px-14 sm:py-16">
+        <div className="rotate-[0.6deg] space-y-5 text-[17px] leading-relaxed text-ink sm:text-[18px]">
           <p>Hi there.</p>
           <p>Sales can be a great job. You get paid to be curious. You help people fix real problems. When it goes well, you earn a good living.</p>
           <p>But finding a good sales job is hard.</p>
@@ -35,10 +39,11 @@ export function FounderLetter() {
           <p>Then you get the pay when it&apos;s posted, what the posting leaves out, and the questions to ask before you say yes.</p>
           <p>It&apos;s free. Hope it helps.</p>
         </div>
-        <div className="mt-10 rotate-[0.4deg]">
+        <div className="mt-10 rotate-[0.6deg]">
           <p className="font-serif text-3xl italic tracking-tight text-ink">Josh Braun</p>
           <p className="mt-1 text-sm text-ink-2">Founder, Braun Board</p>
         </div>
+      </div>
       </div>
     </section>
   );
