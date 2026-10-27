@@ -1,0 +1,286 @@
+name,domain,note
+Sequence,sequencehq.com,2026 Series A revenue ops AI
+BackOps AI,backops.ai,2026 Series A
+Onyx Security,onyx.security,2026 Series A
+Qurrent,qurrent.ai,2026 Series A
+Axiamatic,axiamatic.com,2026 Series A
+Depot,depot.dev,2026 Series A
+TestBox,testbox.com,2026 Series A
+OpenFX,openfx.com,2026 Series A
+GridCARE,gridcare.ai,2026 Series A
+BranchLab,branchlab.com,2026 Series A
+GovWell,govwell.com,2026 Series A
+Optura,optura.com,2026 Series A
+Greenboard,greenboard.com,2026 Series A
+Vector,vector.co,2026 Series A
+Lightfield,lightfield.app,2026 Series A
+Euno,euno.ai,2026 Series A
+Chift,chift.eu,2026 Series A
+Perry Weather,perryweather.com,2026 Series C
+CloudNC,cloudnc.com,2026 funding
+Common Room,commonroom.io,sales
+Pocus,pocus.com,sales
+Default,default.com,sales
+Warmly,warmly.ai,sales
+Koala,getkoala.com,sales
+11x,11x.ai,sales
+Artisan,artisan.co,sales
+Regie.ai,regie.ai,sales
+Lavender,lavender.ai,sales
+Momentum,momentum.io,sales
+Attention,attention.com,sales
+Sybill,sybill.ai,sales
+Jiminny,jiminny.com,sales
+QuotaPath,quotapath.com,sales comp
+Everstage,everstage.com,sales comp
+CaptivateIQ,captivateiq.com,sales comp
+Dock,dock.us,sales
+Aligned,alignedup.com,sales
+Qualified,qualified.com,sales
+Chili Piper,chilipiper.com,sales
+RevenueHero,revenuehero.io,sales
+Champify,champify.io,sales
+Keyplay,keyplay.io,sales
+Avoma,avoma.com,meetings
+Grain,grain.com,meetings
+Fathom,fathom.video,meetings
+Read AI,read.ai,meetings
+Supernormal,supernormal.com,meetings
+Lindy,lindy.ai,AI agents
+Relevance AI,relevanceai.com,AI agents
+Copy.ai,copy.ai,marketing AI
+Typeface,typeface.ai,marketing AI
+Hightouch,hightouch.com,data
+RudderStack,rudderstack.com,data
+Knock,knock.app,dev
+Loops,loops.so,email
+Resend,resend.com,email
+Clerk,clerk.com,auth
+Stytch,stytch.com,auth
+Thoropass,thoropass.com,compliance
+Sprinto,sprinto.com,compliance
+Hyperproof,hyperproof.io,compliance
+Conveyor,conveyor.com,security reviews
+Nudge Security,nudgesecurity.com,security
+Push Security,pushsecurity.com,security
+Sublime Security,sublime.security,security
+Socket,socket.dev,security
+Endor Labs,endorlabs.com,security
+Aikido,aikido.dev,security
+Oligo Security,oligo.security,security
+Upwind,upwind.io,security
+Prompt Security,prompt.security,security
+HiddenLayer,hiddenlayer.com,security
+Lakera,lakera.ai,security
+Noma Security,noma.security,security
+Zenity,zenity.io,security
+Astrix Security,astrix.security,security
+Oasis Security,oasis.security,security
+Veza,veza.com,security
+ConductorOne,conductorone.com,security
+Opal,opal.dev,security
+Lumos,lumos.com,security
+Blumira,blumira.com,security
+Cyberhaven,cyberhaven.com,security
+Doppel,doppel.com,security
+Adaptive Security,adaptivesecurity.com,security
+Hoxhunt,hoxhunt.com,security
+Supabase,supabase.com,dev
+Turso,turso.tech,dev
+Convex,convex.dev,dev
+Inngest,inngest.com,dev
+Trigger.dev,trigger.dev,dev
+Railway,railway.com,dev
+Replicate,replicate.com,AI infra
+Pinecone,pinecone.io,AI infra
+Qdrant,qdrant.tech,AI infra
+Chroma,trychroma.com,AI infra
+LangChain,langchain.com,AI infra
+LlamaIndex,llamaindex.ai,AI infra
+Vellum,vellum.ai,AI infra
+Braintrust,braintrust.dev,AI infra
+Arize AI,arize.com,AI infra
+Galileo,galileo.ai,AI infra
+Sourcegraph,sourcegraph.com,dev
+Graphite,graphite.dev,dev
+CodeRabbit,coderabbit.ai,dev
+Greptile,greptile.com,dev
+Warp,warp.dev,dev
+Retool,retool.com,dev
+Superblocks,superblocks.com,dev
+Appsmith,appsmith.com,dev
+Mintlify,mintlify.com,dev
+ReadMe,readme.com,dev
+Stainless,stainless.com,dev
+Speakeasy,speakeasy.com,dev
+Zuplo,zuplo.com,dev
+Dagster Labs,dagster.io,data
+Omni Analytics,omni.co,data
+Lightdash,lightdash.com,data
+Tobiko Data,tobikodata.com,data
+Estuary,estuary.dev,data
+Tinybird,tinybird.co,data
+Materialize,materialize.com,data
+Chronosphere,chronosphere.io,observability
+Observe,observeinc.com,observability
+Checkly,checklyhq.com,observability
+Better Stack,betterstack.com,observability
+Rootly,rootly.com,incident
+FireHydrant,firehydrant.com,incident
+OpsLevel,opslevel.com,dev
+Port,getport.io,dev
+Spacelift,spacelift.io,dev
+env0,env0.com,dev
+Pulumi,pulumi.com,dev
+Netlify,netlify.com,dev
+Hygraph,hygraph.com,CMS
+Builder.io,builder.io,CMS
+Framer,framer.com,web
+Puzzle,puzzle.io,finance
+Digits,digits.com,finance
+Light,light.inc,finance
+Tabs,tabs.com,finance
+Maxio,maxio.com,billing
+Metronome,metronome.com,billing
+Orb,withorb.com,billing
+Stigg,stigg.io,billing
+Lago,getlago.com,billing
+Increase,increase.com,banking
+Unit,unit.co,banking
+Synctera,synctera.com,banking
+Highnote,highnote.com,cards
+Lithic,lithic.com,cards
+Footprint,onefootprint.com,identity
+Middesk,middesk.com,identity
+Baselayer,baselayerhq.com,identity
+Tropic,tropicapp.io,procurement
+Vendr,vendr.com,procurement
+Order.co,order.co,procurement
+Levelpath,levelpath.com,procurement
+Settle,settle.com,payments
+Pipe,pipe.com,finance
+Capchase,capchase.com,finance
+Arc,arc.tech,finance
+Slope,slopepay.com,payments
+Balance,getbalance.com,payments
+Resolve,resolvepay.com,payments
+Upflow,upflow.io,AR
+Tesorio,tesorio.com,AR
+Monk,monk.com,AR
+Finally,finally.com,finance
+Trovata,trovata.io,treasury
+Pave,pave.com,HR
+Gem,gem.com,recruiting
+Paraform,paraform.com,recruiting
+Metaview,metaview.ai,recruiting
+BrightHire,brighthire.ai,recruiting
+Kandji,kandji.io,IT
+Fleet,fleetdm.com,IT
+Leapsome,leapsome.com,HR
+ChartHop,charthop.com,HR
+Warp Payroll,joinwarp.com,payroll
+Assembled,assembled.com,support
+Forma,joinforma.com,benefits
+Benepass,getbenepass.com,benefits
+Thatch,thatch.ai,benefits
+Nayya,nayya.com,benefits
+Hippocratic AI,hippocraticai.com,health
+Tennr,tennr.com,health
+Infinitus,infinitus.ai,health
+Candid Health,joincandidhealth.com,health billing
+Freed,getfreed.ai,health
+Nabla,nabla.com,health
+Healthie,gethealthie.com,health
+Canvas Medical,canvasmedical.com,health
+Zus Health,zushealth.com,health
+Spruce Health,sprucehealth.com,health
+Crexi,crexi.com,real estate
+Persefoni,persefoni.com,climate
+Watershed,watershed.com,climate
+Sweep,sweep.net,climate
+Patch,patch.io,climate
+Hadrian,hadrian.co,manufacturing
+Slang.ai,slang.ai,restaurants
+Popmenu,popmenu.com,restaurants
+7shifts,7shifts.com,restaurants
+Homebase,joinhomebase.com,SMB
+Avoca,avoca.ai,home services
+Rilla,rilla.com,field sales
+Hatch,usehatchapp.com,home services
+Pylon,usepylon.com,support
+Plain,plain.com,support
+Maven AGI,mavenagi.com,support
+Lorikeet,lorikeet.ai,support
+Parloa,parloa.com,contact center
+Observe.AI,observe.ai,contact center
+Level AI,thelevel.ai,contact center
+Siro,siro.ai,field sales
+Bland AI,bland.ai,voice AI
+Retell AI,retellai.com,voice AI
+Vapi,vapi.ai,voice AI
+Synthflow,synthflow.ai,voice AI
+PolyAI,poly.ai,voice AI
+Hume AI,hume.ai,voice AI
+Deepgram,deepgram.com,voice AI
+AssemblyAI,assemblyai.com,voice AI
+Cartesia,cartesia.ai,voice AI
+Tavus,tavus.io,video AI
+HeyGen,heygen.com,video AI
+Gamma,gamma.app,productivity
+Pitch,pitch.com,productivity
+Beautiful.ai,beautiful.ai,productivity
+Coda,coda.io,productivity
+Tana,tana.inc,productivity
+Granola,granola.ai,productivity
+Guru,getguru.com,knowledge
+Slite,slite.com,knowledge
+Hebbia,hebbia.ai,finance AI
+Rogo,rogo.ai,finance AI
+Brightwave,brightwave.io,finance AI
+Legora,legora.com,legal
+Spellbook,spellbook.legal,legal
+EvenUp,evenuplaw.com,legal
+Eudia,eudia.com,legal
+Juro,juro.com,legal
+SpotDraft,spotdraft.com,legal
+Robin AI,robinai.com,legal
+Luminance,luminance.com,legal
+Supio,supio.com,legal
+Eve,eve.legal,legal
+Federato,federato.ai,insurance
+Sixfold,sixfold.ai,insurance
+At-Bay,at-bay.com,insurance
+Cowbell,cowbell.insure,insurance
+Polimorphic,polimorphic.com,govtech
+Mark43,mark43.com,govtech
+Loop,loop.com,logistics
+Vooma,vooma.ai,logistics
+Trunk Tools,trunktools.com,construction
+Buildots,buildots.com,construction
+Kojo,usekojo.com,construction
+Document Crunch,documentcrunch.com,construction
+AirOps,airops.com,marketing
+Profound,tryprofound.com,marketing
+Peec AI,peec.ai,marketing
+Scrunch AI,scrunchai.com,marketing
+Userpilot,userpilot.com,product
+Appcues,appcues.com,product
+Chameleon,chameleon.io,product
+PostHog,posthog.com,product
+Sendoso,sendoso.com,marketing
+Reachdesk,reachdesk.com,marketing
+Goldcast,goldcast.io,events
+Bizzabo,bizzabo.com,events
+Livestorm,livestorm.co,events
+Navattic,navattic.com,demos
+Storylane,storylane.io,demos
+Arcade,arcade.software,demos
+Walnut,walnut.io,demos
+Consensus,goconsensus.com,demos
+Demostack,demostack.com,demos
+Spekit,spekit.com,enablement
+WorkRamp,workramp.com,enablement
+Vitally,vitally.io,customer success
+ChurnZero,churnzero.com,customer success
+Pepper,usepepper.com,food distribution
+Choco,choco.com,food distribution

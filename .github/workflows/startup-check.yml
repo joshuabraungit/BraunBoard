@@ -1,0 +1,26 @@
+name: Startup check
+
+# Read-only: checks a list of startups for a job board we can read and an open sales role.
+# Results go to the startup_candidates table. Nothing is added to the site.
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: "CSV of startups (name,domain,note)"
+        default: data/startups-2026-10.csv
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/startup-check.ts ${{ inputs.file }}
