@@ -74,3 +74,22 @@ export async function extractSize(company: string, postings: string[], key = pro
   const raw = firstJsonObject(data.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("")) as Parameters<typeof cleanSize>[0];
   return cleanSize(raw, text);
 }
+
+/**
+ * Sanity check on a size using how many openings the company has right now (all teams, all countries).
+ * Companies we know are under 200 people never had more than 20 openings, so an estimated "startup"
+ * with more than 40 is almost certainly bigger and moves up to "growth". Nothing else changes on its
+ * own, because fast-growing AI startups can have hundreds of openings. Odd cases are flagged for a person.
+ * Only estimates are checked. Sizes from a posting, a careers site or an admin are trusted.
+ */
+export function checkSize(bucket: SizeBucket | null, source: string | null, openings: number | null): { bucket: SizeBucket | null; changed: boolean; flag: string | null } {
+  const same = { bucket, changed: false, flag: null };
+  if (source !== "estimate" || !bucket || openings == null) return same;
+  if (bucket === "startup" && openings > 40) return { bucket: "growth", changed: true, flag: `Was estimated as a startup, but has ${openings} openings` };
+  if (bucket === "startup" && openings > 25) return { ...same, flag: `${openings} openings is a lot for under 200 people` };
+  if (bucket === "growth" && openings <= 5) return { ...same, flag: `Only ${openings} openings. Could be under 200 people` };
+  if (bucket === "growth" && openings > 150) return { ...same, flag: `${openings} openings. Could be over 1,000 people` };
+  if (bucket === "large" && openings < 10) return { ...same, flag: `Only ${openings} openings for 1,000+ people` };
+  if (bucket === "enterprise" && openings < 40) return { ...same, flag: `Only ${openings} openings for 5,000+ people` };
+  return same;
+}

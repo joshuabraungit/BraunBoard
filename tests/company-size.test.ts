@@ -46,3 +46,20 @@ describe("company size in alerts and For You", () => {
     expect(rowToPrefs({ company_sizes: ["large", "bogus"] }).company_sizes).toEqual(["large"]);
   });
 });
+
+describe("openings sanity check", () => {
+  it("moves an estimated startup with lots of openings up to growth", async () => {
+    const { checkSize } = await import("../src/lib/ingest/size");
+    expect(checkSize("startup", "estimate", 47)).toMatchObject({ bucket: "growth", changed: true });
+    expect(checkSize("startup", "estimate", 12)).toEqual({ bucket: "startup", changed: false, flag: null });
+  });
+  it("only flags the rest, and never touches trusted sizes", async () => {
+    const { checkSize } = await import("../src/lib/ingest/size");
+    expect(checkSize("growth", "estimate", 364)).toMatchObject({ bucket: "growth", changed: false });
+    expect(checkSize("growth", "estimate", 364).flag).toContain("over 1,000");
+    expect(checkSize("growth", "estimate", 2).flag).toContain("under 200");
+    expect(checkSize("startup", "posting", 90)).toEqual({ bucket: "startup", changed: false, flag: null });
+    expect(checkSize("enterprise", "admin", 3).flag).toBeNull();
+    expect(checkSize("large", "estimate", null).flag).toBeNull();
+  });
+});

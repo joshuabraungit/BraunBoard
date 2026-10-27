@@ -2,18 +2,19 @@ import Link from "next/link";
 import { adminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin";
 import { addCompany, setCompanyEnabled, setCompanySize } from "../actions";
-import { SIZE_BUCKETS, SIZE_LABELS } from "@/lib/ingest/size";
+import { checkSize, SIZE_BUCKETS, SIZE_LABELS } from "@/lib/ingest/size";
 import { AdminNotice } from "@/components/AdminNotice";
 import { ENABLED_PROVIDERS } from "@/lib/ingest/providers";
 
 export const maxDuration = 60;
 
-type Show = "all" | "hiring" | "no-board" | "off" | "errors";
+type Show = "all" | "hiring" | "no-board" | "off" | "errors" | "size";
 const SHOWS: [Show, string][] = [
   ["all", "All"],
   ["hiring", "Hiring now"],
   ["no-board", "No job board"],
   ["errors", "Errors"],
+  ["size", "Sizes to check"],
   ["off", "Switched off"],
 ];
 
@@ -29,8 +30,12 @@ interface Row {
   size_bucket: string | null;
   size_source: string | null;
   size_quote: string | null;
+  open_jobs_total: number | null;
   company_stats: { open_roles: number; new_30d: number; trend: string } | null;
 }
+
+/** Why a size estimate looks off, judged by how many openings the company has. */
+const sizeFlag = (r: Row) => checkSize(r.size_bucket as never, r.size_source, r.open_jobs_total).flag;
 
 function ago(iso: string | null) {
   if (!iso) return "never";
@@ -58,7 +63,7 @@ export default async function AdminCompanies({ searchParams }: { searchParams: P
   const [{ data: companies }, { data: errs }] = await Promise.all([
     db
       .from("companies")
-      .select("id, slug, name, domain, ats_provider, ats_identifier, last_crawled_at, is_disabled, size_bucket, size_source, size_quote, company_stats(open_roles, new_30d, trend)")
+      .select("id, slug, name, domain, ats_provider, ats_identifier, last_crawled_at, is_disabled, size_bucket, size_source, size_quote, open_jobs_total, company_stats(open_roles, new_30d, trend)")
       .order("name")
       .limit(3000),
     db.from("crawl_runs").select("company_id, error, started_at").not("error", "is", null).gte("started_at", new Date(Date.now() - 86_400_000).toISOString()),
@@ -76,6 +81,7 @@ export default async function AdminCompanies({ searchParams }: { searchParams: P
       : show === "no-board" ? !crawled(r) && !r.is_disabled
       : show === "off" ? r.is_disabled
       : show === "errors" ? errorBy.has(r.id)
+      : show === "size" ? open(r) > 0 && !!sizeFlag(r)
       : true,
     )
     .sort((a, b) => open(b) - open(a) || a.name.localeCompare(b.name));
@@ -85,6 +91,7 @@ export default async function AdminCompanies({ searchParams }: { searchParams: P
     "no-board": all.filter((r) => !crawled(r) && !r.is_disabled).length,
     errors: all.filter((r) => errorBy.has(r.id)).length,
     off: all.filter((r) => r.is_disabled).length,
+    size: all.filter((r) => open(r) > 0 && !!sizeFlag(r)).length,
   };
   const here = `/admin/companies?show=${show}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
 
@@ -163,8 +170,10 @@ export default async function AdminCompanies({ searchParams }: { searchParams: P
                     {r.size_source && (
                       <span className="block text-xs text-ink-3" title={r.size_quote ?? undefined}>
                         {{ posting: "from a posting", estimate: "AI estimate", admin: "set by you", careers: "from careers site" }[r.size_source] ?? r.size_source}
+                        {r.open_jobs_total != null && ` · ${r.open_jobs_total} openings`}
                       </span>
                     )}
+                    {sizeFlag(r) && <span className="block max-w-[220px] text-xs font-semibold text-red">Check: {sizeFlag(r)}</span>}
                   </td>
                   <td className="px-4 py-2.5">
                     {url ? (

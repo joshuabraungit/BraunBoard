@@ -3,7 +3,7 @@
 // Usage: npx tsx scripts/size-backfill.ts [max companies, default 40]
 
 import { adminClient } from "../src/lib/supabase/admin";
-import { extractSize } from "../src/lib/ingest/size";
+import { checkSize, extractSize } from "../src/lib/ingest/size";
 import { fail, notice, requireEnv, warn } from "./report";
 
 const DAY = 86_400_000;
@@ -57,6 +57,18 @@ async function main() {
       }),
     );
   }
+  // Sanity check every estimate against how many openings the company has right now.
+  const { data: ests } = await db.from("companies").select("id, name, size_bucket, size_source, open_jobs_total").eq("size_source", "estimate");
+  const moved: string[] = [];
+  for (const c of ests ?? []) {
+    const r = checkSize(c.size_bucket, c.size_source, c.open_jobs_total);
+    if (r.changed) {
+      await db.from("companies").update({ size_bucket: r.bucket }).eq("id", c.id);
+      moved.push(`${c.name} (${c.open_jobs_total} openings)`);
+    }
+  }
+  if (moved.length) notice(`Company size: moved up from startup to growth because of how many openings they have: ${moved.join(", ")}`);
+
   notice(`Company size: checked ${batch.length - tally.errors}. From postings ${tally.posting}, estimated ${tally.estimate}, unknown ${tally.unknown}${tally.errors ? `, ${tally.errors} errors (will retry)` : ""}. ${Math.max(0, due.length - batch.length)} still to do.`);
   if (tally.errors) warn(`Last size error: ${lastError}`);
 }

@@ -140,7 +140,8 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
       if (removed) stats.removed++;
     }
 
-    await db.from("companies").update({ last_crawled_at: now }).eq("id", company.id);
+    // Every opening on the careers page, not just sales ones: a sanity check on company size.
+    await db.from("companies").update({ last_crawled_at: now, open_jobs_total: raw.length }).eq("id", company.id);
     if (newJobIds.length) await matchNewJobs(db, newJobIds);
   } catch (err) {
     // On a failed crawl we do NOT mark jobs missing. A flaky API shouldn't delete inventory.
