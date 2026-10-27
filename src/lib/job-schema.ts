@@ -21,6 +21,17 @@ export function employmentType(raw: string | null | undefined): string | undefin
   return undefined;
 }
 
+/** When the careers site didn't say, the posting text often does ("This is a full-time role"). */
+export function employmentTypeFromText(text: string | null | undefined): string | undefined {
+  const t = text ?? "";
+  if (/\bfull[- ]?time\b/i.test(t)) return "FULL_TIME";
+  if (/\bpart[- ]?time (role|position|job)\b/i.test(t)) return "PART_TIME";
+  if (/\b(contract|contractor|fixed[- ]term) (role|position|job)\b/i.test(t)) return "CONTRACTOR";
+  return undefined;
+}
+
+const DAY = 86_400_000;
+
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /** Plain posting text as simple HTML paragraphs, which is what Google asks for. */
@@ -43,6 +54,9 @@ export function jobPostingSchema(job: JobView & { employment_type?: string | nul
     title: job.title_raw,
     description: postingHtml(text),
     datePosted: new Date(job.first_seen_at).toISOString(),
+    // We take a job down as soon as the company does. This only tells Google when to stop trusting
+    // the listing if our checks ever stopped: 30 days after we last saw it live.
+    validThrough: new Date(new Date(job.last_seen_at ?? Date.now()).getTime() + 30 * DAY).toISOString(),
     url: `${siteUrl}/jobs/${job.slug}`,
     directApply: false,
     identifier: { "@type": "PropertyValue", name: job.company_name, value: job.id },
@@ -54,7 +68,7 @@ export function jobPostingSchema(job: JobView & { employment_type?: string | nul
     },
   };
 
-  const type = employmentType(job.employment_type);
+  const type = employmentType(job.employment_type) ?? employmentTypeFromText(job.description_raw);
   if (type) schema.employmentType = type;
 
   if (job.remote_type === "Remote") {

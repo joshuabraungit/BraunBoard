@@ -41,3 +41,19 @@ describe("job schema for Google's job search", () => {
     expect(jsonLd({ d: "</script><script>x" })).not.toContain("</script>");
   });
 });
+
+describe("filling the fields Google asked for", () => {
+  it("reads full-time from the posting when the careers site didn't say", async () => {
+    const { employmentTypeFromText } = await import("../src/lib/job-schema");
+    expect(employmentTypeFromText("This is a full-time, remote role.")).toBe("FULL_TIME");
+    expect(employmentTypeFromText("A part-time position for students")).toBe("PART_TIME");
+    expect(employmentTypeFromText("6-month contract role")).toBe("CONTRACTOR");
+    expect(employmentTypeFromText("We sell software.")).toBeUndefined();
+    const s = jobPostingSchema({ ...base, employment_type: null, description_raw: "Full time. Great team." }, "https://x.com");
+    expect(s.employmentType).toBe("FULL_TIME");
+  });
+  it("valid for 30 days after we last saw it live", () => {
+    const s = jobPostingSchema({ ...base, last_seen_at: "2026-10-27T00:00:00.000Z" }, "https://x.com");
+    expect(s.validThrough).toBe("2026-11-26T00:00:00.000Z");
+  });
+});
