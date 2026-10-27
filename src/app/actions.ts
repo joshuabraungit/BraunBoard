@@ -20,6 +20,7 @@ import {
 } from "@/lib/watch-prefs";
 import type { WatchPrefs } from "@/lib/match";
 import { REMOTE_TYPES, ROLE_FAMILIES, SALES_MOTIONS, SALES_SEGMENTS } from "@/lib/ingest/types";
+import { isSizeBucket } from "@/lib/ingest/size";
 
 async function requireUser(next: string) {
   const user = await getUser();
@@ -47,6 +48,7 @@ export async function saveOnboarding(formData: FormData) {
     country: formData.get("country") ?? "US",
     motion: formData.get("motion") ?? "either",
     dealbreakers: formData.getAll("dealbreakers"),
+    sizes: formData.getAll("sizes"),
   });
   const stored: StoredWatch = { name: defaultWatchName(answers), answers, prefs: answersToPrefs(answers) };
 
@@ -93,6 +95,7 @@ export async function watchSearch(formData: FormData) {
     dealbreakers: [],
     // The jobs page always passes the country it was showing ("NA", "US", "CA", "UK" or "all").
     countries: watchCountries(sp.get("country")),
+    company_sizes: ((v) => (isSizeBucket(v) ? [v] : []))(sp.get("size")),
   };
   const name = String(formData.get("name") ?? "").trim() || "My search";
   const db = await serverClient();

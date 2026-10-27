@@ -22,3 +22,27 @@ describe("company size", () => {
     expect(cleanSize(null, posting).bucket).toBeNull();
   });
 });
+
+describe("company size in alerts and For You", () => {
+  it("only keeps the sizes someone picked, but never drops a company we couldn't size", async () => {
+    const { fitsSize } = await import("../src/lib/match");
+    expect(fitsSize({ company_size: "startup" }, { company_sizes: ["startup", "growth"] })).toBe(true);
+    expect(fitsSize({ company_size: "enterprise" }, { company_sizes: ["startup", "growth"] })).toBe(false);
+    expect(fitsSize({ company_size: null }, { company_sizes: ["startup"] })).toBe(true);
+    expect(fitsSize({ company_size: "enterprise" }, { company_sizes: [] })).toBe(true);
+    expect(fitsSize({ company_size: "enterprise" }, {})).toBe(true);
+  });
+  it("onboarding answers carry the sizes into the watch", async () => {
+    const { answersToPrefs, defaultWatchName, OnboardingAnswers } = await import("../src/lib/watch-prefs");
+    const a = OnboardingAnswers.parse({ roles: ["ae"], min_base: null, min_ote: null, work: "remote", motion: "either", sizes: ["startup", "growth"] });
+    expect(answersToPrefs(a).company_sizes).toEqual(["startup", "growth"]);
+    expect(defaultWatchName(a)).toContain("Startup / Growth");
+    const old = OnboardingAnswers.parse({ roles: ["ae"], min_base: null, min_ote: null, work: "any", motion: "either" });
+    expect(answersToPrefs(old).company_sizes).toEqual([]);
+  });
+  it("old watches without sizes still load", async () => {
+    const { rowToPrefs } = await import("../src/lib/watch-prefs");
+    expect(rowToPrefs({ role_families: ["Account Executive"] }).company_sizes).toEqual([]);
+    expect(rowToPrefs({ company_sizes: ["large", "bogus"] }).company_sizes).toEqual(["large"]);
+  });
+});

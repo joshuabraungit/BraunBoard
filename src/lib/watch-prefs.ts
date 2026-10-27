@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { GBP_TO_USD } from "./ingest/compensation";
 import { DEALBREAKERS, type WatchPrefs } from "./match";
+import { SIZE_BUCKETS, SIZE_LABELS } from "./ingest/size";
 import { REMOTE_TYPES, ROLE_FAMILIES, SALES_MOTIONS, SALES_SEGMENTS, type RoleFamily, type SalesSegment } from "./ingest/types";
 
 export const ONBOARDING_COOKIE = "bb_watch";
@@ -34,6 +35,7 @@ export const OnboardingAnswers = z.object({
   country: z.enum(["US", "CA", "both", "UK"]).default("US"),
   motion: z.enum(["new", "expansion", "either"]),
   dealbreakers: z.array(z.enum(DEALBREAKERS)).default([]),
+  sizes: z.array(z.enum(SIZE_BUCKETS)).default([]),
 });
 export type OnboardingAnswers = z.infer<typeof OnboardingAnswers>;
 
@@ -52,6 +54,7 @@ export const StoredWatch = z.object({
     min_ote: z.number().nullable(),
     dealbreakers: z.array(z.enum(DEALBREAKERS)),
     countries: z.array(z.enum(["US", "CA", "UK"])).optional(),
+    company_sizes: z.array(z.enum(SIZE_BUCKETS)).optional(),
   }),
 });
 export type StoredWatch = z.infer<typeof StoredWatch>;
@@ -84,6 +87,7 @@ export function answersToPrefs(a: OnboardingAnswers): WatchPrefs {
     min_ote: a.min_ote == null ? null : Math.round(a.min_ote * payRate(a)),
     dealbreakers: a.dealbreakers,
     countries: a.country === "both" ? ["US", "CA"] : [a.country],
+    company_sizes: a.sizes,
   };
 }
 
@@ -93,6 +97,7 @@ export function defaultWatchName(a: OnboardingAnswers): string {
   const parts = [roles.slice(0, 2).join(" / ") + (roles.length > 2 ? " +" : "")];
   if (a.work !== "any") parts.push(WORK_CHOICES[a.work]);
   if (a.country === "UK") parts.push("UK");
+  if (a.sizes?.length && a.sizes.length < 4) parts.push(a.sizes.map((b) => SIZE_LABELS[b].label).join(" / "));
   if (a.min_ote) parts.push(`${paySymbol(a)}${Math.round(a.min_ote / 1000)}K+ OTE`);
   else if (a.min_base) parts.push(`${paySymbol(a)}${Math.round(a.min_base / 1000)}K+ base`);
   return parts.join(" · ");
@@ -124,5 +129,6 @@ export function rowToPrefs(r: Record<string, unknown>): WatchPrefs {
     min_ote: r.min_ote ?? null,
     dealbreakers: (r.dealbreakers as string[] | undefined)?.filter((d) => (DEALBREAKERS as readonly string[]).includes(d)) ?? [],
     countries: (r.countries as string[] | undefined)?.length ? r.countries : ["US"],
+    company_sizes: ((r.company_sizes as string[] | undefined) ?? []).filter((s) => (SIZE_BUCKETS as readonly string[]).includes(s)),
   });
 }

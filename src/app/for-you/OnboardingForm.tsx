@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { saveOnboarding } from "@/app/actions";
 import { DEALBREAKER_LABELS, DEALBREAKERS } from "@/lib/match";
+import { SIZE_BUCKETS, SIZE_LABELS, type SizeBucket } from "@/lib/ingest/size";
 import { COUNTRY_CHOICES, MOTION_CHOICES, ROLE_CHOICES, WORK_CHOICES, type OnboardingAnswers, type RoleChoice } from "@/lib/watch-prefs";
 
 const PRESETS = {
@@ -49,6 +50,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
   const [country, setCountry] = useState<OnboardingAnswers["country"]>(initial?.country ?? "US");
   const [motion, setMotion] = useState<OnboardingAnswers["motion"]>(initial?.motion ?? "either");
   const [breakers, setBreakers] = useState<string[]>(initial?.dealbreakers ?? []);
+  const [sizes, setSizes] = useState<SizeBucket[]>(initial?.sizes ?? []);
   const [pending, setPending] = useState(false);
   const uk = country === "UK";
 
@@ -124,6 +126,20 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
           {(Object.keys(MOTION_CHOICES) as (keyof typeof MOTION_CHOICES)[]).map((m) => (
             <Chip key={m} name="motion" value={m} type="radio" checked={motion === m} onChange={() => setMotion(m)}>
               {MOTION_CHOICES[m]}
+            </Chip>
+          ))}
+        </div>
+      ),
+      ok: true,
+    },
+    {
+      q: "What size company?",
+      hint: "Pick any you'd join, or skip it for any size. Companies we can't size still show up, so you don't miss anything.",
+      body: (
+        <div className="flex flex-wrap gap-2">
+          {SIZE_BUCKETS.map((b) => (
+            <Chip key={b} name="sizes" value={b} type="checkbox" checked={sizes.includes(b)} onChange={(on) => setSizes(on ? [...sizes, b] : sizes.filter((x) => x !== b))}>
+              {SIZE_LABELS[b].label} <span className="opacity-70">· {SIZE_LABELS[b].range}</span>
             </Chip>
           ))}
         </div>

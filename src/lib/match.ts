@@ -5,6 +5,7 @@
 
 import type { RemoteType, RoleFamily, SalesMotion, SalesSegment, SelfSourcingLevel } from "./ingest/types";
 import { toUsdRate } from "./ingest/compensation";
+import type { SizeBucket } from "./ingest/size";
 
 export interface WatchPrefs {
   role_families: RoleFamily[];
@@ -18,6 +19,8 @@ export interface WatchPrefs {
   dealbreakers: Dealbreaker[];
   /** Where the person can work. Missing = US (every watch made before Canada and UK support). */
   countries?: ("US" | "CA" | "UK")[];
+  /** Company sizes they want ("startup", "growth", "large", "enterprise"). Empty or missing = any size. */
+  company_sizes?: SizeBucket[];
 }
 
 export const DEALBREAKERS = [
@@ -56,6 +59,8 @@ export interface MatchableJob {
   ote_max: number | null;
   description_raw: string | null;
   company_employee_range?: string | null;
+  /** Size bucket of the company, when known. */
+  company_size?: string | null;
   currency?: string | null;
   markets?: string[] | null;
 }
@@ -64,6 +69,15 @@ export interface MatchableJob {
 export function openInCountries(job: { markets?: string[] | null }, prefs: Pick<WatchPrefs, "countries">): boolean {
   const want = prefs.countries?.length ? prefs.countries : ["US"];
   return (job.markets?.length ? job.markets : ["US"]).some((m) => (want as string[]).includes(m));
+}
+
+/**
+ * Is the company a size they want? A company we don't know the size of still passes,
+ * so nobody misses a job because we couldn't size the company.
+ */
+export function fitsSize(job: { company_size?: string | null }, prefs: Pick<WatchPrefs, "company_sizes">): boolean {
+  if (!prefs.company_sizes?.length || !job.company_size) return true;
+  return (prefs.company_sizes as string[]).includes(job.company_size);
 }
 
 export type CheckResult = "pass" | "fail" | "unknown";
