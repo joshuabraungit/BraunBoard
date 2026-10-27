@@ -1,9 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import localFont from "next/font/local";
-
-// A handwriting font for the signature (Mrs Saint Delafield, SIL Open Font License), served from the site itself.
-const signature = localFont({ src: "../fonts/mrs-saint-delafield-latin-400-normal.woff2", display: "swap" });
 
 // Josh's letter on why he built Braun Board. Bottom of the home page.
 export function FounderLetter() {
@@ -49,8 +45,9 @@ export function FounderLetter() {
           <p>It&apos;s free. Hope it helps.</p>
         </div>
         <div className="mt-8 rotate-[0.6deg]">
-          <p aria-hidden className={`${signature.className} -ml-1 text-[56px] leading-none text-ink sm:text-[64px]`}>Josh Braun</p>
-          <div className="mt-5 flex items-center gap-3">
+          {/* Josh's own signature. */}
+          <Image src="/josh-signature.png" alt="" aria-hidden width={640} height={320} priority className="-ml-2 h-auto w-[170px] sm:w-[200px]" />
+          <div className="mt-4 flex items-center gap-3">
             <Image src="/josh-braun.png" alt="Josh Braun" width={52} height={52} className="h-[52px] w-[52px] rounded-full" priority />
             <div>
               <p className="font-semibold leading-tight">Josh Braun</p>
