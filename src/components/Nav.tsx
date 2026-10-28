@@ -2,13 +2,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const ITEMS = [
+const ITEMS: { href: string; label: string; also?: string[] }[] = [
   { href: "/for-you", label: "For You" },
   { href: "/new", label: "New Today" },
   { href: "/products", label: "Products" },
   { href: "/jobs", label: "All Jobs" },
   { href: "/watchlist", label: "Watchlist" },
   { href: "/salaries", label: "Salaries" },
+  { href: "/outreach", label: "Playbook", also: ["/kit"] },
   { href: "/alerts", label: "Alerts" },
 ];
 
@@ -17,7 +18,7 @@ export function Nav() {
   return (
     <nav className="-mx-1 flex gap-1 overflow-x-auto text-sm [scrollbar-width:none]">
       {ITEMS.map((i) => {
-        const active = path === i.href || (i.href !== "/" && path.startsWith(i.href + "/"));
+        const active = [i.href, ...(i.also ?? [])].some((h) => path === h || (h !== "/" && path.startsWith(h + "/")));
         return (
           <Link
             key={i.href}

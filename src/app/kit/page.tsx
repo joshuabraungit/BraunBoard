@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PicksSignup } from "@/components/PicksSignup";
+import { PlaybookTabs } from "@/components/PlaybookTabs";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -44,13 +45,14 @@ const INSIDE = [
 ] as const;
 
 // Where the visitor came from, carried into the download link so Admin can tell what's working.
-const FROM = new Set(["job-page", "ask", "picks-email", "alert-email"]);
+const FROM = new Set(["job-page", "ask", "picks-email", "alert-email", "outreach"]);
 
 export default async function KitPage({ searchParams }: { searchParams: Promise<{ picks?: string; from?: string }> }) {
   const { picks, from } = await searchParams;
   const source = from && FROM.has(from) ? from : "kit-page";
   return (
     <div className="mx-auto max-w-2xl">
+      <PlaybookTabs active="/kit" />
       <p className="text-xs font-bold uppercase tracking-wide text-accent">Free interview kit</p>
       <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Before You Say Yes</h1>
       <p className="mt-2 text-lg text-ink-2">Your first AE job interview kit. Ask better questions before accepting the offer.</p>
