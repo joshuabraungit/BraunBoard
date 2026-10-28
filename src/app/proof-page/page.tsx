@@ -16,6 +16,7 @@ const PROMPT = `I'm applying for a sales role and want a one-page website to sen
 
 Rules
 - Use only the facts I give you. Never invent numbers, results, companies or experience.
+- Only use testimonials I paste, word for word. Never write, edit or shorten a quote.
 - If something's missing, ask me before you build. One question at a time.
 - Anyone with the link can see this page. Include the contact info I give you, but never my home address or anything else private.
 
@@ -24,6 +25,7 @@ Here's what I have
 - The hiring manager's name: [name]
 - My résumé: [paste]
 - My best numbers (attainment, deal size, pipeline): [paste]
+- Two or three testimonials, with each person's name and title: [paste]
 - What I noticed about the company: [paste]
 - How to reach me (email, phone, LinkedIn): [paste]
 
@@ -31,9 +33,10 @@ Build the page in this order
 1. A headline written to the hiring manager about their problem, not my job search.
 2. Why this company, in two sentences, starting from what I noticed.
 3. My proof: up to four numbers, no adjectives.
-4. The work: five companies I'd target, each with a reason to reach out now. If you can search the web, research them. If not, ask me for them. Tell me where each reason came from so I can check it. Then write one sample email to one of them: short, curious, no pitch, ending with a question.
-5. My first 90 days, in three steps.
-6. A close with one ask, "Book 15 minutes," and an easy out, like "If it's not a fit, no hard feelings."
+4. What others say: my testimonials, word for word, with name and title.
+5. The work: five companies I'd target, each with a reason to reach out now. If you can search the web, research them. If not, ask me for them. Tell me where each reason came from so I can check it. Then write one sample email to one of them: short, curious, no pitch, ending with a question.
+6. My first 90 days, in three steps.
+7. A close with one ask, "Book 15 minutes," and an easy out, like "If it's not a fit, no hard feelings."
 
 Put my contact info near the top and again at the bottom, so it's easy to reach me.
 
@@ -43,6 +46,7 @@ const SECTIONS: [string, string][] = [
   ["A headline written to them", "About their problem, not your job search."],
   ["Why this company", "Two sentences, starting from something you noticed."],
   ["Your proof", "Up to four numbers. No adjectives."],
+  ["What others say", "Two or three real testimonials. Name and title, their exact words."],
   ["The work", "Five accounts you'd go after, why now, and the email you'd send one of them."],
   ["Your first 90 days", "Three steps, not a strategy deck."],
   ["One ask, with an easy out", "“Book 15 minutes.” And “if it's not a fit, no hard feelings.”"],
@@ -53,6 +57,7 @@ const READY = [
   "The hiring manager's name",
   "Your résumé",
   "Your best numbers: attainment, deal size, pipeline",
+  "Two or three testimonials (LinkedIn recommendations work)",
   "One thing you noticed about the company",
   "Your email, phone and LinkedIn",
 ];
@@ -146,7 +151,16 @@ export default async function ProofPage({ searchParams }: { searchParams: Promis
           ))}
         </ol>
 
-        <div className="mt-6 rounded-xl bg-amber-soft px-4 py-3 text-[15px] leading-relaxed text-amber">
+        <div className="mt-6 rounded-2xl border border-line bg-surface p-5">
+          <p className="font-semibold">Applying to more than one job?</p>
+          <p className="mt-1 text-[15px] leading-relaxed text-ink-2">
+            Build the base once. Your proof, testimonials and contact info stay the same. For the next job, ask Claude: &ldquo;Keep my
+            proof, testimonials and contact info. Redo the headline, why this company, the five accounts and the 90 days for this new
+            job,&rdquo; and paste the new posting. Your second page takes minutes, not an hour.
+          </p>
+        </div>
+
+        <div className="mt-4 rounded-xl bg-amber-soft px-4 py-3 text-[15px] leading-relaxed text-amber">
           <p>
             <span className="font-semibold">Heads up:</span> anyone with the link can see the page, so only put on it what you&apos;d be glad
             for a hiring manager to read. Publishing works on personal Claude accounts, not company Team or Enterprise ones.
