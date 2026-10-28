@@ -113,6 +113,7 @@ export default async function ColdCallPage({ searchParams }: { searchParams: Pro
         <h2 className="font-bold">Before you dial</h2>
         <ul className="mt-3 space-y-2 text-[15px]">
           {[
+            "Check your intent. You're calling to see if there's a fit, not to get a yes.",
             "Call the hiring manager, not the recruiter.",
             "If the posting says not to call, don't.",
             "Have one piece of proof ready, in one sentence.",
