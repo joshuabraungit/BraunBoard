@@ -17,7 +17,7 @@ const PROMPT = `I'm applying for a sales role and want a one-page website to sen
 Rules
 - Use only the facts I give you. Never invent numbers, results, companies or experience.
 - If something's missing, ask me before you build. One question at a time.
-- Anyone with the link can see this page, so don't include my phone number, home address or anything private unless I ask.
+- Anyone with the link can see this page. Include the contact info I give you, but never my home address or anything else private.
 
 Here's what I have
 - The job posting: [paste]
@@ -25,6 +25,7 @@ Here's what I have
 - My résumé: [paste]
 - My best numbers (attainment, deal size, pipeline): [paste]
 - What I noticed about the company: [paste]
+- How to reach me (email, phone, LinkedIn): [paste]
 
 Build the page in this order
 1. A headline written to the hiring manager about their problem, not my job search.
@@ -33,6 +34,8 @@ Build the page in this order
 4. The work: five companies I'd target, each with a reason to reach out now. If you can search the web, research them. If not, ask me for them. Tell me where each reason came from so I can check it. Then write one sample email to one of them: short, curious, no pitch, ending with a question.
 5. My first 90 days, in three steps.
 6. A close with one ask, "Book 15 minutes," and an easy out, like "If it's not a fit, no hard feelings."
+
+Put my contact info near the top and again at the bottom, so it's easy to reach me.
 
 Make it clean, simple and mobile-friendly. Short enough to read in 60 seconds.`;
 
@@ -51,6 +54,7 @@ const READY = [
   "Your résumé",
   "Your best numbers: attainment, deal size, pipeline",
   "One thing you noticed about the company",
+  "Your email, phone and LinkedIn",
 ];
 
 export default async function ProofPage({ searchParams }: { searchParams: Promise<{ picks?: string }> }) {
