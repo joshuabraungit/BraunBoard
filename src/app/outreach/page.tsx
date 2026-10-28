@@ -7,7 +7,7 @@ import { BeatsLegend, FirstNotes, FollowUps } from "./OutreachEmails";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   alternates: { canonical: "/outreach" },
-  title: "Outreach emails · Reach the hiring manager, not just the ATS · Braun Board",
+  title: "Cold emails · Reach the hiring manager, not just the ATS · Braun Board",
   description:
     "Four first notes and four follow-ups for sales job seekers to send the person who owns the hire, with subject lines, LinkedIn versions and the psychology behind each one.",
 };
@@ -18,7 +18,7 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
     <div className="mx-auto max-w-2xl">
       <PlaybookTabs active="/outreach" />
 
-      <p className="text-xs font-bold uppercase tracking-wide text-accent">Outreach emails</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-accent">Cold emails</p>
       <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Stop applying. Start prospecting.</h1>
       <p className="mt-2 text-lg text-ink-2">
         Four first notes and four follow-ups for reaching the person who owns the hire. Plus why each one works, so you can write your own.

@@ -160,7 +160,7 @@ export default async function ColdCallPage({ searchParams }: { searchParams: Pro
 
       <p className="mt-10 text-[15px] text-ink-2">
         Need the note to send after?{" "}
-        <Link href="/outreach" className="font-semibold text-ink underline underline-offset-2">See the outreach emails</Link>.
+        <Link href="/outreach" className="font-semibold text-ink underline underline-offset-2">See the cold emails</Link>.
       </p>
       <div className="mt-6">
         <PicksSignup back="/cold-call" source="cold-call" status={picks} compact />
