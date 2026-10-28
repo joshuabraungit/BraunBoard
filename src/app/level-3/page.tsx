@@ -90,8 +90,8 @@ export default async function LevelThreePage({ searchParams }: { searchParams: P
         >
           <span>
             <span className="block text-xs font-bold uppercase tracking-wide text-ink-3">Example</span>
-            <span className="mt-0.5 block font-semibold">Alex Berger for Northwind Labs</span>
-            <span className="block text-sm text-ink-2">With notes on why each section works.</span>
+            <span className="mt-0.5 block font-semibold">Maya Torres for Toast, LA territory</span>
+            <span className="block text-sm text-ink-2">A real job and real restaurants. The candidate is made up. With notes on why each section works.</span>
           </span>
           <span className="shrink-0 rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white">See it →</span>
         </a>
@@ -126,7 +126,7 @@ export default async function LevelThreePage({ searchParams }: { searchParams: P
           {[
             ["Paste it into Claude", "Go to claude.ai (a free account works), paste the prompt and fill in the brackets. Answer its questions."],
             ["Click “Publish”", "On the page Claude builds. It gives you a link anyone can open, no Claude account needed."],
-            ["Hide the link behind your name", "In your email, link the words “Alex Berger for Northwind” instead of pasting the raw URL. They see your name, not a messy link."],
+            ["Hide the link behind your name", "In your email, link the words “Maya Torres for Toast LA” instead of pasting the raw URL. They see your name, not a messy link."],
           ].map(([t, d], i) => (
             <li key={t} className="flex gap-3">
               <span className="mt-0.5 font-serif text-xl font-bold leading-none text-accent">{i + 1}</span>
