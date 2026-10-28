@@ -126,6 +126,23 @@ export default async function ColdCallPage({ searchParams }: { searchParams: Pro
       </div>
 
       <section className="mt-10">
+        <h2 className="text-xl font-bold tracking-tight">Check your intent</h2>
+        <div className="mt-3 space-y-3 text-[17px] leading-relaxed">
+          <p>Your intent shapes how you sound.</p>
+          <p>When you need the job, you sound like it. Rushed. Nervous. Pushy.</p>
+          <p>The hiring manager hears it in the first five seconds.</p>
+          <p className="font-semibold">So lean back.</p>
+          <p>Make the call to see if there&apos;s a fit, not to get a yes.</p>
+          <p>
+            When you&apos;re not attached to what happens, your voice changes. You slow down. You sound relaxed. You sound like someone
+            who&apos;s done this before.
+          </p>
+          <p>Detached doesn&apos;t mean you don&apos;t care.</p>
+          <p className="font-semibold">It means you do your best and forget the rest.</p>
+        </div>
+      </section>
+
+      <section className="mt-10">
         <div className="flex items-end justify-between gap-3">
           <h2 className="text-xl font-bold tracking-tight">The call</h2>
           <CopyButton text={FULL_TRACK} label="Copy the whole track" className="rounded-lg border border-line bg-surface px-3 py-2 text-sm font-semibold hover:border-line-strong" />
