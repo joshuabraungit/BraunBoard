@@ -42,6 +42,10 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
         <h2 className="text-xl font-bold tracking-tight">The follow-ups</h2>
         <p className="mb-4 mt-1 text-[15px] text-ink-2">Every touch adds something new. None of them say &ldquo;just checking in.&rdquo;</p>
         <FollowUps />
+        <p className="mt-6 text-[15px] text-ink-2">
+          Rather pick up the phone?{" "}
+          <Link href="/cold-call" className="font-semibold text-ink underline underline-offset-2">See the cold call talk track</Link>.
+        </p>
       </section>
 
       <div className="mt-12 rounded-2xl bg-ink p-6 text-white sm:p-8">
