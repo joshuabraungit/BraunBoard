@@ -6,8 +6,8 @@ import { PlaybookTabs } from "@/components/PlaybookTabs";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  alternates: { canonical: "/level-3" },
-  title: "Level 3 · Build a one-page case for the hiring manager · Braun Board",
+  alternates: { canonical: "/proof-page" },
+  title: "Proof page · A one-page case for the hiring manager · Braun Board",
   description:
     "Send the hiring manager a page built just for their team: why them, your proof, five accounts you'd go after and your first 90 days. See an example, then copy the prompt to build your own.",
 };
@@ -53,17 +53,21 @@ const READY = [
   "One thing you noticed about the company",
 ];
 
-export default async function LevelThreePage({ searchParams }: { searchParams: Promise<{ picks?: string }> }) {
+export default async function ProofPage({ searchParams }: { searchParams: Promise<{ picks?: string }> }) {
   const { picks } = await searchParams;
   return (
     <div className="mx-auto max-w-2xl">
-      <PlaybookTabs active="/level-3" />
+      <PlaybookTabs active="/proof-page" />
 
-      <p className="text-xs font-bold uppercase tracking-wide text-accent">Level 3</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-accent">Proof page</p>
       <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Send them a page built just for them.</h1>
       <p className="mt-2 text-lg text-ink-2">
-        Level 1 applies for the job. Level 2 shows you can do the job. Level 3 hands the hiring manager a one-page case for you, written for
+        A proof page is a one-page website you send the hiring manager: why them, your numbers, and real work you&apos;ve already done for
         their team.
+      </p>
+      <p className="mt-3 text-[15px] leading-relaxed text-ink-2">
+        <span className="font-semibold text-ink">Why it matters:</span> hundreds of people send a résumé. Almost nobody shows up having
+        already done the job.
       </p>
       <a href="#prompt" className="mt-3 inline-block text-[15px] font-semibold text-ink underline underline-offset-2">
         Skip to the prompt ↓
@@ -83,7 +87,7 @@ export default async function LevelThreePage({ searchParams }: { searchParams: P
           ))}
         </ol>
         <a
-          href="/examples/level-3.html"
+          href="/examples/proof-page.html"
           target="_blank"
           rel="noopener"
           className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-5 hover:border-line-strong"
@@ -155,7 +159,7 @@ export default async function LevelThreePage({ searchParams }: { searchParams: P
         <Link href="/outreach" className="font-semibold text-ink underline underline-offset-2">See the cold emails</Link>.
       </p>
       <div className="mt-6">
-        <PicksSignup back="/level-3" source="level-3" status={picks} compact />
+        <PicksSignup back="/proof-page" source="proof-page" status={picks} compact />
       </div>
     </div>
   );
