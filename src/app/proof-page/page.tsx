@@ -28,6 +28,7 @@ Here's what I have
 - Two or three testimonials, with each person's name and title: [paste]
 - What I noticed about the company: [paste]
 - How to reach me (email, phone, LinkedIn): [paste]
+- A link to my headshot, if I have one online: [paste link]
 
 Build the page in this order
 1. A headline written to the hiring manager about their problem, not my job search.
@@ -39,6 +40,8 @@ Build the page in this order
 7. A close with one ask, "Book 15 minutes," and an easy out, like "If it's not a fit, no hard feelings."
 
 Put my contact info near the top and again at the bottom, so it's easy to reach me.
+
+If I gave you a link to my headshot, show it at the top in a circle next to my name. If not, show my initials in a circle instead.
 
 Make it clean, simple and mobile-friendly. Short enough to read in 60 seconds.`;
 
@@ -60,6 +63,7 @@ const READY = [
   "Two or three testimonials (LinkedIn recommendations work)",
   "One thing you noticed about the company",
   "Your email, phone and LinkedIn",
+  "A link to a headshot that's already online (optional)",
 ];
 
 export default async function ProofPage({ searchParams }: { searchParams: Promise<{ picks?: string }> }) {
