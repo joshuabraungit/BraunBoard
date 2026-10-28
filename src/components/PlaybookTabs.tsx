@@ -5,7 +5,7 @@ const TABS = [
   { href: "/kit", label: "Before You Say Yes" },
 ] as const;
 
-/** Switches between the pages under "Playbook" in the menu. */
+/** Switches between the pages under "Toolkit" in the menu. */
 export function PlaybookTabs({ active }: { active: (typeof TABS)[number]["href"] }) {
   return (
     <div className="mb-6 flex gap-2 overflow-x-auto [scrollbar-width:none]">

@@ -9,7 +9,7 @@ const ITEMS: { href: string; label: string; also?: string[] }[] = [
   { href: "/jobs", label: "All Jobs" },
   { href: "/watchlist", label: "Watchlist" },
   { href: "/salaries", label: "Salaries" },
-  { href: "/outreach", label: "Playbook", also: ["/kit"] },
+  { href: "/outreach", label: "Toolkit", also: ["/kit"] },
   { href: "/alerts", label: "Alerts" },
 ];
 
