@@ -49,6 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE}/salaries/uk`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE}/outreach`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE}/cold-call`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE}/level-3`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE}/kit`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE}/report/october-2026`, lastModified: new Date("2026-10-24"), changeFrequency: "yearly", priority: 0.7 },
     { url: `${SITE}/ask`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },

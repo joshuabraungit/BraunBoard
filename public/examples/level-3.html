@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alex Berger for Northwind Labs · Example · Braun Board</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--bg:#faf8f4;--card:#fff;--ink:#16140f;--ink2:#5b574e;--ink3:#8d887c;--line:#ebe7df;--accent:#1f5c3a;--accent-soft:#e8f1eb;--note:#fbf1dc;--note-ink:#8a5a00}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Inter,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:680px;margin:0 auto;padding:0 18px 70px}
+.example{position:sticky;top:0;z-index:5;background:var(--ink);color:#fff;font-size:13px;padding:10px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.example label{display:flex;align-items:center;gap:8px;cursor:pointer;white-space:nowrap}
+.example input{accent-color:#fff;width:16px;height:16px}
+.hero{padding:44px 0 8px}
+.for{font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--accent);margin:0 0 8px}
+h1{font-size:34px;line-height:1.15;letter-spacing:-.6px;margin:0 0 12px}
+.lede{font-size:18px;color:var(--ink2);margin:0}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.btn{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:10px;font-weight:600;font-size:15px;text-decoration:none;border:1px solid var(--line);color:var(--ink);background:var(--card)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+h2{font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3);margin:46px 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.stat b{display:block;font-size:28px;letter-spacing:-.5px;line-height:1.1}
+.stat span{font-size:14px;color:var(--ink2)}
+.acct{border-top:1px solid var(--line);padding:12px 0}.acct:first-child{border-top:0;padding-top:0}
+.acct b{font-size:16px}.acct p{margin:2px 0 0;font-size:14px;color:var(--ink2)}
+.tag{display:inline-block;font-size:12px;font-weight:600;background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:1px 8px;margin-left:6px;vertical-align:2px}
+.email{white-space:pre-wrap;background:var(--bg);border-radius:12px;padding:14px 16px;font-size:15px;line-height:1.7;margin-top:14px}
+ol{margin:0;padding-left:20px}ol li{margin-bottom:12px}ol li b{display:block}
+.note{display:none;background:var(--note);color:var(--note-ink);border-radius:10px;padding:10px 12px;font-size:14px;line-height:1.5;margin-top:10px}
+body.notes .note{display:block}
+.quote{font-size:17px;line-height:1.6;margin:0}
+.end{margin-top:50px;background:var(--ink);color:#fff;border-radius:18px;padding:26px}
+.end h3{margin:0 0 6px;font-size:22px;letter-spacing:-.3px}
+.end p{margin:0 0 16px;color:rgba(255,255,255,.75)}
+.end .btn{background:#fff;color:var(--ink);border-color:#fff}
+.end .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.3)}
+footer{text-align:center;font-size:12px;color:var(--ink3);margin-top:30px}
+@media (max-width:480px){h1{font-size:28px}.stat b{font-size:24px}}
+</style>
+</head>
+<body class="notes">
+<div class="example"><span><a href="/level-3" style="color:#fff;font-weight:600">← Braun Board</a> · Example. Names and numbers are made up.</span><label><input type="checkbox" checked onchange="document.body.classList.toggle('notes',this.checked)">Why it works</label></div>
+<div class="wrap">
+
+<section class="hero">
+<p class="for">For Max at Northwind Labs · Account Executive, Mid-Market</p>
+<h1>I've helped a team move past founder-led sales. Here's how I'd help yours.</h1>
+<p class="lede">Alex Berger. Four years selling to operations leaders, the last two at a company at your stage.</p>
+<div class="btns"><a class="btn primary" href="#">Book 15 minutes</a><a class="btn" href="#">Download résumé</a></div>
+<div class="note">The headline is about his problem, not your job search. It's written for one person: Max. A page that could be sent to any company isn't Level 3.</div>
+</section>
+
+<h2>Why Northwind</h2>
+<div class="card">
+<p class="quote">Your posting says the next AE will help you <b>move beyond founder-led sales</b>. And three of the eight logos on your customer page are regional logistics companies.</p>
+<p class="quote" style="margin-top:12px">That's the exact move I made at Acme, into the exact market I've sold to for three years.</p>
+</div>
+<div class="note">Opens with an observation, quoted from their world. It proves you did your homework in two sentences.</div>
+
+<h2>The proof</h2>
+<div class="stats">
+<div class="stat"><b>$840K</b><span>New business closed in two years</span></div>
+<div class="stat"><b>60%</b><span>Of my pipeline, self-sourced</span></div>
+<div class="stat"><b>$42K</b><span>Average deal size, close to yours</span></div>
+<div class="stat"><b>Ops leaders</b><span>The buyer I've sold to for four years</span></div>
+</div>
+<div class="note">Four numbers, no adjectives. "Self-sourced" matters most here, because a team leaving founder-led sales needs reps who can build their own pipeline. Only use numbers you can back up in the interview.</div>
+
+<h2>The work</h2>
+<div class="card">
+<p style="margin:0 0 14px">Five logistics companies I'd go after first, and why now:</p>
+<div class="acct"><b>Ridgeline Freight</b><span class="tag">Trigger</span><p>Opened two new distribution centers this quarter. New sites, same old tracking spreadsheets.</p></div>
+<div class="acct"><b>Coastal Cold Chain</b><span class="tag">Trigger</span><p>Hired a new VP of Operations in September. New leaders review their tools in the first 90 days.</p></div>
+<div class="acct"><b>Pinecrest Logistics</b><span class="tag">Trigger</span><p>Job posts for three dispatch coordinators. Usually a sign the current process doesn't scale.</p></div>
+<div class="acct"><b>Harbor Line Carriers</b><span class="tag">Lookalike</span><p>Same size and region as two of your current customers.</p></div>
+<div class="acct"><b>Summit Regional Transport</b><span class="tag">Lookalike</span><p>Just announced a merger. Two systems that now have to talk to each other.</p></div>
+<p style="margin:16px 0 0;font-weight:600">The email I'd send Ridgeline's VP of Operations:</p>
+<div class="email">Subject: Two new DCs
+
+Hi Dana,
+
+Saw Ridgeline opened two new distribution centers this quarter.
+
+When other ops teams added sites, the tracking that worked for one location usually turned into five spreadsheets and a lot of phone calls.
+
+Is that something you're running into yet, or is it under control?
+
+Alex</div>
+</div>
+<div class="note">This is the heart of Level 3. Max doesn't have to imagine you prospecting. He can read it. Real research, real triggers, an email he could send today.</div>
+
+<h2>My first 90 days</h2>
+<div class="card">
+<ol>
+<li><b>Days 1 to 30: Learn the story</b>Shadow the founder on calls and write down, in customers' words, why they bought.</li>
+<li><b>Days 31 to 60: Build my own pipeline</b>Work the logistics vertical first, where I already know the buyers.</li>
+<li><b>Days 61 to 90: Make it repeatable</b>Turn what's working into talk tracks the next AE can use.</li>
+</ol>
+</div>
+<div class="note">Three steps, not a strategy deck. It shows you understand the job and makes it easy for Max to picture you in it.</div>
+
+<div class="end">
+<h3>Worth 15 minutes?</h3>
+<p>If it's not a fit, no hard feelings. I'd still be glad to share the account research.</p>
+<div class="btns" style="margin-top:0"><a class="btn" href="#">Book 15 minutes</a><a class="btn ghost" href="#">alex@example.com</a></div>
+<div class="note" style="margin-top:14px">One clear ask, and a detached close. Giving him an easy out makes the yes easier.</div>
+</div>
+
+<footer>Made by Alex Berger for Northwind Labs. Not indexed by search engines.</footer>
+</div>
+</body>
+</html>
