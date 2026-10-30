@@ -85,7 +85,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         <JobGrid jobs={newToday} ctx={ctx} empty="No new sales jobs in the last 24 hours yet." />
       </Section>
       {productCounts.size > 0 && (
-        <Section title="Explore by product" href="/products">
+        <Section title="What You'd Sell" href="/products">
           <p className="-mt-1 mb-3 text-sm text-ink-2">Find a product you&apos;d be excited to sell, explained in plain English.</p>
           <div className="flex flex-wrap gap-2">
             {PRODUCT_CATEGORIES.filter((c) => productCounts.get(c)).map((c) => (
