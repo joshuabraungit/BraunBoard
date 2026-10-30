@@ -4,7 +4,7 @@ import { adminClient } from "./supabase/admin";
 import { adminEmails } from "./admin-emails";
 import { sendEmail } from "./alerts/email";
 import { formatPrice, liveWindow, MAX_LIVE_SPONSORS, payLine, SPONSOR_DAYS, type SponsorOrder } from "./sponsor-form";
-import { isSettled, type CheckoutSession } from "./stripe";
+import { getInvoiceLinks, isSettled, type CheckoutSession, type Invoice } from "./stripe";
 
 export const LOGO_BUCKET = "sponsor-logos";
 
@@ -82,7 +82,7 @@ export async function markPaid(session: CheckoutSession): Promise<SponsoredJobRo
     .maybeSingle();
   if (error) throw error;
   const row = data as SponsoredJobRow | null;
-  if (row) await sendPaidEmails(row).catch((e) => console.error("[sponsor] email failed", e));
+  if (row) await sendPaidEmails(row, session.invoice).catch((e) => console.error("[sponsor] email failed", e));
   return row ?? (await getOrder(orderId));
 }
 
@@ -113,38 +113,69 @@ function wrap(title: string, body: string) {
   </table></body></html>`;
 }
 
-export function renderOwnerNotice(o: SponsoredJobRow, siteUrl: string) {
+export function renderOwnerNotice(o: SponsoredJobRow, siteUrl: string, invoice: Invoice | null = null) {
   const subject = `New sponsored job: ${o.job_title} at ${o.company}`;
   const rows = orderLines(o)
     .map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#888;vertical-align:top">${k}</td><td style="padding:4px 0">${esc(v)}</td></tr>`)
     .join("");
   const html = wrap(subject, `<table style="font-size:14px">${rows}</table>
     <p style="font-size:14px;color:#555;margin-top:12px"><b>Description</b><br>${esc(o.description).replace(/\n/g, "<br>")}</p>
-    <p style="margin-top:16px"><a href="${siteUrl}/admin/sponsored" style="color:#111;font-weight:600">Open in Admin →</a></p>`);
-  const text = `${subject}\n\n${orderLines(o).map(([k, v]) => `${k}: ${v}`).join("\n")}\n\nDescription:\n${o.description}\n\n${siteUrl}/admin/sponsored`;
+    <p style="margin-top:16px"><a href="${siteUrl}/admin/sponsored" style="color:#111;font-weight:600">Open in Admin →</a>${
+      invoice?.hosted_invoice_url ? ` &nbsp;·&nbsp; <a href="${esc(invoice.hosted_invoice_url)}" style="color:#111">Invoice${invoice.number ? ` ${esc(invoice.number)}` : ""}</a>` : ""
+    }</p>`);
+  const text = `${subject}\n\n${orderLines(o).map(([k, v]) => `${k}: ${v}`).join("\n")}\n\nDescription:\n${o.description}\n\n${siteUrl}/admin/sponsored${invoice?.hosted_invoice_url ? `\nInvoice: ${invoice.hosted_invoice_url}` : ""}`;
   return { subject, html, text };
 }
 
-export function renderCustomerReceipt(o: SponsoredJobRow) {
-  const subject = `You're booked: ${o.job_title} on Braun Board`;
-  const when = o.start_date ? `starting ${o.start_date}` : "as soon as I've set it up (usually within one business day)";
-  const lines = [
-    `Hi ${o.contact_name.split(" ")[0]},`,
-    `Thanks for sponsoring ${o.job_title} at ${o.company}. Payment came through.`,
-    `Here's what happens next: the job goes on the Braun Board home page for ${SPONSOR_DAYS} days ${when}. It also goes out in a LinkedIn post and a newsletter send. I'll email you when each one is live.`,
-    `If anything in your details needs a fix, just reply to this email.`,
-    `Josh`,
+const niceDate = (ymd: string) =>
+  new Date(`${ymd}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "America/New_York" });
+
+/** The autoresponse a buyer gets the moment they pay. Josh's voice: short lines, no hype. */
+export function renderCustomerReceipt(o: SponsoredJobRow, invoice: Invoice | null = null) {
+  const subject = `Got it. Thanks for sponsoring ${o.job_title}.`;
+  const where = [o.remote_type, o.location].filter(Boolean).join(" · ");
+  const summary = [`${o.company} · ${o.job_title}`, payLine(o), where, o.job_url];
+  const para = [
+    `Hi ${o.contact_name.trim().split(/\s+/)[0]},`,
+    `Your payment came through.`,
+    `Here's what happens next.`,
+    `I read every sponsored job before it goes up. Usually within one business day.`,
+    `Once it's approved, it sits at the top of the Braun Board home page for ${SPONSOR_DAYS} days.${o.start_date ? ` Starting ${niceDate(o.start_date)}, like you asked.` : ""}`,
+    `It also goes out in a LinkedIn post and a newsletter send.`,
+    `You'll get an email from me when it's live, with a link to the page sellers see.`,
   ];
-  const html = wrap(subject, lines.map((l) => `<p style="font-size:15px;line-height:1.5;color:#222">${esc(l)}</p>`).join(""));
-  return { subject, html, text: lines.join("\n\n") };
+  const after = [`Something off? Just reply. It comes straight to me.`, `Josh`];
+  const invoiceLine = invoice?.hosted_invoice_url ? `Your invoice${invoice.number ? ` (${invoice.number})` : ""}: ${invoice.hosted_invoice_url}` : null;
+
+  const p = (t: string) => `<p style="font-size:15px;line-height:1.5;color:#222;margin:0 0 14px">${esc(t)}</p>`;
+  const html = wrap(
+    subject,
+    para.map(p).join("") +
+      `<p style="font-size:15px;line-height:1.5;color:#222;margin:0 0 6px">Here's what you sent:</p>
+       <div style="font-size:14px;line-height:1.6;color:#333;background:#faf8f5;border:1px solid #eee;border-radius:8px;padding:12px 14px;margin:0 0 14px">${summary
+         .map((l, i) => (i === summary.length - 1 ? `<a href="${esc(l)}" style="color:#333">${esc(l)}</a>` : esc(l)))
+         .join("<br>")}</div>` +
+      (invoice?.hosted_invoice_url
+        ? `<p style="font-size:15px;line-height:1.5;color:#222;margin:0 0 14px"><a href="${esc(invoice.hosted_invoice_url)}" style="color:#111;font-weight:600">View or download your invoice${invoice.number ? ` (${esc(invoice.number)})` : ""} →</a></p>`
+        : `<p style="font-size:14px;line-height:1.5;color:#555;margin:0 0 14px">Need an invoice? Reply and I'll send one.</p>`) +
+      after.map(p).join(""),
+  );
+  const text = [
+    ...para,
+    `Here's what you sent:\n${summary.join("\n")}`,
+    invoiceLine ?? `Need an invoice? Reply and I'll send one.`,
+    ...after,
+  ].join("\n\n");
+  return { subject, html, text };
 }
 
-async function sendPaidEmails(o: SponsoredJobRow) {
+async function sendPaidEmails(o: SponsoredJobRow, invoiceId?: string | null) {
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://braunboard.com";
   const owner = adminEmails()[0];
+  const invoice = await getInvoiceLinks(invoiceId);
   await Promise.all([
-    owner ? sendEmail(owner, renderOwnerNotice(o, site), { replyTo: o.email }) : null,
-    sendEmail(o.email, renderCustomerReceipt(o), { replyTo: owner }),
+    owner ? sendEmail(owner, renderOwnerNotice(o, site, invoice), { replyTo: o.email }) : null,
+    sendEmail(o.email, renderCustomerReceipt(o, invoice), { replyTo: owner }),
   ]);
 }
 

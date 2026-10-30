@@ -14,6 +14,8 @@ export interface CheckoutSession {
   amount_total: number | null;
   payment_intent: string | null;
   client_reference_id: string | null;
+  /** Invoice id when invoice_creation is on (set once checkout completes). */
+  invoice?: string | null;
   customer_details?: { email?: string | null; name?: string | null } | null;
   metadata?: Record<string, string>;
 }
@@ -80,6 +82,28 @@ export function createCheckoutSession(p: {
       cancel_url: `${p.siteUrl}/sponsor?canceled=1&order=${p.orderId}`,
     },
   });
+}
+
+export interface Invoice {
+  id: string;
+  number: string | null;
+  hosted_invoice_url: string | null;
+  invoice_pdf: string | null;
+}
+
+/** The buyer's invoice links. Stripe can take a moment to finalize, so retry briefly. Never throws. */
+export async function getInvoiceLinks(id: string | null | undefined, tries = 3): Promise<Invoice | null> {
+  if (!id) return null;
+  for (let i = 0; i < tries; i++) {
+    try {
+      const inv = await stripe<Invoice>(`invoices/${encodeURIComponent(id)}`, { method: "GET" });
+      if (inv.hosted_invoice_url) return inv;
+    } catch (e) {
+      console.error("[stripe] invoice lookup failed", e);
+    }
+    if (i < tries - 1) await new Promise((r) => setTimeout(r, 1500));
+  }
+  return null;
 }
 
 /** Paid, or fully covered by a promo code (Stripe reports that as "no_payment_required"). */
