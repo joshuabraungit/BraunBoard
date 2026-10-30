@@ -21,7 +21,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="min-h-screen">
         <header className="sticky top-0 z-20 border-b border-line bg-bg/90 backdrop-blur">
           {/* On phones the menu gets its own scrollable row under the logo, so more than one item shows. */}
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 sm:flex-nowrap sm:gap-6 sm:py-3">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 sm:flex-nowrap sm:gap-4 sm:py-3 xl:gap-6">
             <Link href="/" className="shrink-0 text-[17px] font-bold tracking-tight">
               Braun Board
             </Link>
