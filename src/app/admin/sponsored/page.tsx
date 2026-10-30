@@ -2,9 +2,9 @@ import Link from "next/link";
 import { adminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin";
 import { AdminNotice } from "@/components/AdminNotice";
-import { orderLines, type SponsoredJobRow } from "@/lib/sponsor";
-import { isRunning } from "@/lib/sponsor-form";
-import { goLive, sendReceiptAgain, setSponsoredStatus } from "./actions";
+import { canRefund, orderLines, type SponsoredJobRow } from "@/lib/sponsor";
+import { formatPrice, isRunning } from "@/lib/sponsor-form";
+import { cancelOrder, goLive, sendReceiptAgain, setSponsoredStatus } from "./actions";
 
 const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" });
 
@@ -120,14 +120,35 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                         <button className="rounded-md border border-line-strong bg-surface px-3 py-1.5 text-sm">Resend receipt</button>
                       </form>
                     )}
-                    {st === "approve" && (
-                      <form action={setSponsoredStatus}>
-                        <input type="hidden" name="id" value={r.id} />
-                        <input type="hidden" name="status" value="canceled" />
-                        <button className="rounded-md border border-line-strong bg-surface px-3 py-1.5 text-sm text-red">Cancel order</button>
-                      </form>
-                    )}
                   </div>
+                  {canRefund(r, now) && (
+                    <details className="mt-3 rounded-lg border border-red/20 bg-red-soft/40 px-3 py-2">
+                      <summary className="cursor-pointer text-sm font-semibold text-red">Cancel and refund…</summary>
+                      <form action={cancelOrder} className="mt-2 space-y-2">
+                        <input type="hidden" name="id" value={r.id} />
+                        <label className="block text-xs text-ink-2" htmlFor={`reason-${r.id}`}>
+                          Reason (optional). It goes in the email to {r.contact_name}, right after &ldquo;I can&apos;t run this one on Braun Board.&rdquo;
+                        </label>
+                        <textarea
+                          id={`reason-${r.id}`}
+                          name="reason"
+                          rows={2}
+                          maxLength={500}
+                          placeholder="Sponsored jobs have to be sales roles with base pay listed."
+                          className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm"
+                        />
+                        <button className="rounded-md bg-red px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">
+                          {r.amount_cents > 0 ? `Refund ${formatPrice(r.amount_cents)} and cancel` : "Cancel (nothing to refund)"}
+                        </button>
+                        <p className="text-xs text-ink-3">Refunds in Stripe right away and can&apos;t be undone.</p>
+                      </form>
+                    </details>
+                  )}
+                  {r.status === "canceled" && r.refunded_at && (
+                    <p className="mt-3 text-xs text-ink-2">
+                      {r.stripe_refund_id ? `Refunded ${formatPrice(r.amount_cents)}` : "Canceled"} on {day(r.refunded_at)}.{r.cancel_reason ? ` Reason: ${r.cancel_reason}` : ""}
+                    </p>
+                  )}
                   {st === "approve" && runningCount >= 2 && (
                     <p className="mt-2 text-xs text-amber">Both home page spots are taken. If you approve it now, it starts automatically when a spot opens, and gets its full 30 days from then.</p>
                   )}
