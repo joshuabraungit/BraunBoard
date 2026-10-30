@@ -21,7 +21,9 @@ export async function prefillFromResume(formData: FormData): Promise<ResumeResul
     const prefill = await readResume(isPdf ? { pdf: bytes } : { text: bytes.toString("utf8") });
     if (!Object.keys(prefill.answers).length) return { ok: false, error: "I couldn't read enough from that file. You can fill it in below." };
     return { ok: true, prefill };
-  } catch {
+  } catch (e) {
+    // Log why (never the file or its contents) so failures show up in Vercel logs.
+    console.error("[resume] read failed:", e instanceof Error ? e.message : e);
     return { ok: false, error: "Something went wrong reading that. You can fill it in below." };
   }
 }
