@@ -4,7 +4,7 @@ import { adminClient } from "./supabase/admin";
 import { adminEmails } from "./admin-emails";
 import { sendEmail } from "./alerts/email";
 import { formatPrice, liveWindow, MAX_LIVE_SPONSORS, payLine, SPONSOR_DAYS, type SponsorOrder } from "./sponsor-form";
-import { getInvoiceLinks, isSettled, type CheckoutSession, type Invoice } from "./stripe";
+import { getCheckoutSession, getInvoiceLinks, isSettled, type CheckoutSession, type Invoice } from "./stripe";
 
 export const LOGO_BUCKET = "sponsor-logos";
 
@@ -253,4 +253,16 @@ export function renderLiveEmail(o: SponsoredJobRow, siteUrl: string) {
   <p style="font-size:14px;color:#555">${esc(payLine(o))}</p>
   </td></tr></table></body></html>`;
   return { subject, html, text: lines.join("\n\n") };
+}
+
+/** Admin "Resend receipt": sends the buyer the paid autoresponse again, with a fresh invoice link. */
+export async function resendReceipt(id: string): Promise<{ to: string; invoice: boolean }> {
+  const o = await getOrder(id);
+  if (!o) throw new Error("Order not found");
+  if (!["paid", "live", "done"].includes(o.status)) throw new Error("Only paid orders have a receipt.");
+  const session = o.stripe_session_id ? await getCheckoutSession(o.stripe_session_id).catch(() => null) : null;
+  const invoice = await getInvoiceLinks(session?.invoice, 1);
+  const sent = await sendEmail(o.email, renderCustomerReceipt(o, invoice), { replyTo: adminEmails()[0] });
+  if (!sent) throw new Error("Email isn't set up on the site (RESEND_API_KEY), so nothing was sent.");
+  return { to: o.email, invoice: !!invoice };
 }
