@@ -140,6 +140,7 @@ export function renderCustomerReceipt(o: SponsoredJobRow, invoice: Invoice | nul
     `Your payment came through.`,
     `Here's what happens next.`,
     `I read every sponsored job before it goes up. Usually within one business day.`,
+    `If it doesn't qualify, you get a full refund.`,
     `Once it's approved, it sits at the top of the Braun Board home page for ${SPONSOR_DAYS} days.${o.start_date ? ` Starting ${niceDate(o.start_date)}, like you asked.` : ""}`,
     `It also goes out in a LinkedIn post and a newsletter send.`,
     `You'll get an email from me when it's live, with a link to the page sellers see.`,
