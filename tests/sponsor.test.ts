@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { checkLogo, formatPrice, isRunning, liveWindow, nextOpenSpot, parseMoney, parseSponsorForm, payLine } from "../src/lib/sponsor-form";
+import { checkLogo, formatPrice, isRunning, liveWindow, nextOpenSpot, parseMoney, parseSponsorEdit, parseSponsorForm, payLine } from "../src/lib/sponsor-form";
 import { formEncode, isSettled, verifyWebhook } from "../src/lib/stripe";
 
 const good: Record<string, string> = {
@@ -149,5 +149,32 @@ describe("live window", () => {
     expect(payLine({ salary_min: 95000, salary_max: 110000, ote_min: 190000, ote_max: 220000, currency: "USD" })).toBe("$95K–$110K base · $190K–$220K OTE");
     expect(payLine({ salary_min: 87500, salary_max: 87500, ote_min: null, ote_max: null, currency: "GBP" })).toBe("£87.5K base");
     expect(payLine({ salary_min: 90000, salary_max: 100000, ote_min: null, ote_max: null, currency: "CAD" })).toBe("$90K–$100K base CAD");
+  });
+});
+
+describe("what they sell", () => {
+  it("is optional on the order form and trimmed when given", () => {
+    const r = parseSponsorForm(fd({ ...good, product_short: "  Surveys that show what a community thinks ", product_story: "" }));
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.order.product_short).toBe("Surveys that show what a community thinks");
+      expect(r.order.product_story).toBeNull();
+    }
+  });
+});
+
+describe("admin edits", () => {
+  const edit = (o: Record<string, string>) => {
+    const f = new FormData();
+    for (const [k, v] of Object.entries({ job_title: "Director of Growth", job_url: "https://x.com/j", description: "Sell research.", product_short: "", product_story: "", ...o })) f.set(k, v);
+    return parseSponsorEdit(f);
+  };
+  it("saves good copy and clears blank product fields", () => {
+    const r = edit({ product_short: "Surveys" });
+    expect(r.ok && r.edit).toMatchObject({ job_title: "Director of Growth", product_short: "Surveys", product_story: null });
+  });
+  it("refuses a blank title or a bad link", () => {
+    expect(edit({ job_title: "" }).ok).toBe(false);
+    expect(edit({ job_url: "javascript:alert(1)" }).ok).toBe(false);
   });
 });

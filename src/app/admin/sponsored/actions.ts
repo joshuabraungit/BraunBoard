@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { adminClient } from "@/lib/supabase/admin";
-import { cancelAndRefund, markLive, resendReceipt } from "@/lib/sponsor";
-import { formatPrice } from "@/lib/sponsor-form";
+import { cancelAndRefund, markLive, resendReceipt, updateSponsorCopy } from "@/lib/sponsor";
+import { formatPrice, parseSponsorEdit } from "@/lib/sponsor-form";
 
 // Canceling goes through cancelOrder so it always refunds.
 const STATUSES = ["done"] as const;
@@ -66,4 +66,23 @@ export async function cancelOrder(formData: FormData) {
   }
   revalidatePath("/");
   back(true, msg);
+}
+
+export async function editCopy(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  const parsed = parseSponsorEdit(formData);
+  if (!parsed.ok) {
+    back(false, `Not saved. ${parsed.error}`);
+    return;
+  }
+  try {
+    await updateSponsorCopy(id, parsed.edit);
+  } catch (e) {
+    back(false, e instanceof Error ? e.message : "Couldn't save.");
+    return;
+  }
+  revalidatePath("/");
+  revalidatePath(`/sponsored/${id}`);
+  back(true, `Saved. ${parsed.edit.job_title} is updated everywhere it shows.`);
 }

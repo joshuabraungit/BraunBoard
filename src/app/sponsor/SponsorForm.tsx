@@ -169,6 +169,28 @@ export function SponsorForm({ price, canceled }: { price: string; canceled: bool
       </fieldset>
 
       <fieldset className="space-y-4">
+        <legend className="mb-1 text-lg font-bold tracking-tight">What you sell, in plain English</legend>
+        <p className="!mt-0 text-sm text-ink-2">
+          Optional, but it&apos;s what makes sellers want the job. Write it like you&apos;re explaining it to a friend: the customer&apos;s problem, what you do about it,
+          what changes. No buzzwords.
+        </p>
+        <div className="rounded-lg border border-line bg-bg px-4 py-3 text-sm text-ink-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-3">Example</p>
+          <p className="mt-1 font-semibold text-ink">Texts and emails picked for each shopper</p>
+          <p className="mt-0.5">
+            A clothing brand sends the same email to everyone, and most people ignore it. Acme looks at what each shopper browsed and sends them the
+            things they actually want. More people open, click and buy.
+          </p>
+        </div>
+        <Field name="product_short" label="Headline" hint="4 to 8 words." error={e.product_short}>
+          <input id="product_short" name="product_short" defaultValue={v.product_short} maxLength={80} className={input} {...err("product_short")} />
+        </Field>
+        <Field name="product_story" label="The short story" hint="2 to 4 sentences, under 60 words." error={e.product_story}>
+          <textarea id="product_story" name="product_story" defaultValue={v.product_story} rows={3} maxLength={500} className={input} {...err("product_story")} />
+        </Field>
+      </fieldset>
+
+      <fieldset className="space-y-4">
         <legend className="mb-3 text-lg font-bold tracking-tight">Timing</legend>
         <Field name="start_date" label="Preferred start date" hint="Optional. Leave blank and it goes live as soon as I've set it up." error={e.start_date}>
           <input id="start_date" name="start_date" type="date" min={today} defaultValue={v.start_date} className={`${input} sm:max-w-56`} {...err("start_date")} />

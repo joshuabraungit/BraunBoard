@@ -35,7 +35,13 @@ export function SponsoredCard({ s }: { s: SponsoredJobRow }) {
                 </span>
               ))}
           </p>
-          <p className="mt-2.5 line-clamp-3 text-[15px] leading-relaxed text-ink-2">{s.description}</p>
+          {s.product_short && (
+            <p className="mt-2.5 text-sm">
+              <span className="text-ink-3">What they sell: </span>
+              <span className="font-semibold">{s.product_short}</span>
+            </p>
+          )}
+          <p className="mt-2 line-clamp-3 text-[15px] leading-relaxed text-ink-2">{s.description}</p>
         </div>
       </div>
       <div className="mt-4 flex justify-end">

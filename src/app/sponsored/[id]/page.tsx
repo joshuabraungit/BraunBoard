@@ -67,6 +67,14 @@ export default async function SponsoredJobPage({ params }: Props) {
 
       <div className="mt-5 whitespace-pre-line text-[15px] leading-relaxed text-ink">{s.description}</div>
 
+      {(s.product_short || s.product_story) && (
+        <section className="mt-8 rounded-2xl border border-line bg-surface p-5 sm:p-6">
+          <h2 className="text-xs font-bold uppercase tracking-wide text-ink-3">What {s.company} sells, in plain English</h2>
+          {s.product_short && <p className="mt-2 text-[17px] font-bold leading-snug">{s.product_short}</p>}
+          {s.product_story && <p className="mt-1.5 text-[15px] leading-relaxed text-ink-2">{s.product_story}</p>}
+        </section>
+      )}
+
       <div className="mt-8 rounded-2xl border border-line bg-surface p-5 sm:p-6">
         {hasRun && !admin ? (
           <p className="text-sm text-ink-2">This job is no longer featured on Braun Board. The posting may still be open on {s.company}&apos;s site.</p>

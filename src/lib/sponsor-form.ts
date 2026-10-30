@@ -44,6 +44,8 @@ const schema = z
       .transform((v) => v || null)
       .refine((v) => v === null || /^\d{4}-\d{2}-\d{2}$/.test(v), "Pick a date"),
     notes: z.string().trim().max(1000).optional().transform((v) => v || null),
+    product_short: z.string().trim().max(80, "Keep it under 80 characters").optional().transform((v) => v || null),
+    product_story: z.string().trim().max(500, "Keep it under 500 characters").optional().transform((v) => v || null),
     sales_role: z.literal("yes", { error: "Sponsored jobs have to be sales roles" }),
   });
 
@@ -152,4 +154,24 @@ export function payLine(p: { salary_min: number; salary_max: number; ote_min: nu
   const parts = [`${range(p.salary_min, p.salary_max, p.currency)} base`];
   if (p.ote_min && p.ote_max) parts.push(`${range(p.ote_min, p.ote_max, p.currency)} OTE`);
   return parts.join(" · ") + (p.currency === "CAD" ? " CAD" : "");
+}
+
+/** Josh's edits from Admin: the words sellers read. Blank product fields clear them. */
+const editSchema = z.object({
+  job_title: text(140),
+  job_url: z.string().trim().pipe(z.url({ protocol: /^https?$/, error: "Paste the full link, starting with https://" })),
+  description: text(3000),
+  product_short: z.string().trim().max(80, "Keep it under 80 characters").transform((v) => v || null),
+  product_story: z.string().trim().max(500, "Keep it under 500 characters").transform((v) => v || null),
+});
+export type SponsorEdit = z.output<typeof editSchema>;
+
+export function parseSponsorEdit(fd: FormData): { ok: true; edit: SponsorEdit } | { ok: false; error: string } {
+  const raw = Object.fromEntries(["job_title", "job_url", "description", "product_short", "product_story"].map((k) => [k, String(fd.get(k) ?? "")]));
+  const r = editSchema.safeParse(raw);
+  if (!r.success) {
+    const i = r.error.issues[0];
+    return { ok: false, error: `${String(i.path[0]).replace("_", " ")}: ${i.message}` };
+  }
+  return { ok: true, edit: r.data };
 }

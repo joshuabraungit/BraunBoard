@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/admin";
 import { AdminNotice } from "@/components/AdminNotice";
 import { canRefund, orderLines, type SponsoredJobRow } from "@/lib/sponsor";
 import { formatPrice, isRunning } from "@/lib/sponsor-form";
-import { cancelOrder, goLive, sendReceiptAgain, setSponsoredStatus } from "./actions";
+import { cancelOrder, editCopy, goLive, sendReceiptAgain, setSponsoredStatus } from "./actions";
 
 const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" });
 
@@ -91,6 +91,34 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                     </tbody>
                   </table>
                   <p className="mt-3 whitespace-pre-wrap text-ink-2">{r.description}</p>
+                  {r.status !== "canceled" && r.status !== "pending" && (
+                    <details className="mt-3 rounded-lg border border-line px-3 py-2">
+                      <summary className="cursor-pointer text-sm font-semibold">Edit copy</summary>
+                      <form action={editCopy} className="mt-3 space-y-3">
+                        <input type="hidden" name="id" value={r.id} />
+                        {(
+                          [
+                            ["job_title", "Job title", r.job_title, 140, 1],
+                            ["job_url", "Link to apply", r.job_url, 2000, 1],
+                            ["description", "Description (the card shows about 3 lines)", r.description, 3000, 6],
+                            ["product_short", "What they sell: headline (4 to 8 words)", r.product_short ?? "", 80, 1],
+                            ["product_story", "What they sell: story (2 to 4 sentences, under 60 words)", r.product_story ?? "", 500, 3],
+                          ] as const
+                        ).map(([name, label, value, max, rows]) => (
+                          <label key={name} className="block">
+                            <span className="text-xs text-ink-2">{label}</span>
+                            {rows > 1 ? (
+                              <textarea name={name} defaultValue={value} rows={rows} maxLength={max} className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm" />
+                            ) : (
+                              <input name={name} defaultValue={value} maxLength={max} className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm" />
+                            )}
+                          </label>
+                        ))}
+                        <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">Save copy</button>
+                        <p className="text-xs text-ink-3">Updates the home page card and job page right away. Pay, location and dates stay as the buyer sent them.</p>
+                      </form>
+                    </details>
+                  )}
                   <div className="mt-4 flex flex-wrap items-center gap-2">
                     {["paid", "live", "done"].includes(r.status) && (
                       <Link href={`/sponsored/${r.id}`} target="_blank" className="rounded-md border border-line-strong bg-surface px-3 py-1.5 text-sm font-semibold">
