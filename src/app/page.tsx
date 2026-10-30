@@ -12,6 +12,8 @@ import { marketsFor, visitorMarket } from "@/lib/market";
 import { PRODUCT_CATEGORIES, categoryCounts, loadProductData } from "@/lib/products";
 import { cookies } from "next/headers";
 import { INTRO_COOKIE, IntroBanner } from "@/components/IntroBanner";
+import { SponsoredCard } from "@/components/SponsoredCard";
+import { listRunningSponsors } from "@/lib/sponsor";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -27,13 +29,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   const uk = market === "UK";
   // High OTE: $250K+ in USD terms, which is £200K+ for UK jobs.
   const highOteMin = 250_000;
-  const [newToday, highOte, remoteEnt, state, watch, companies] = await Promise.all([
+  const [newToday, highOte, remoteEnt, state, watch, companies, sponsors] = await Promise.all([
     listJobs({ postedWithinDays: 1, markets }, 6),
     listJobs({ minOte: highOteMin, postedWithinDays: 90, markets }, 6),
     listJobs({ role: "Account Executive", segment: "Enterprise", remote: "Remote", postedWithinDays: 90, markets }, 6),
     getUserState(),
     getActiveWatch(),
     listCompanies(),
+    listRunningSponsors(),
   ]);
   // The owl intro shows until it's closed. While it's up, it stands in for the old "set up a watch" box.
   const showIntro = (await cookies()).get(INTRO_COOKIE)?.value !== "hidden";
@@ -68,6 +71,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
           Set up my watch →
         </Link>
       </div>
+      )}
+
+      {sponsors.length > 0 && (
+        <section className="mt-10 space-y-3 first:mt-0" aria-label="Sponsored jobs">
+          {sponsors.map((s) => (
+            <SponsoredCard key={s.id} s={s} />
+          ))}
+        </section>
       )}
 
       <Section title="New Today" href="/new">

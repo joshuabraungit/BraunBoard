@@ -3,7 +3,7 @@ import "server-only";
 import { adminClient } from "./supabase/admin";
 import { adminEmails } from "./admin-emails";
 import { sendEmail } from "./alerts/email";
-import { formatPrice, SPONSOR_DAYS, type SponsorOrder } from "./sponsor-form";
+import { formatPrice, liveWindow, MAX_LIVE_SPONSORS, payLine, SPONSOR_DAYS, type SponsorOrder } from "./sponsor-form";
 import { isSettled, type CheckoutSession } from "./stripe";
 
 export const LOGO_BUCKET = "sponsor-logos";
@@ -16,6 +16,10 @@ export interface SponsoredJobRow extends SponsorOrder {
   amount_cents: number;
   stripe_session_id: string | null;
   paid_at: string | null;
+  live_at: string | null;
+  ends_at: string | null;
+  views: number;
+  apply_clicks: number;
 }
 
 export async function uploadLogo(orderId: string, file: File): Promise<string> {
@@ -142,4 +146,80 @@ async function sendPaidEmails(o: SponsoredJobRow) {
     owner ? sendEmail(owner, renderOwnerNotice(o, site), { replyTo: o.email }) : null,
     sendEmail(o.email, renderCustomerReceipt(o), { replyTo: owner }),
   ]);
+}
+
+/** Sponsors showing right now, newest first. Never throws: the home page must load regardless. */
+export async function listRunningSponsors(): Promise<SponsoredJobRow[]> {
+  try {
+    const now = new Date().toISOString();
+    const { data } = await adminClient()
+      .from("sponsored_jobs")
+      .select("*")
+      .eq("status", "live")
+      .lte("live_at", now)
+      .gt("ends_at", now)
+      .order("live_at", { ascending: false })
+      .limit(MAX_LIVE_SPONSORS);
+    return (data ?? []) as SponsoredJobRow[];
+  } catch {
+    return [];
+  }
+}
+
+export async function bump(id: string, what: "view" | "apply") {
+  await adminClient().rpc("sponsored_job_bump", { sid: id, what }).then(
+    () => undefined,
+    (e: unknown) => console.error("[sponsor] bump failed", e),
+  );
+}
+
+/** Josh's "Mark live": sets the 30-day window and tells the buyer where to find it. */
+export async function markLive(id: string): Promise<SponsoredJobRow> {
+  const order = await getOrder(id);
+  if (!order) throw new Error("Order not found");
+  if (order.status !== "paid") throw new Error(`Can't go live from ${order.status}`);
+  const { data: booked } = await adminClient()
+    .from("sponsored_jobs")
+    .select("live_at, ends_at")
+    .eq("status", "live")
+    .gt("ends_at", new Date().toISOString());
+  const { data, error } = await adminClient()
+    .from("sponsored_jobs")
+    .update({ status: "live", ...liveWindow(order.start_date, new Date(), (booked ?? []) as { live_at: string; ends_at: string }[]) })
+    .eq("id", id)
+    .eq("status", "paid")
+    .select("*")
+    .single();
+  if (error) throw error;
+  const row = data as SponsoredJobRow;
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://braunboard.com";
+  await sendEmail(row.email, renderLiveEmail(row, site), { replyTo: adminEmails()[0] }).catch((e) =>
+    console.error("[sponsor] live email failed", e),
+  );
+  return row;
+}
+
+const day = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "America/New_York" });
+
+export function renderLiveEmail(o: SponsoredJobRow, siteUrl: string) {
+  const startsLater = o.live_at && new Date(o.live_at) > new Date(Date.now() + 60_000);
+  const subject = startsLater ? `${o.job_title} goes live on Braun Board ${day(o.live_at!)}` : `${o.job_title} is live on Braun Board`;
+  const link = `${siteUrl}/sponsored/${o.id}`;
+  const lines = [
+    `Hi ${o.contact_name.split(" ")[0]},`,
+    startsLater
+      ? `${o.job_title} at ${o.company} is approved. It goes on the Braun Board home page on ${day(o.live_at!)} and stays there through ${day(o.ends_at!)}.`
+      : `${o.job_title} at ${o.company} is now featured at the top of the Braun Board home page. It runs through ${day(o.ends_at!)}.`,
+    `Here's the job page sellers land on: ${link}`,
+    `The LinkedIn post and newsletter send are next. I'll let you know when those go out.`,
+    `Josh`,
+  ];
+  const html = `<!doctype html><html><body style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;background:#faf8f5;padding:24px">
+  <table width="100%" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #eee;border-radius:10px;padding:24px"><tr><td>
+  <div style="font-size:13px;color:#888">Braun Board</div><h1 style="font-size:20px;margin:6px 0 12px">${esc(subject)}</h1>
+  ${lines.map((l) => `<p style="font-size:15px;line-height:1.5;color:#222">${esc(l).replace(esc(link), `<a href="${link}" style="color:#111;font-weight:600">${esc(link)}</a>`)}</p>`).join("")}
+  <p style="font-size:14px;color:#555">${esc(payLine(o))}</p>
+  </td></tr></table></body></html>`;
+  return { subject, html, text: lines.join("\n\n") };
 }

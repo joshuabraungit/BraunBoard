@@ -99,3 +99,57 @@ export function sponsorPriceCents(): number | null {
   const n = Number(process.env.SPONSOR_PRICE_CENTS);
   return Number.isInteger(n) && n >= 100 ? n : null;
 }
+
+export const MAX_LIVE_SPONSORS = 2;
+
+/**
+ * When a sponsorship runs once Josh marks it live: from now, or from the buyer's
+ * preferred start date if that's later (8am ET that day), for SPONSOR_DAYS days.
+ */
+export function liveWindow(
+  startDate: string | null,
+  now = new Date(),
+  booked: { live_at: string; ends_at: string }[] = [],
+): { live_at: string; ends_at: string } {
+  const preferred = startDate ? new Date(`${startDate}T12:00:00Z`) : null;
+  const start = nextOpenSpot(preferred && preferred > now ? preferred : now, booked);
+  const end = new Date(start.getTime() + SPONSOR_DAYS * 86_400_000);
+  return { live_at: start.toISOString(), ends_at: end.toISOString() };
+}
+
+/**
+ * Earliest moment at or after `from` when a new SPONSOR_DAYS run never puts more than
+ * MAX_LIVE_SPONSORS on the page at once. A third sponsor waits for a spot instead of
+ * pushing someone off mid-run, and a sponsor already scheduled for later keeps its slot.
+ */
+export function nextOpenSpot(from: Date, booked: { live_at: string; ends_at: string }[]): Date {
+  const runs = booked.map((b) => ({ start: new Date(b.live_at).getTime(), end: new Date(b.ends_at).getTime() }));
+  const showingAt = (x: number) => runs.filter((r) => r.start <= x && r.end > x);
+  let t = from.getTime();
+  for (let guard = 0; guard < 4 * runs.length + 2; guard++) {
+    const until = t + SPONSOR_DAYS * 86_400_000;
+    // Who's on the page only changes when someone starts, so check our start and every start inside our run.
+    const checks = [t, ...runs.map((r) => r.start).filter((x) => x > t && x < until)];
+    const full = checks.find((x) => showingAt(x).length >= MAX_LIVE_SPONSORS);
+    if (full === undefined) return new Date(t);
+    t = Math.min(...showingAt(full).map((r) => r.end));
+  }
+  return new Date(t);
+}
+
+/** Showing on the site right now. */
+export const isRunning = (s: { status: string; live_at: string | null; ends_at: string | null }, now = new Date()) =>
+  s.status === "live" && !!s.live_at && !!s.ends_at && new Date(s.live_at) <= now && new Date(s.ends_at) > now;
+
+const short = (n: number, cur: string) => {
+  const sym = cur === "GBP" ? "£" : "$";
+  return `${sym}${n % 1000 === 0 ? `${n / 1000}K` : `${Math.round(n / 100) / 10}K`}`;
+};
+const range = (a: number, b: number, cur: string) => (a === b ? short(a, cur) : `${short(a, cur)}–${short(b, cur)}`);
+
+/** "$95K–$110K base · $190K–$220K OTE" (CAD noted at the end). */
+export function payLine(p: { salary_min: number; salary_max: number; ote_min: number | null; ote_max: number | null; currency: string }) {
+  const parts = [`${range(p.salary_min, p.salary_max, p.currency)} base`];
+  if (p.ote_min && p.ote_max) parts.push(`${range(p.ote_min, p.ote_max, p.currency)} OTE`);
+  return parts.join(" · ") + (p.currency === "CAD" ? " CAD" : "");
+}

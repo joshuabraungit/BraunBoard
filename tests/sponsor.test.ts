@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { checkLogo, formatPrice, parseMoney, parseSponsorForm } from "../src/lib/sponsor-form";
+import { checkLogo, formatPrice, isRunning, liveWindow, nextOpenSpot, parseMoney, parseSponsorForm, payLine } from "../src/lib/sponsor-form";
 import { formEncode, isSettled, verifyWebhook } from "../src/lib/stripe";
 
 const good: Record<string, string> = {
@@ -107,5 +107,47 @@ describe("stripe helpers", () => {
   it("formats prices", () => {
     expect(formatPrice(150000)).toBe("$1,500");
     expect(formatPrice(49950)).toBe("$499.50");
+  });
+});
+
+describe("live window", () => {
+  const now = new Date("2026-11-02T15:00:00Z");
+  const day = 86_400_000;
+  const run = (startDays: number) => ({
+    live_at: new Date(now.getTime() + startDays * day).toISOString(),
+    ends_at: new Date(now.getTime() + (startDays + 30) * day).toISOString(),
+  });
+
+  it("starts now for 30 days, or on a later preferred date", () => {
+    expect(liveWindow(null, now)).toEqual({ live_at: now.toISOString(), ends_at: "2026-12-02T15:00:00.000Z" });
+    expect(liveWindow("2026-11-10", now).live_at).toBe("2026-11-10T12:00:00.000Z");
+    expect(liveWindow("2026-10-01", now).live_at).toBe(now.toISOString());
+  });
+
+  it("starts right away when a spot is free", () => {
+    expect(nextOpenSpot(now, [run(-10)]).toISOString()).toBe(now.toISOString());
+  });
+
+  it("waits for the first spot to open when two are showing", () => {
+    const t = nextOpenSpot(now, [run(-10), run(-25)]);
+    expect(t.toISOString()).toBe(run(-25).ends_at);
+  });
+
+  it("doesn't overfill a later slot someone already booked", () => {
+    // One showing now, one booked from day 5. Starting now would make three from day 5 on.
+    const t = nextOpenSpot(now, [run(-10), run(5)]);
+    expect(t.toISOString()).toBe(run(-10).ends_at);
+  });
+
+  it("knows what's running", () => {
+    expect(isRunning({ status: "live", ...run(-1) }, now)).toBe(true);
+    expect(isRunning({ status: "live", ...run(1) }, now)).toBe(false);
+    expect(isRunning({ status: "paid", ...run(-1) }, now)).toBe(false);
+  });
+
+  it("formats pay compactly", () => {
+    expect(payLine({ salary_min: 95000, salary_max: 110000, ote_min: 190000, ote_max: 220000, currency: "USD" })).toBe("$95K–$110K base · $190K–$220K OTE");
+    expect(payLine({ salary_min: 87500, salary_max: 87500, ote_min: null, ote_max: null, currency: "GBP" })).toBe("£87.5K base");
+    expect(payLine({ salary_min: 90000, salary_max: 100000, ote_min: null, ote_max: null, currency: "CAD" })).toBe("$90K–$100K base CAD");
   });
 });
