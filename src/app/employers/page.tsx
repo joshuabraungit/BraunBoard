@@ -47,10 +47,10 @@ const STEPS = [
   ["Then it goes out.", "The LinkedIn post and the newsletter follow."],
 ] as const;
 
-// A real sponsored post, name removed (Josh hasn't asked the company yet). Wording lightly trimmed.
+// Based on a real sponsored post. Reworded so it can't be traced back to the company, same flavor.
 const BEFORE = [
-  "We are an audience research partner for governments, 501(c)(3)s, public affairs teams, and companies that seek reliable research on the communities they serve. We combine curiosity, rigor, and innovative technology to reach everyone from specific communities to the broader public, so leaders can make decisions with confidence.",
-  "We are seeking a full-time Director of Growth to build a top-of-funnel pipeline and manage the full sales cycle. This is a quota-carrying role focused on targeted pipeline and business development, vertical-market specialization, full sales cycle, and consultative relationship ownership.",
+  "We are a trusted research partner for public sector organizations, nonprofits, and mission-driven brands seeking actionable insights into the audiences they serve. Leveraging a blend of curiosity, rigor, and cutting-edge methodology, we empower leaders to make data-driven decisions with confidence.",
+  "We are looking for a full-time Director of Growth to drive top-of-funnel pipeline generation and own the end-to-end sales cycle. This quota-carrying role will focus on strategic business development, vertical-market expertise, and consultative relationship management.",
 ];
 const AFTER = [
   "Governments, nonprofits, and public affairs teams make big decisions about the people they serve. Without good research, they're guessing.",
@@ -64,7 +64,7 @@ function BeforeAfter() {
   return (
     <section className="mt-10">
       <h2 className="text-xl font-bold tracking-tight">Before and after</h2>
-      <p className="mt-1 text-[15px] text-ink-2">A real sponsored post. Name removed, same job.</p>
+      <p className="mt-1 text-[15px] text-ink-2">Based on a real sponsored post. Details changed, same idea.</p>
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <div className="rounded-2xl border border-line bg-bg p-5">
           <p className="text-xs font-bold uppercase tracking-wide text-ink-3">Before</p>
