@@ -3,7 +3,7 @@ import "server-only";
 import { adminClient } from "./supabase/admin";
 import { adminEmails } from "./admin-emails";
 import { sendEmail } from "./alerts/email";
-import { formatPrice, liveWindow, MAX_LIVE_SPONSORS, payLine, SPONSOR_DAYS, type SponsorOrder } from "./sponsor-form";
+import { formatPrice, liveWindow, MAX_LIVE_SPONSORS, payLine, SPONSOR_DAYS, type SponsorEdit, type SponsorOrder } from "./sponsor-form";
 import { getCheckoutSession, getInvoiceLinks, isSettled, refundPayment, type CheckoutSession, type Invoice } from "./stripe";
 
 export const LOGO_BUCKET = "sponsor-logos";
@@ -24,6 +24,12 @@ export interface SponsoredJobRow extends SponsorOrder {
   refunded_at?: string | null;
   stripe_refund_id?: string | null;
   cancel_reason?: string | null;
+}
+
+/** Josh's edits from Admin. Only the words sellers read; pay and dates stay as the buyer sent them. */
+export async function updateSponsorCopy(id: string, edit: SponsorEdit) {
+  const { error } = await adminClient().from("sponsored_jobs").update(edit).eq("id", id);
+  if (error) throw error;
 }
 
 export async function uploadLogo(orderId: string, file: File): Promise<string> {
@@ -106,6 +112,7 @@ export function orderLines(o: SponsoredJobRow): [string, string][] {
     ["Start", o.start_date ?? "As soon as possible"],
     ["Logo", logoUrl(o.logo_path) ?? "None uploaded"],
     ["Paid", formatPrice(o.amount_cents)],
+    ["What they sell", [o.product_short, o.product_story].filter(Boolean).join(" · ") || "Not given"],
     ["Notes", o.notes ?? ""],
   ];
 }
