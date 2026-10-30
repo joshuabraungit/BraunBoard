@@ -2,6 +2,8 @@
 // "What sales job would you actually take?" One question at a time, one form underneath.
 import { useState } from "react";
 import { saveOnboarding } from "@/app/actions";
+import { prefillFromResume } from "./resume-action";
+import type { ResumePrefill } from "@/lib/resume-read";
 import { DEALBREAKER_LABELS, DEALBREAKERS } from "@/lib/match";
 import { SIZE_BUCKETS, SIZE_LABELS, type SizeBucket } from "@/lib/ingest/size";
 import { COUNTRY_CHOICES, MOTION_CHOICES, ROLE_CHOICES, WORK_CHOICES, type OnboardingAnswers, type RoleChoice } from "@/lib/watch-prefs";
@@ -52,6 +54,39 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
   const [breakers, setBreakers] = useState<string[]>(initial?.dealbreakers ?? []);
   const [sizes, setSizes] = useState<SizeBucket[]>(initial?.sizes ?? []);
   const [pending, setPending] = useState(false);
+  const [reading, setReading] = useState(false);
+  const [resumeError, setResumeError] = useState("");
+  const [saw, setSaw] = useState<ResumePrefill["saw"] | null>(null);
+
+  async function readResumeFile(file: File | undefined) {
+    if (!file) return;
+    setResumeError("");
+    setReading(true);
+    const fd = new FormData();
+    fd.append("resume", file);
+    try {
+      const r = await prefillFromResume(fd);
+      if (!r.ok) return setResumeError(r.error);
+      const a = r.prefill.answers;
+      if (a.roles) setRoles(a.roles);
+      if (a.country) {
+        if ((a.country === "UK") !== uk) {
+          setBase("");
+          setOte("");
+        }
+        setCountry(a.country);
+      }
+      if (a.location) setLocation(a.location);
+      if (a.work) setWork(a.work);
+      if (a.motion) setMotion(a.motion);
+      if (a.sizes) setSizes(a.sizes);
+      setSaw(r.prefill.saw);
+    } catch {
+      setResumeError("Something went wrong reading that. You can fill it in below.");
+    } finally {
+      setReading(false);
+    }
+  }
   const uk = country === "UK";
 
   const steps = [
@@ -171,6 +206,45 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
       <div className="mt-2 h-1 rounded-full bg-line">
         <div className="h-1 rounded-full bg-ink transition-all" style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
       </div>
+
+      {step === 0 && (
+        <div className="mt-8 rounded-2xl border border-line bg-surface p-5">
+          {saw ? (
+            <>
+              <p className="font-semibold">Here&apos;s what I picked up from your résumé</p>
+              <ul className="mt-2 space-y-1 text-[15px] text-ink-2">
+                {saw.current_role && <li>Most recent: {saw.current_role}</li>}
+                {saw.years_selling !== null && <li>Years in sales: {saw.years_selling}</li>}
+                {saw.sold_to && <li>Sold to: {saw.sold_to}</li>}
+                {saw.industries && <li>Industries: {saw.industries}</li>}
+              </ul>
+              <p className="mt-3 text-sm text-ink-2">
+                I filled in what I could. Check each step and change anything that&apos;s off. Pay and dealbreakers are up to you.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-semibold">Have a résumé handy? I&apos;ll fill this in for you.</p>
+              <p className="mt-1 text-sm text-ink-2">I read it once to fill in your answers, then it&apos;s gone. It&apos;s never saved.</p>
+              <label className={`mt-4 inline-flex min-h-11 cursor-pointer items-center rounded-lg border border-line-strong bg-bg px-4 text-sm font-semibold hover:border-ink ${reading ? "pointer-events-none opacity-60" : ""}`}>
+                <input
+                  type="file"
+                  accept=".pdf,.txt,application/pdf,text/plain"
+                  className="sr-only"
+                  disabled={reading}
+                  onChange={(e) => {
+                    readResumeFile(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+                {reading ? "Reading your résumé…" : "Upload résumé (PDF)"}
+              </label>
+              <p className="mt-2 text-xs text-ink-3">Using Word? Save it as a PDF first. Or skip this and answer below.</p>
+            </>
+          )}
+          {resumeError && <p className="mt-3 text-sm text-red">{resumeError}</p>}
+        </div>
+      )}
 
       {steps.map((s, i) => (
         // Every step stays mounted so the whole form submits at once; only the current one shows.
