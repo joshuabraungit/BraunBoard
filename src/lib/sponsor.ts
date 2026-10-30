@@ -112,6 +112,7 @@ export function orderLines(o: SponsoredJobRow): [string, string][] {
     ["Start", o.start_date ?? "As soon as possible"],
     ["Logo", logoUrl(o.logo_path) ?? "None uploaded"],
     ["Paid", formatPrice(o.amount_cents)],
+    ["Hit OTE", o.ote_attainment_pct != null ? `${o.ote_attainment_pct}% of ramped reps last year` : "Not given"],
     ["What they sell", [o.product_short, o.product_story].filter(Boolean).join(" · ") || "Not given"],
     ["Notes", o.notes ?? ""],
   ];
