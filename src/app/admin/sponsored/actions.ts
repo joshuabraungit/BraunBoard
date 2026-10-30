@@ -3,9 +3,11 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { adminClient } from "@/lib/supabase/admin";
-import { markLive, resendReceipt } from "@/lib/sponsor";
+import { cancelAndRefund, markLive, resendReceipt } from "@/lib/sponsor";
+import { formatPrice } from "@/lib/sponsor-form";
 
-const STATUSES = ["done", "canceled"] as const;
+// Canceling goes through cancelOrder so it always refunds.
+const STATUSES = ["done"] as const;
 const back = (ok: boolean, msg: string) => redirect(`/admin/sponsored?${ok ? "msg" : "err"}=${encodeURIComponent(msg)}`);
 
 export async function goLive(formData: FormData) {
@@ -49,5 +51,19 @@ export async function sendReceiptAgain(formData: FormData) {
     back(false, e instanceof Error ? e.message : "Couldn't send the receipt.");
     return;
   }
+  back(true, msg);
+}
+
+export async function cancelOrder(formData: FormData) {
+  await requireAdmin();
+  let msg: string;
+  try {
+    const r = await cancelAndRefund(String(formData.get("id")), String(formData.get("reason") ?? ""));
+    msg = r.refunded > 0 ? `Canceled and refunded ${formatPrice(r.refunded)}. ${r.to} got an email.` : `Canceled. Nothing was charged. ${r.to} got an email.`;
+  } catch (e) {
+    back(false, e instanceof Error ? e.message : "Couldn't cancel. Nothing was refunded.");
+    return;
+  }
+  revalidatePath("/");
   back(true, msg);
 }

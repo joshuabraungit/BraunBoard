@@ -4,7 +4,7 @@ import { adminClient } from "./supabase/admin";
 import { adminEmails } from "./admin-emails";
 import { sendEmail } from "./alerts/email";
 import { formatPrice, liveWindow, MAX_LIVE_SPONSORS, payLine, SPONSOR_DAYS, type SponsorOrder } from "./sponsor-form";
-import { getCheckoutSession, getInvoiceLinks, isSettled, type CheckoutSession, type Invoice } from "./stripe";
+import { getCheckoutSession, getInvoiceLinks, isSettled, refundPayment, type CheckoutSession, type Invoice } from "./stripe";
 
 export const LOGO_BUCKET = "sponsor-logos";
 
@@ -20,6 +20,10 @@ export interface SponsoredJobRow extends SponsorOrder {
   ends_at: string | null;
   views: number;
   apply_clicks: number;
+  stripe_payment_intent?: string | null;
+  refunded_at?: string | null;
+  stripe_refund_id?: string | null;
+  cancel_reason?: string | null;
 }
 
 export async function uploadLogo(orderId: string, file: File): Promise<string> {
@@ -266,4 +270,57 @@ export async function resendReceipt(id: string): Promise<{ to: string; invoice: 
   const sent = await sendEmail(o.email, renderCustomerReceipt(o, invoice), { replyTo: adminEmails()[0] });
   if (!sent) throw new Error("Email isn't set up on the site (RESEND_API_KEY), so nothing was sent.");
   return { to: o.email, invoice: !!invoice };
+}
+
+/** Can be canceled with a refund: paid and not yet on the page (approved-but-scheduled counts). */
+export const canRefund = (o: Pick<SponsoredJobRow, "status" | "live_at">, now = new Date()) =>
+  o.status === "paid" || (o.status === "live" && !!o.live_at && new Date(o.live_at) > now);
+
+/**
+ * Admin "Cancel and refund": refunds the full payment in Stripe, marks the order canceled,
+ * and tells the buyer. Refund first, so an order is never marked canceled without its money back.
+ */
+export async function cancelAndRefund(id: string, reason: string | null): Promise<{ to: string; refunded: number }> {
+  const o = await getOrder(id);
+  if (!o) throw new Error("Order not found");
+  if (o.status === "canceled") throw new Error("Already canceled.");
+  if (!canRefund(o)) throw new Error("This one is already on the home page. Take it down first, then refund in Stripe if you want to.");
+
+  let refundId: string | null = null;
+  let refunded = 0;
+  if (o.amount_cents > 0) {
+    const pi = o.stripe_payment_intent ?? (o.stripe_session_id ? (await getCheckoutSession(o.stripe_session_id)).payment_intent : null);
+    if (!pi) throw new Error("Couldn't find the payment in Stripe. Refund it there by hand.");
+    const r = await refundPayment(pi, o.id);
+    refundId = r.id;
+    refunded = r.amount;
+  }
+
+  const why = reason?.trim().slice(0, 500) || null;
+  const { error } = await adminClient()
+    .from("sponsored_jobs")
+    .update({ status: "canceled", refunded_at: new Date().toISOString(), stripe_refund_id: refundId, cancel_reason: why })
+    .eq("id", id);
+  if (error) throw error;
+
+  await sendEmail(o.email, renderRefundEmail(o, refunded, why), { replyTo: adminEmails()[0] }).catch((e) =>
+    console.error("[sponsor] refund email failed", e),
+  );
+  return { to: o.email, refunded };
+}
+
+export function renderRefundEmail(o: SponsoredJobRow, refundedCents: number, reason: string | null) {
+  const subject = `About your Braun Board sponsorship: ${o.job_title}`;
+  const lines = [
+    `Hi ${o.contact_name.trim().split(/\s+/)[0]},`,
+    `Thanks for sponsoring ${o.job_title} at ${o.company}.`,
+    `I can't run this one on Braun Board.${reason ? ` ${reason}` : ""}`,
+    refundedCents > 0
+      ? `I've refunded the full ${formatPrice(refundedCents)}. It usually shows up on your card in 5 to 10 business days.`
+      : `Nothing was charged, so there's nothing to refund.`,
+    `Questions? Just reply. It comes straight to me.`,
+    `Josh`,
+  ];
+  const html = wrap(subject, lines.map((l) => `<p style="font-size:15px;line-height:1.5;color:#222;margin:0 0 14px">${esc(l)}</p>`).join(""));
+  return { subject, html, text: lines.join("\n\n") };
 }

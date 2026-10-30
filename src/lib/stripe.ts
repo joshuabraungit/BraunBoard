@@ -32,7 +32,10 @@ export function formEncode(obj: Record<string, unknown>, prefix = ""): string[] 
   return out;
 }
 
-async function stripe<T>(path: string, init: { method: "GET" | "POST"; body?: Record<string, unknown> }): Promise<T> {
+async function stripe<T>(
+  path: string,
+  init: { method: "GET" | "POST"; body?: Record<string, unknown>; idempotencyKey?: string },
+): Promise<T> {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY is not set");
   const res = await fetch(`https://api.stripe.com/v1/${path}`, {
@@ -41,6 +44,7 @@ async function stripe<T>(path: string, init: { method: "GET" | "POST"; body?: Re
       Authorization: `Bearer ${key}`,
       "Content-Type": "application/x-www-form-urlencoded",
       "Stripe-Version": STRIPE_VERSION,
+      ...(init.idempotencyKey ? { "Idempotency-Key": init.idempotencyKey } : {}),
     },
     body: init.body ? formEncode(init.body).join("&") : undefined,
     cache: "no-store",
@@ -105,6 +109,17 @@ export async function getInvoiceLinks(id: string | null | undefined, tries = 3):
   }
   return null;
 }
+
+/**
+ * Full refund of a payment. The idempotency key means a double click (or a retry)
+ * can never refund twice: Stripe returns the first refund instead.
+ */
+export const refundPayment = (paymentIntent: string, orderId: string) =>
+  stripe<{ id: string; status: string; amount: number }>("refunds", {
+    method: "POST",
+    body: { payment_intent: paymentIntent, reason: "requested_by_customer", metadata: { sponsored_job_id: orderId } },
+    idempotencyKey: `sponsor-refund-${orderId}`,
+  });
 
 /** Paid, or fully covered by a promo code (Stripe reports that as "no_payment_required"). */
 export const isSettled = (s: Pick<CheckoutSession, "status" | "payment_status">) =>
