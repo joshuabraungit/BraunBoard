@@ -44,10 +44,24 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<R
               </Link>
             ))}
           <Link href={`/for-you?edit${watch.id ? `&watch=${watch.id}` : ""}`} className="rounded-full border border-line-strong bg-surface px-3 py-1.5">
+            Upload résumé
+          </Link>
+          <Link href={`/for-you?edit${watch.id ? `&watch=${watch.id}` : ""}`} className="rounded-full border border-line-strong bg-surface px-3 py-1.5">
             Edit preferences
           </Link>
         </div>
       </div>
+
+      {!watch.prefs.experience?.length && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3">
+          <p className="text-sm">
+            <span className="font-semibold">New:</span> upload your résumé and jobs selling to buyers you already know will rank higher.
+          </p>
+          <Link href={`/for-you?edit${watch.id ? `&watch=${watch.id}` : ""}`} className="rounded-lg bg-ink px-3.5 py-2 text-sm font-semibold text-white">
+            Upload résumé →
+          </Link>
+        </div>
+      )}
 
       {!state.signedIn && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent-soft px-4 py-3">
