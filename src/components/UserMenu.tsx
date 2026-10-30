@@ -5,17 +5,22 @@ import { isAdmin } from "@/lib/admin";
 
 export async function UserMenu() {
   const user = await getUser();
-  // "Ask Josh" sits by Sign in, where there's room on every screen size (the main menu scrolls off on phones).
+  // "Employers" and "Ask Josh" sit by Sign in, where there's room on every screen size (the main menu scrolls off on phones).
   const ask = (
-    <Link href="/ask" className="whitespace-nowrap rounded-md px-2.5 py-1.5 font-semibold text-accent hover:bg-surface">
-      Ask Josh
-    </Link>
+    <>
+      <Link href="/sponsor" className="whitespace-nowrap rounded-md px-1.5 py-1.5 text-ink-2 hover:bg-surface hover:text-ink sm:px-2.5">
+        Employers
+      </Link>
+      <Link href="/ask" className="whitespace-nowrap rounded-md px-1.5 py-1.5 font-semibold text-accent hover:bg-surface sm:px-2.5">
+        Ask Josh
+      </Link>
+    </>
   );
   if (!user) {
     return (
-      <div className="ml-auto flex shrink-0 items-center gap-1 text-sm">
+      <div className="ml-auto flex shrink-0 items-center gap-0 text-sm sm:gap-1">
         {ask}
-        <Link href="/login" className="rounded-md px-2.5 py-1.5 font-semibold hover:bg-surface">
+        <Link href="/login" className="whitespace-nowrap rounded-md px-1.5 py-1.5 font-semibold hover:bg-surface sm:px-2.5">
           Sign in
         </Link>
       </div>
