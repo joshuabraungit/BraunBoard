@@ -68,13 +68,16 @@ export async function readResume(input: { pdf: Buffer } | { text: string }, key 
     headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify({
       model: process.env.EXTRACTION_MODEL ?? "claude-haiku-5-5",
-      max_tokens: 800,
+      max_tokens: 2000,
       system: SYSTEM,
       messages: [{ role: "user", content }],
     }),
   });
   if (!res.ok) throw new Error(`Anthropic ${res.status}`);
-  const data = (await res.json()) as { content: { type: string; text?: string }[] };
+  const data = (await res.json()) as { content: { type: string; text?: string }[]; stop_reason?: string; model?: string };
   const text = data.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("");
+  if (!text.includes("{"))
+    // Shape only, never résumé contents, so the log says why without leaking anything.
+    throw new Error(`No JSON in reply (model=${data.model}, stop=${data.stop_reason}, blocks=${data.content.map((c) => c.type).join(",")}, chars=${text.length})`);
   return cleanPrefill((firstJsonObject(text) ?? {}) as Record<string, unknown>);
 }
