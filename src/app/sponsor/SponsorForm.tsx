@@ -90,7 +90,7 @@ export function SponsorForm({ price, canceled }: { price: string; canceled: bool
         <Field name="company" label="Company" error={e.company}>
           <input id="company" name="company" defaultValue={v.company} required autoComplete="organization" className={input} {...err("company")} />
         </Field>
-        <Field name="logo" label="Company logo" hint="Optional. PNG, JPG, WebP or SVG, up to 2MB. Square works best." error={e.logo}>
+        <Field name="logo" label="Company logo" hint="Optional. Square, 400 × 400 px or larger (200 × 200 minimum). A PNG or SVG with a transparent background looks best. JPG and WebP work too. Up to 2MB." error={e.logo}>
           <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-line-strong bg-bg px-3 py-3 text-sm hover:bg-surface">
             <span className="rounded-md bg-surface px-2.5 py-1 font-semibold ring-1 ring-line">Choose file</span>
             <span className="truncate text-ink-2">{logoName || "No file chosen"}</span>
