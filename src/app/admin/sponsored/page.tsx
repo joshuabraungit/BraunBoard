@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/admin";
 import { AdminNotice } from "@/components/AdminNotice";
 import { orderLines, type SponsoredJobRow } from "@/lib/sponsor";
 import { isRunning } from "@/lib/sponsor-form";
-import { goLive, setSponsoredStatus } from "./actions";
+import { goLive, sendReceiptAgain, setSponsoredStatus } from "./actions";
 
 const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" });
 
@@ -112,6 +112,12 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                         <button className="rounded-md border border-line-strong bg-surface px-3 py-1.5 text-sm font-semibold">
                           {st === "ended" ? "Mark done" : "Take down now"}
                         </button>
+                      </form>
+                    )}
+                    {["paid", "live", "done"].includes(r.status) && (
+                      <form action={sendReceiptAgain}>
+                        <input type="hidden" name="id" value={r.id} />
+                        <button className="rounded-md border border-line-strong bg-surface px-3 py-1.5 text-sm">Resend receipt</button>
                       </form>
                     )}
                     {st === "approve" && (
