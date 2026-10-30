@@ -31,7 +31,7 @@ export function FounderLetter() {
           <p>Yet half the time you can&apos;t figure out what a company sells, even after reading the posting twice.</p>
           <p>That&apos;s why I built Braun Board.</p>
           <p>
-            You can <Link href="/products" className="underline decoration-line-strong underline-offset-2 hover:decoration-ink">shop by product</Link>, not just title. Every company gets a short note on what it sells, in plain English. So you ask
+            You can <Link href="/products" className="underline decoration-line-strong underline-offset-2 hover:decoration-ink">see what you&apos;d sell</Link>, not just the title. Every company gets a short note on what it sells, in plain English. So you ask
             the most important question first: would I be excited to sell this?
           </p>
           <p>
