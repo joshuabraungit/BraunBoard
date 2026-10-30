@@ -29,7 +29,7 @@ const schema = z
     email: z.string().trim().toLowerCase().pipe(z.email("That email doesn't look right")),
     job_title: text(140),
     job_url: z.string().trim().pipe(z.url({ protocol: /^https?$/, error: "Paste the full link, starting with https://" })),
-    description: text(3000),
+    description: text(10000),
     salary_min: money,
     salary_max: money,
     ote_min: money,
@@ -167,7 +167,7 @@ export function payLine(p: { salary_min: number; salary_max: number; ote_min: nu
 const editSchema = z.object({
   job_title: text(140),
   job_url: z.string().trim().pipe(z.url({ protocol: /^https?$/, error: "Paste the full link, starting with https://" })),
-  description: text(3000),
+  description: text(10000),
   product_short: z.string().trim().max(80, "Keep it under 80 characters").transform((v) => v || null),
   product_story: z.string().trim().max(500, "Keep it under 500 characters").transform((v) => v || null),
   ote_attainment_pct: z
