@@ -4,7 +4,7 @@ import { adminClient } from "./supabase/admin";
 import { adminEmails } from "./admin-emails";
 import { sendEmail } from "./alerts/email";
 import { formatPrice, SPONSOR_DAYS, type SponsorOrder } from "./sponsor-form";
-import type { CheckoutSession } from "./stripe";
+import { isSettled, type CheckoutSession } from "./stripe";
 
 export const LOGO_BUCKET = "sponsor-logos";
 
@@ -62,7 +62,7 @@ export async function getOrder(id: string): Promise<SponsoredJobRow | null> {
  */
 export async function markPaid(session: CheckoutSession): Promise<SponsoredJobRow | null> {
   const orderId = session.client_reference_id ?? session.metadata?.sponsored_job_id;
-  if (!orderId || session.payment_status !== "paid") return null;
+  if (!orderId || !isSettled(session)) return null;
   const { data, error } = await adminClient()
     .from("sponsored_jobs")
     .update({

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getCheckoutSession } from "@/lib/stripe";
+import { getCheckoutSession, isSettled } from "@/lib/stripe";
 import { markPaid } from "@/lib/sponsor";
 import { SPONSOR_DAYS } from "@/lib/sponsor-form";
 
@@ -12,7 +12,7 @@ export default async function SponsorThanks({ searchParams }: { searchParams: Pr
   // Confirm with Stripe directly. The webhook does the same; whichever lands first wins.
   const session = session_id?.startsWith("cs_") ? await getCheckoutSession(session_id).catch(() => null) : null;
   const order = session ? await markPaid(session).catch(() => null) : null;
-  const paid = session?.payment_status === "paid";
+  const paid = !!session && isSettled(session);
 
   return (
     <div className="mx-auto max-w-xl py-6">

@@ -1,7 +1,7 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { checkLogo, formatPrice, parseMoney, parseSponsorForm } from "../src/lib/sponsor-form";
-import { formEncode, verifyWebhook } from "../src/lib/stripe";
+import { formEncode, isSettled, verifyWebhook } from "../src/lib/stripe";
 
 const good: Record<string, string> = {
   company: "Acme",
@@ -95,6 +95,13 @@ describe("stripe helpers", () => {
     expect(verifyWebhook(body + " ", `t=${t},v1=${sig}`, secret, t)).toBeNull();
     expect(verifyWebhook(body, `t=${t},v1=${sig}`, secret, t + 3600)).toBeNull();
     expect(verifyWebhook(body, null, secret, t)).toBeNull();
+  });
+
+  it("treats paid and fully discounted sessions as settled", () => {
+    expect(isSettled({ status: "complete", payment_status: "paid" })).toBe(true);
+    expect(isSettled({ status: "complete", payment_status: "no_payment_required" })).toBe(true);
+    expect(isSettled({ status: "complete", payment_status: "unpaid" })).toBe(false);
+    expect(isSettled({ status: "open", payment_status: "no_payment_required" })).toBe(false);
   });
 
   it("formats prices", () => {

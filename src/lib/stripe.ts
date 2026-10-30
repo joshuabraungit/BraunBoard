@@ -82,6 +82,10 @@ export function createCheckoutSession(p: {
   });
 }
 
+/** Paid, or fully covered by a promo code (Stripe reports that as "no_payment_required"). */
+export const isSettled = (s: Pick<CheckoutSession, "status" | "payment_status">) =>
+  s.status === "complete" && (s.payment_status === "paid" || s.payment_status === "no_payment_required");
+
 export const getCheckoutSession = (id: string) => stripe<CheckoutSession>(`checkout/sessions/${encodeURIComponent(id)}`, { method: "GET" });
 
 /**
