@@ -100,7 +100,7 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                           [
                             ["job_title", "Job title", r.job_title, 140, 1],
                             ["job_url", "Link to apply", r.job_url, 2000, 1],
-                            ["description", "Description (the card shows about 3 lines)", r.description, 3000, 6],
+                            ["description", "Description (the card shows about 3 lines)", r.description, 10000, 8],
                             ["product_short", "What they sell: headline (4 to 8 words)", r.product_short ?? "", 80, 1],
                             ["product_story", "What they sell: story (2 to 4 sentences, under 60 words)", r.product_story ?? "", 500, 3],
                             ["ote_attainment_pct", "% of ramped reps who hit OTE last year (blank = not shared)", r.ote_attainment_pct?.toString() ?? "", 4, 1],

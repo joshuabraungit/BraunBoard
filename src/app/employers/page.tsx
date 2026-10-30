@@ -36,7 +36,7 @@ const GET = [
 const STEPS = [
   [
     "Tell me about the job.",
-    "Takes about five minutes. Then pay. There's one optional question most job boards never ask: what percentage of your ramped reps hit OTE last year? If your number's good, show it off. If you don't track it, skip it. Nothing shows, and nothing says it's missing.",
+    "Paste in your job description and a few details. Takes about five minutes. Then pay. There's one optional question most job boards never ask: what percentage of your ramped reps hit OTE last year? If your number's good, show it off. If you don't track it, skip it. Nothing shows, and nothing says it's missing.",
   ],
   ["I read it.", "Usually within one business day."],
   [

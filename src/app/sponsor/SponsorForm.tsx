@@ -114,8 +114,13 @@ export function SponsorForm({ price, canceled }: { price: string; canceled: bool
         <Field name="job_url" label="Link to apply" hint="Your careers page or ATS posting." error={e.job_url}>
           <input id="job_url" name="job_url" type="url" defaultValue={v.job_url} required placeholder="https://" className={input} {...err("job_url")} />
         </Field>
-        <Field name="description" label="What makes this job worth a look?" hint="A few sentences: who they sell to, deal size, territory, what ramp looks like. This is what readers see." error={e.description}>
-          <textarea id="description" name="description" defaultValue={v.description} required rows={5} maxLength={3000} className={input} {...err("description")} />
+        <Field
+          name="description"
+          label="Paste in your job description"
+          hint="Don't polish it. I'll rewrite it in plain English, plus a line about what you sell, and send it to you for approval."
+          error={e.description}
+        >
+          <textarea id="description" name="description" defaultValue={v.description} required rows={8} maxLength={10000} className={input} {...err("description")} />
         </Field>
 
         <div>
@@ -187,28 +192,6 @@ export function SponsorForm({ price, canceled }: { price: string; canceled: bool
             />
           </Field>
         </div>
-      </fieldset>
-
-      <fieldset className="space-y-4">
-        <legend className="mb-1 text-lg font-bold tracking-tight">What you sell, in plain English</legend>
-        <p className="!mt-0 text-sm text-ink-2">
-          Optional, but it&apos;s what makes sellers want the job. Write it like you&apos;re explaining it to a friend: the customer&apos;s problem, what you do about it,
-          what changes. No buzzwords.
-        </p>
-        <div className="rounded-lg border border-line bg-bg px-4 py-3 text-sm text-ink-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-3">Example</p>
-          <p className="mt-1 font-semibold text-ink">Texts and emails picked for each shopper</p>
-          <p className="mt-0.5">
-            A clothing brand sends the same email to everyone, and most people ignore it. Acme looks at what each shopper browsed and sends them the
-            things they actually want. More people open, click and buy.
-          </p>
-        </div>
-        <Field name="product_short" label="Headline" hint="4 to 8 words." error={e.product_short}>
-          <input id="product_short" name="product_short" defaultValue={v.product_short} maxLength={80} className={input} {...err("product_short")} />
-        </Field>
-        <Field name="product_story" label="The short story" hint="2 to 4 sentences, under 60 words." error={e.product_story}>
-          <textarea id="product_story" name="product_story" defaultValue={v.product_story} rows={3} maxLength={500} className={input} {...err("product_story")} />
-        </Field>
       </fieldset>
 
       <fieldset className="space-y-4">
