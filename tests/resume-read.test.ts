@@ -51,3 +51,35 @@ describe("readResume", () => {
     expect(r.saw.current_role).toBe("SDR at Acme");
   });
 });
+
+describe("experience matching", () => {
+  it("turns what they sold into matching words, skipping role words", async () => {
+    const { experienceTerms } = await import("../src/lib/match");
+    expect(experienceTerms("Restaurant owners; logistics, operations leaders")).toEqual(["restaurant", "logistic", "operation"]);
+    expect(experienceTerms("VP of Sales, B2B SaaS")).toEqual(["sale"]);
+  });
+  it("boosts jobs selling to the same buyers and never penalizes others", async () => {
+    const { experienceTerms, scoreMatch } = await import("../src/lib/match");
+    const prefs = { role_families: ["Account Executive"], segments: [], motions: [], remote_types: [], locations: [], keywords: [], min_base: null, min_ote: null, dealbreakers: [], experience: experienceTerms("restaurant owners") } as never;
+    const base = { title_raw: "AE", role_family: "Account Executive", sales_segment: "SMB", sales_motion: "New Logo", self_sourcing_level: "Unknown", remote_type: "Remote", city: null, state: null, salary_min: null, salary_max: null, ote_min: null, ote_max: null, description_raw: "" } as never;
+    const toast = scoreMatch({ ...(base as object), buyer: "Restaurant owners and restaurateurs", industry: "Restaurants" } as never, prefs);
+    const other = scoreMatch({ ...(base as object), buyer: "CTOs", industry: "Cloud" } as never, prefs);
+    const unknown = scoreMatch(base, prefs);
+    expect(toast.checks.some((c) => c.key === "experience" && c.result === "pass")).toBe(true);
+    expect(other.checks.some((c) => c.key === "experience")).toBe(false);
+    expect(other.score).toBe(unknown.score);
+    expect(toast.score).toBeGreaterThanOrEqual(other.score!);
+  });
+});
+
+describe("ranking with experience", () => {
+  it("puts jobs selling to their buyers first when scores tie", async () => {
+    const { rankForWatch } = await import("../src/lib/matching");
+    const { experienceTerms } = await import("../src/lib/match");
+    const prefs = { role_families: ["Account Executive"], segments: [], motions: [], remote_types: [], locations: [], keywords: [], min_base: null, min_ote: null, dealbreakers: [], experience: experienceTerms("restaurant owners") } as never;
+    const job = (id: string, buyer: string, seen: string) =>
+      ({ id, title_raw: "AE", role_family: "Account Executive", sales_segment: "SMB", sales_motion: "New Logo", self_sourcing_level: "Unknown", remote_type: "Remote", city: null, state: null, salary_min: null, salary_max: null, ote_min: null, ote_max: null, description_raw: "", buyer, industry: null, first_seen_at: seen, markets: ["US"] }) as never;
+    const r = rankForWatch([job("cloud", "CTOs", "2026-10-30"), job("toast", "Restaurant owners", "2026-10-01")], prefs);
+    expect(r.jobs.map((j) => j.id)).toEqual(["toast", "cloud"]);
+  });
+});

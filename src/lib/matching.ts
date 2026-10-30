@@ -25,6 +25,11 @@ export function rankForWatch(jobs: JobView[], prefs: WatchPrefs, hidden: Set<str
     matches.set(j.id, m);
     kept.push(j);
   }
-  kept.sort((a, b) => matches.get(b.id)!.score! - matches.get(a.id)!.score! || b.first_seen_at.localeCompare(a.first_seen_at));
+  // Same score: jobs selling to buyers they've sold to before come first, then newest.
+  const knows = (id: string) => (matches.get(id)!.checks.some((c) => c.key === "experience") ? 1 : 0);
+  kept.sort(
+    (a, b) =>
+      matches.get(b.id)!.score! - matches.get(a.id)!.score! || knows(b.id) - knows(a.id) || b.first_seen_at.localeCompare(a.first_seen_at),
+  );
   return { jobs: kept, matches, blocked };
 }

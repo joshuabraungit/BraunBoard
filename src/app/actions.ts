@@ -49,6 +49,7 @@ export async function saveOnboarding(formData: FormData) {
     motion: formData.get("motion") ?? "either",
     dealbreakers: formData.getAll("dealbreakers"),
     sizes: formData.getAll("sizes"),
+    sold_to: String(formData.get("sold_to") ?? "").slice(0, 160),
   });
   const stored: StoredWatch = { name: defaultWatchName(answers), answers, prefs: answersToPrefs(answers) };
 

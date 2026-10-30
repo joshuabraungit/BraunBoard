@@ -8,7 +8,7 @@ export async function matchNewJobs(db: SupabaseClient, jobIds: string[]): Promis
   const { data: jobs } = await db
     .from("jobs")
     .select(
-      "id, company_id, title_raw, role_family, sales_segment, sales_motion, self_sourcing_level, remote_type, city, state, salary_min, salary_max, ote_min, ote_max, currency, markets, description_raw, companies(employee_range, size_bucket)",
+      "id, company_id, title_raw, role_family, sales_segment, sales_motion, self_sourcing_level, remote_type, city, state, salary_min, salary_max, ote_min, ote_max, currency, markets, description_raw, buyer, industry, companies(employee_range, size_bucket)",
     )
     .in("id", jobIds);
   if (!jobs?.length) return 0;

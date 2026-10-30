@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import { GBP_TO_USD } from "./ingest/compensation";
-import { DEALBREAKERS, type WatchPrefs } from "./match";
+import { DEALBREAKERS, experienceTerms, type WatchPrefs } from "./match";
 import { SIZE_BUCKETS, SIZE_LABELS } from "./ingest/size";
 import { REMOTE_TYPES, ROLE_FAMILIES, SALES_MOTIONS, SALES_SEGMENTS, type RoleFamily, type SalesSegment } from "./ingest/types";
 
@@ -36,6 +36,8 @@ export const OnboardingAnswers = z.object({
   motion: z.enum(["new", "expansion", "either"]),
   dealbreakers: z.array(z.enum(DEALBREAKERS)).default([]),
   sizes: z.array(z.enum(SIZE_BUCKETS)).default([]),
+  /** Who they've sold to and in what industries, in their words. */
+  sold_to: z.string().max(160).default(""),
 });
 export type OnboardingAnswers = z.infer<typeof OnboardingAnswers>;
 
@@ -55,6 +57,7 @@ export const StoredWatch = z.object({
     dealbreakers: z.array(z.enum(DEALBREAKERS)),
     countries: z.array(z.enum(["US", "CA", "UK"])).optional(),
     company_sizes: z.array(z.enum(SIZE_BUCKETS)).optional(),
+    experience: z.array(z.string()).optional(),
   }),
 });
 export type StoredWatch = z.infer<typeof StoredWatch>;
@@ -88,6 +91,7 @@ export function answersToPrefs(a: OnboardingAnswers): WatchPrefs {
     dealbreakers: a.dealbreakers,
     countries: a.country === "both" ? ["US", "CA"] : [a.country],
     company_sizes: a.sizes,
+    experience: experienceTerms(a.sold_to ?? ""),
   };
 }
 
@@ -130,5 +134,6 @@ export function rowToPrefs(r: Record<string, unknown>): WatchPrefs {
     dealbreakers: (r.dealbreakers as string[] | undefined)?.filter((d) => (DEALBREAKERS as readonly string[]).includes(d)) ?? [],
     countries: (r.countries as string[] | undefined)?.length ? r.countries : ["US"],
     company_sizes: ((r.company_sizes as string[] | undefined) ?? []).filter((s) => (SIZE_BUCKETS as readonly string[]).includes(s)),
+    experience: ((r.experience as string[] | undefined) ?? []).filter((s) => typeof s === "string"),
   });
 }

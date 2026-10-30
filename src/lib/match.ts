@@ -21,6 +21,30 @@ export interface WatchPrefs {
   countries?: ("US" | "CA" | "UK")[];
   /** Company sizes they want ("startup", "growth", "large", "enterprise"). Empty or missing = any size. */
   company_sizes?: SizeBucket[];
+  /** Words for who they've sold to, like ["restaurant", "logistic"]. Only ever boosts a match. */
+  experience?: string[];
+}
+
+// Role words say nothing about the market ("operations leaders" vs "finance leaders"), so they never match.
+const GENERIC = new Set(
+  "and the with from into for other various including like their them who sold selling sell to of in at a an b2b saas software technology tech leader team owner manager executive director head buyer decision maker company business enterprise small medium large mid market midmarket organization people customer client professional user department firm industry vp".split(" "),
+);
+
+/** "Restaurant owners; logistics" -> ["restaurant", "logistic"] */
+export function experienceTerms(text: string): string[] {
+  const words = text
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .map((w) => (w.length > 4 && w.endsWith("s") ? w.slice(0, -1) : w))
+    .filter((w) => w.length >= 3 && !GENERIC.has(w));
+  return [...new Set(words)].slice(0, 20);
+}
+
+/** Does the job sell to the same buyers or industries the rep has? */
+export function sharesExperience(job: { buyer?: string | null; industry?: string | null }, terms: string[] | undefined): boolean {
+  if (!terms?.length) return false;
+  const jobTerms = experienceTerms(`${job.buyer ?? ""} ${job.industry ?? ""}`);
+  return jobTerms.some((t) => terms.includes(t));
 }
 
 export const DEALBREAKERS = [
@@ -63,6 +87,9 @@ export interface MatchableJob {
   company_size?: string | null;
   currency?: string | null;
   markets?: string[] | null;
+  /** Who the job sells to and in what industry, when we know. */
+  buyer?: string | null;
+  industry?: string | null;
 }
 
 /** Is the job open where this person can work? */
@@ -82,7 +109,7 @@ export function fitsSize(job: { company_size?: string | null }, prefs: Pick<Watc
 
 export type CheckResult = "pass" | "fail" | "unknown";
 export interface MatchCheck {
-  key: "role" | "compensation" | "remote" | "location" | "segment" | "motion" | "keyword";
+  key: "role" | "compensation" | "remote" | "location" | "segment" | "motion" | "keyword" | "experience";
   label: string;
   result: CheckResult;
 }
@@ -100,6 +127,7 @@ const WEIGHTS: Record<MatchCheck["key"], number> = {
   segment: 12,
   motion: 8,
   keyword: 10,
+  experience: 10,
 };
 
 const SMALL_COMPANY = /^(1-10|2-10|11-50|1-50)$/;
@@ -189,6 +217,9 @@ export function scoreMatch(job: MatchableJob, prefs: WatchPrefs): MatchResult {
       result: prefs.keywords.some((k) => hay.includes(k.toLowerCase())) ? "pass" : "fail",
     });
   }
+
+  // Selling to buyers they already know is a plus. Not matching is never held against a job.
+  if (sharesExperience(job, prefs.experience)) checks.push({ key: "experience", label: "Your buyers", result: "pass" });
 
   if (blocked) return { score: null, checks, blocked_by: blocked };
 

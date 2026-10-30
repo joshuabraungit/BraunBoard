@@ -53,6 +53,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
   const [motion, setMotion] = useState<OnboardingAnswers["motion"]>(initial?.motion ?? "either");
   const [breakers, setBreakers] = useState<string[]>(initial?.dealbreakers ?? []);
   const [sizes, setSizes] = useState<SizeBucket[]>(initial?.sizes ?? []);
+  const [soldTo, setSoldTo] = useState(initial?.sold_to ?? "");
   const [pending, setPending] = useState(false);
   const [reading, setReading] = useState(false);
   const [resumeError, setResumeError] = useState("");
@@ -80,7 +81,10 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
       if (a.work) setWork(a.work);
       if (a.motion) setMotion(a.motion);
       if (a.sizes) setSizes(a.sizes);
-      setSaw(r.prefill.saw);
+      const s = r.prefill.saw;
+      const exp = [s.sold_to, s.industries].filter(Boolean).join("; ");
+      if (exp) setSoldTo(exp.slice(0, 160));
+      setSaw(s);
     } catch {
       setResumeError("Something went wrong reading that. You can fill it in below.");
     } finally {
@@ -164,6 +168,21 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
             </Chip>
           ))}
         </div>
+      ),
+      ok: true,
+    },
+    {
+      q: "Who have you sold to?",
+      hint: "Optional. Jobs selling to the same buyers or industries rank higher. Nothing gets hidden.",
+      body: (
+        <input
+          name="sold_to"
+          value={soldTo}
+          maxLength={160}
+          onChange={(e) => setSoldTo(e.target.value)}
+          placeholder="Restaurant owners; logistics; finance teams"
+          className="w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm"
+        />
       ),
       ok: true,
     },
