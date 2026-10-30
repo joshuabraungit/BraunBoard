@@ -47,6 +47,52 @@ const STEPS = [
   ["Then it goes out.", "The LinkedIn post and the newsletter follow."],
 ] as const;
 
+// A real sponsored post, name removed (Josh hasn't asked the company yet). Wording lightly trimmed.
+const BEFORE = [
+  "We are an audience research partner for governments, 501(c)(3)s, public affairs teams, and companies that seek reliable research on the communities they serve. We combine curiosity, rigor, and innovative technology to reach everyone from specific communities to the broader public, so leaders can make decisions with confidence.",
+  "We are seeking a full-time Director of Growth to build a top-of-funnel pipeline and manage the full sales cycle. This is a quota-carrying role focused on targeted pipeline and business development, vertical-market specialization, full sales cycle, and consultative relationship ownership.",
+];
+const AFTER = [
+  "Governments, nonprofits, and public affairs teams make big decisions about the people they serve. Without good research, they're guessing.",
+  "We help them find out what people actually think.",
+  "We need someone to bring in new customers. That's you.",
+  "You'll focus on one kind of customer, like city governments or nonprofits. You'll start the conversations, run each deal from first call to signed contract, and stay close after the sale.",
+  "It's a quota-carrying role on a small, fully remote team.",
+];
+
+function BeforeAfter() {
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-bold tracking-tight">Before and after</h2>
+      <p className="mt-1 text-[15px] text-ink-2">A real sponsored post. Name removed, same job.</p>
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-line bg-bg p-5">
+          <p className="text-xs font-bold uppercase tracking-wide text-ink-3">Before</p>
+          <div className="mt-3 space-y-3 text-[15px] leading-relaxed text-ink-2">
+            {BEFORE.map((t) => (
+              <p key={t}>{t}</p>
+            ))}
+          </div>
+          <p className="mt-4 text-sm text-ink-3">Accurate. Also on every job post. A seller can&apos;t tell what they&apos;d sell or who they&apos;d call.</p>
+        </div>
+        <div className="rounded-2xl border-[1.5px] border-amber/40 bg-surface p-5">
+          <p className="text-xs font-bold uppercase tracking-wide text-accent">After</p>
+          <p className="mt-3 text-sm">
+            <span className="text-ink-3">What they sell: </span>
+            <span className="font-semibold">Surveys that show what a whole community thinks</span>
+          </p>
+          <div className="mt-3 space-y-3 text-[15px] leading-relaxed text-ink">
+            {AFTER.map((t) => (
+              <p key={t}>{t}</p>
+            ))}
+          </div>
+          <p className="mt-4 text-sm text-ink-3">Problem first. Plain words. Then where the seller fits in.</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function List({ items }: { items: readonly (readonly [string, string])[] }) {
   return (
     <ul className="mt-4 space-y-3 text-[15px] leading-relaxed">
@@ -117,6 +163,8 @@ export default function EmployersPage() {
           ))}
         </ol>
       </section>
+
+      <BeforeAfter />
 
       <section className="mt-10 rounded-2xl border border-line bg-surface p-5 sm:p-6">
         <h2 className="text-xl font-bold tracking-tight">What it costs</h2>
