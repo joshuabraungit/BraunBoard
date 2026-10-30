@@ -44,6 +44,13 @@ const schema = z
       .transform((v) => v || null)
       .refine((v) => v === null || /^\d{4}-\d{2}-\d{2}$/.test(v), "Pick a date"),
     notes: z.string().trim().max(1000).optional().transform((v) => v || null),
+    ote_attainment_pct: z
+      .string()
+      .trim()
+      .optional()
+      .transform((v) => (v ? v.replace(/%/g, "").trim() : ""))
+      .refine((v) => v === "" || (/^\d{1,3}$/.test(v) && Number(v) <= 100), "Use a number from 0 to 100")
+      .transform((v) => (v === "" ? null : Number(v))),
     product_short: z.string().trim().max(80, "Keep it under 80 characters").optional().transform((v) => v || null),
     product_story: z.string().trim().max(500, "Keep it under 500 characters").optional().transform((v) => v || null),
     sales_role: z.literal("yes", { error: "Sponsored jobs have to be sales roles" }),
@@ -163,11 +170,18 @@ const editSchema = z.object({
   description: text(3000),
   product_short: z.string().trim().max(80, "Keep it under 80 characters").transform((v) => v || null),
   product_story: z.string().trim().max(500, "Keep it under 500 characters").transform((v) => v || null),
+  ote_attainment_pct: z
+      .string()
+      .trim()
+      .optional()
+      .transform((v) => (v ? v.replace(/%/g, "").trim() : ""))
+      .refine((v) => v === "" || (/^\d{1,3}$/.test(v) && Number(v) <= 100), "Use a number from 0 to 100")
+      .transform((v) => (v === "" ? null : Number(v))),
 });
 export type SponsorEdit = z.output<typeof editSchema>;
 
 export function parseSponsorEdit(fd: FormData): { ok: true; edit: SponsorEdit } | { ok: false; error: string } {
-  const raw = Object.fromEntries(["job_title", "job_url", "description", "product_short", "product_story"].map((k) => [k, String(fd.get(k) ?? "")]));
+  const raw = Object.fromEntries(["job_title", "job_url", "description", "product_short", "product_story", "ote_attainment_pct"].map((k) => [k, String(fd.get(k) ?? "")]));
   const r = editSchema.safeParse(raw);
   if (!r.success) {
     const i = r.error.issues[0];
@@ -175,3 +189,7 @@ export function parseSponsorEdit(fd: FormData): { ok: true; edit: SponsorEdit } 
   }
   return { ok: true, edit: r.data };
 }
+
+/** "70% of reps hit OTE last year". Green when most reps get there, plain otherwise. */
+export const attainmentBadge = (pct: number | null | undefined) =>
+  pct == null ? null : { text: `${pct}% of reps hit OTE last year`, good: pct >= 50 };

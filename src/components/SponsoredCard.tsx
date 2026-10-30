@@ -1,10 +1,24 @@
 import Link from "next/link";
 import { CompanyLogo } from "./CompanyLogo";
 import { logoUrl, type SponsoredJobRow } from "@/lib/sponsor";
-import { payLine } from "@/lib/sponsor-form";
+import { attainmentBadge, payLine } from "@/lib/sponsor-form";
 
 export const sponsorWhere = (s: Pick<SponsoredJobRow, "remote_type" | "location">) =>
   s.remote_type === "Remote" ? ["Remote", s.location].filter(Boolean).join(", ") : [s.location, s.remote_type === "Hybrid" ? "Hybrid" : null].filter(Boolean).join(" · ");
+
+/** Same look as the attainment badge on regular job cards. Nothing when the buyer didn't share it. */
+export function AttainmentBadge({ pct }: { pct: number | null | undefined }) {
+  const b = attainmentBadge(pct);
+  if (!b) return null;
+  return (
+    <span
+      className={`inline-block rounded border px-1.5 py-0.5 text-xs font-semibold ${b.good ? "border-accent/25 bg-accent-soft text-accent" : "border-line-strong bg-surface text-ink-2"}`}
+    >
+      {b.good ? "✓ " : ""}
+      {b.text}
+    </span>
+  );
+}
 
 /** Paid placement at the top of the home page. Always labeled. No Braun Read: Josh doesn't grade jobs he's paid to show. */
 export function SponsoredCard({ s }: { s: SponsoredJobRow }) {
@@ -35,6 +49,11 @@ export function SponsoredCard({ s }: { s: SponsoredJobRow }) {
                 </span>
               ))}
           </p>
+          {s.ote_attainment_pct != null && (
+            <p className="mt-2">
+              <AttainmentBadge pct={s.ote_attainment_pct} />
+            </p>
+          )}
           {s.product_short && (
             <p className="mt-2.5 text-sm">
               <span className="text-ink-3">What they sell: </span>

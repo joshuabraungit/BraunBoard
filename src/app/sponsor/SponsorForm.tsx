@@ -142,6 +142,27 @@ export function SponsorForm({ price, canceled }: { price: string; canceled: bool
               <input id="ote_max" name="ote_max" inputMode="numeric" defaultValue={v.ote_max} placeholder="220,000" className={input} {...err("ote_max")} />
             </Field>
           </div>
+          <div className="mt-4">
+            <Field
+              name="ote_attainment_pct"
+              label="What percentage of fully ramped reps earned their full OTE last year? (optional)"
+              hint="Sellers trust jobs that share this. Skip it if you don't track it or the role is new."
+              error={e.ote_attainment_pct}
+            >
+              <div className="flex items-center gap-2">
+                <input
+                  id="ote_attainment_pct"
+                  name="ote_attainment_pct"
+                  inputMode="numeric"
+                  defaultValue={v.ote_attainment_pct}
+                  placeholder="70"
+                  className={`${input} max-w-24`}
+                  {...err("ote_attainment_pct")}
+                />
+                <span className="text-ink-2">%</span>
+              </div>
+            </Field>
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

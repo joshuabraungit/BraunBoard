@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { checkLogo, formatPrice, isRunning, liveWindow, nextOpenSpot, parseMoney, parseSponsorEdit, parseSponsorForm, payLine } from "../src/lib/sponsor-form";
+import { attainmentBadge, checkLogo, formatPrice, isRunning, liveWindow, nextOpenSpot, parseMoney, parseSponsorEdit, parseSponsorForm, payLine } from "../src/lib/sponsor-form";
 import { formEncode, isSettled, verifyWebhook } from "../src/lib/stripe";
 
 const good: Record<string, string> = {
@@ -176,5 +176,22 @@ describe("admin edits", () => {
   it("refuses a blank title or a bad link", () => {
     expect(edit({ job_title: "" }).ok).toBe(false);
     expect(edit({ job_url: "javascript:alert(1)" }).ok).toBe(false);
+  });
+});
+
+describe("OTE attainment", () => {
+  it("is optional, takes 0 to 100 with or without a % sign", () => {
+    const ok = (v: string) => { const r = parseSponsorForm(fd({ ...good, ote_attainment_pct: v })); return r.ok ? r.order.ote_attainment_pct : "error"; };
+    expect(ok("")).toBeNull();
+    expect(ok("70")).toBe(70);
+    expect(ok(" 65% ")).toBe(65);
+    expect(ok("0")).toBe(0);
+    expect(ok("120")).toBe("error");
+    expect(ok("most")).toBe("error");
+  });
+  it("labels the badge, green only when most reps get there", () => {
+    expect(attainmentBadge(70)).toEqual({ text: "70% of reps hit OTE last year", good: true });
+    expect(attainmentBadge(30)?.good).toBe(false);
+    expect(attainmentBadge(null)).toBeNull();
   });
 });
