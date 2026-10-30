@@ -60,9 +60,13 @@ export default async function Products({ searchParams }: { searchParams: Promise
   return (
     <>
       <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">What you&apos;d sell</h1>
-      <p className="mt-2 max-w-2xl text-ink-2">
-        Find a product you&apos;d be excited to sell. Every description comes from the company&apos;s own job posts, in plain English.
-      </p>
+      <div className="mt-3 max-w-2xl space-y-2 text-ink-2">
+        <p>Job posts say things like &ldquo;AI-native revenue orchestration platform.&rdquo;</p>
+        <p className="font-semibold text-ink">Cool. What does it do?</p>
+        <p>
+          Every company here gets a plain-English answer, pulled from its own job posts. Because it&apos;s hard to sell something you can&apos;t explain.
+        </p>
+      </div>
 
       <nav aria-label="What you'd sell" className="mt-6 flex flex-wrap gap-2">
         <Link href={href({ cat: undefined })} aria-current={!category ? "page" : undefined} className={`${chip} ${!category ? on : off}`}>
