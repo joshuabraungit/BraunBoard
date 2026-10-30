@@ -25,7 +25,7 @@ import { getUserState } from "@/lib/session";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   alternates: { canonical: "/products" },
-  title: "Browse sales jobs by product · Braun Board",
+  title: "What you'd sell: sales jobs by product · Braun Board",
   description: "Find a product you'd be excited to sell. Every company's product in plain English, with its open sales roles.",
 };
 
@@ -59,7 +59,7 @@ export default async function Products({ searchParams }: { searchParams: Promise
 
   return (
     <>
-      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Browse jobs by product</h1>
+      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">What you&apos;d sell</h1>
       <p className="mt-2 max-w-2xl text-ink-2">
         Find a product you&apos;d be excited to sell. Every description comes from the company&apos;s own job posts, in plain English.
       </p>
