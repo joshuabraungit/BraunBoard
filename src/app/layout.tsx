@@ -36,6 +36,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <Link href="/privacy" className="hover:text-ink">Privacy</Link>
           <span className="mx-2">·</span>
           <Link href="/terms" className="hover:text-ink">Terms</Link>
+          <span className="mx-2">·</span>
+          <Link href="/sponsor" className="hover:text-ink">Hiring sellers? Sponsor a job</Link>
         </footer>
         {/* Visitor counts and where they came from. No cookies. */}
         <Analytics />
