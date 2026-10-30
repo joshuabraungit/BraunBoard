@@ -1,6 +1,5 @@
 "use client";
-import { useActionState, useEffect, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { startTransition, useActionState, useState } from "react";
 import { startCheckout, type SponsorState } from "./actions";
 import { CURRENCIES, REMOTE_TYPES } from "@/lib/sponsor-form";
 
@@ -35,8 +34,7 @@ function Field({
   );
 }
 
-function Submit({ price }: { price: string }) {
-  const { pending } = useFormStatus();
+function Submit({ price, pending }: { price: string; pending: boolean }) {
   return (
     <button
       disabled={pending}
@@ -48,21 +46,29 @@ function Submit({ price }: { price: string }) {
 }
 
 export function SponsorForm({ price, canceled }: { price: string; canceled: boolean }) {
-  const [state, action] = useActionState<SponsorState, FormData>(startCheckout, { errors: {}, values: {} });
+  const [state, action, pending] = useActionState<SponsorState, FormData>(startCheckout, { errors: {}, values: {} });
   const e = state.errors;
   const v = state.values;
   const [remote, setRemote] = useState(v.remote_type ?? "");
   const [logoName, setLogoName] = useState("");
   const today = new Date().toISOString().slice(0, 10);
-  // The browser clears file inputs after a submit, so clear the name too.
-  useEffect(() => setLogoName(""), [state]);
   const err = (n: string) => (e[n] ? { "aria-invalid": true, "aria-describedby": `${n}-error` } : {});
 
   return (
-    <form action={action} className="space-y-8" noValidate>
+    <form
+      // Submit by hand instead of <form action>, so React doesn't wipe the form when it comes back
+      // with errors. Everything they typed (dropdowns and logo included) stays put.
+      onSubmit={(ev) => {
+        ev.preventDefault();
+        const fd = new FormData(ev.currentTarget);
+        startTransition(() => action(fd));
+      }}
+      className="space-y-8"
+      noValidate
+    >
       {canceled && !e.form && (
         <p className="rounded-lg bg-amber-soft px-4 py-3 text-sm text-amber">
-          Checkout was canceled, so nothing was charged. Your details are below if you want to try again.
+          Checkout was canceled, so nothing was charged. Fill it in again whenever you&apos;re ready.
         </p>
       )}
       {e.form && <p className="rounded-lg bg-red-soft px-4 py-3 text-sm font-semibold text-red">{e.form}</p>}
@@ -84,7 +90,7 @@ export function SponsorForm({ price, canceled }: { price: string; canceled: bool
         <Field name="company" label="Company" error={e.company}>
           <input id="company" name="company" defaultValue={v.company} required autoComplete="organization" className={input} {...err("company")} />
         </Field>
-        <Field name="logo" label="Company logo" hint="Optional. PNG, JPG, WebP or SVG, up to 2MB. Square works best." error={e.logo}>
+        <Field name="logo" label="Company logo" hint="Optional. Square, 400 × 400 px or larger (200 × 200 minimum). A PNG or SVG with a transparent background looks best. JPG and WebP work too. Up to 2MB." error={e.logo}>
           <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-line-strong bg-bg px-3 py-3 text-sm hover:bg-surface">
             <span className="rounded-md bg-surface px-2.5 py-1 font-semibold ring-1 ring-line">Choose file</span>
             <span className="truncate text-ink-2">{logoName || "No file chosen"}</span>
@@ -183,7 +189,7 @@ export function SponsorForm({ price, canceled }: { price: string; canceled: bool
           </p>
         )}
         <div className="mt-5">
-          <Submit price={price} />
+          <Submit price={price} pending={pending} />
         </div>
         <p className="mt-3 text-xs text-ink-3">Secure payment through Stripe. You&apos;ll get a receipt by email. Promo code? Add it on the next page.</p>
       </div>
