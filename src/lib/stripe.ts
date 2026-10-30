@@ -2,6 +2,10 @@
 // Server-only: reads STRIPE_SECRET_KEY.
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+// The account's default API version is from 2018, older than the Checkout fields used here.
+// Pin a current version so every call (and the webhook, set to match in Stripe) speaks the same shape.
+export const STRIPE_VERSION = "2026-09-30.endive";
+
 export interface CheckoutSession {
   id: string;
   url: string | null;
@@ -31,7 +35,11 @@ async function stripe<T>(path: string, init: { method: "GET" | "POST"; body?: Re
   if (!key) throw new Error("STRIPE_SECRET_KEY is not set");
   const res = await fetch(`https://api.stripe.com/v1/${path}`, {
     method: init.method,
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/x-www-form-urlencoded" },
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Stripe-Version": STRIPE_VERSION,
+    },
     body: init.body ? formEncode(init.body).join("&") : undefined,
     cache: "no-store",
   });

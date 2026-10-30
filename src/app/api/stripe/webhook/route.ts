@@ -1,7 +1,7 @@
 // Stripe calls this after checkout. Point a webhook at /api/stripe/webhook with
 // checkout.session.completed and checkout.session.async_payment_succeeded.
 import { NextResponse } from "next/server";
-import { verifyWebhook, type CheckoutSession } from "@/lib/stripe";
+import { getCheckoutSession, verifyWebhook, type CheckoutSession } from "@/lib/stripe";
 import { markPaid } from "@/lib/sponsor";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,8 @@ export async function POST(req: Request) {
     const session = event.data.object as CheckoutSession;
     if (session.metadata?.sponsored_job_id || session.client_reference_id) {
       try {
-        await markPaid(session);
+        // Re-read the session from Stripe rather than trusting the payload's shape.
+        await markPaid(await getCheckoutSession(session.id));
       } catch (e) {
         console.error("[stripe] markPaid failed", e);
         return NextResponse.json({ error: "retry" }, { status: 500 }); // Stripe retries
