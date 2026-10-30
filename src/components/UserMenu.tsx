@@ -8,7 +8,7 @@ export async function UserMenu() {
   // "Employers" and "Ask Josh" sit by Sign in, where there's room on every screen size (the main menu scrolls off on phones).
   const ask = (
     <>
-      <Link href="/sponsor" className="whitespace-nowrap rounded-md px-1.5 py-1.5 text-ink-2 hover:bg-surface hover:text-ink sm:px-2.5">
+      <Link href="/employers" className="whitespace-nowrap rounded-md px-1.5 py-1.5 text-ink-2 hover:bg-surface hover:text-ink sm:px-2.5">
         Employers
       </Link>
       <Link href="/ask" className="whitespace-nowrap rounded-md px-1.5 py-1.5 font-semibold text-accent hover:bg-surface sm:px-2.5">
