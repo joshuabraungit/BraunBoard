@@ -209,11 +209,9 @@ export default function EmployersPage() {
       <section className="mt-16">
         <H2>What should you expect?</H2>
         <div className="mt-4 space-y-4 text-[17px] leading-relaxed text-ink-2">
-          <p className="text-ink">A clearer job ad and promotion to an audience of salespeople.</p>
-          <p>
-            I can&apos;t promise a certain number of applicants or a hire. The goal is to help the right sellers understand the opportunity and decide whether to
-            apply.
-          </p>
+          <p className="text-ink">A job ad people can understand. Put in front of salespeople.</p>
+          <p>Will you get 50 applicants? Find your next hire? I don&apos;t know.</p>
+          <p>What I can do is make it clear what you&apos;re offering, so sellers can decide if it&apos;s for them.</p>
         </div>
       </section>
 
