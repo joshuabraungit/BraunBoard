@@ -61,6 +61,7 @@ export function createCheckoutSession(p: {
   productName: string;
   description: string;
   siteUrl: string;
+  cancelUrl?: string;
 }) {
   return stripe<CheckoutSession>("checkout/sessions", {
     method: "POST",
@@ -83,7 +84,7 @@ export function createCheckoutSession(p: {
       metadata: { sponsored_job_id: p.orderId },
       payment_intent_data: { metadata: { sponsored_job_id: p.orderId } },
       success_url: `${p.siteUrl}/sponsor/thanks?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${p.siteUrl}/sponsor?canceled=1&order=${p.orderId}`,
+      cancel_url: p.cancelUrl ?? `${p.siteUrl}/sponsor?canceled=1&order=${p.orderId}`,
     },
   });
 }

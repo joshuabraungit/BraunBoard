@@ -56,6 +56,7 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                 <summary className="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-sm">
                   <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>{label}</span>
                   <span className="min-w-0 flex-1 truncate font-semibold">
+                    {r.renewal_of && <span className="mr-1.5 rounded bg-accent-soft px-1.5 py-0.5 text-xs font-semibold text-accent">Renewal</span>}
                     {r.job_title} · {r.company}
                   </span>
                   {r.live_at && r.ends_at ? (

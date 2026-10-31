@@ -24,6 +24,7 @@ export interface SponsoredJobRow extends SponsorOrder {
   refunded_at?: string | null;
   stripe_refund_id?: string | null;
   cancel_reason?: string | null;
+  renewal_of?: string | null;
 }
 
 /** Josh's edits from Admin. Only the words sellers read; pay and dates stay as the buyer sent them. */
@@ -91,9 +92,98 @@ export async function markPaid(session: CheckoutSession): Promise<SponsoredJobRo
     .select("*")
     .maybeSingle();
   if (error) throw error;
-  const row = data as SponsoredJobRow | null;
-  if (row) await sendPaidEmails(row, session.invoice).catch((e) => console.error("[sponsor] email failed", e));
+  let row = data as SponsoredJobRow | null;
+  if (row?.renewal_of) {
+    // Renewals skip the rewrite and approval: same ad, picks up when the current run ends.
+    row = await scheduleRenewal(row);
+    await sendRenewalEmails(row, session.invoice).catch((e) => console.error("[sponsor] renewal email failed", e));
+  } else if (row) {
+    await sendPaidEmails(row, session.invoice).catch((e) => console.error("[sponsor] email failed", e));
+  }
   return row ?? (await getOrder(orderId));
+}
+
+/** Copies a sponsor's ad into a new pending order for another run. Returns the new order id. */
+export async function createRenewal(oldId: string): Promise<{ id: string; order: SponsoredJobRow }> {
+  const old = await getOrder(oldId);
+  if (!old || !["live", "done"].includes(old.status)) throw new Error("Only a sponsorship that ran can be renewed.");
+  const price = Number(process.env.SPONSOR_PRICE_CENTS);
+  const keep = [
+    "company", "contact_name", "email", "job_title", "job_url", "description", "salary_min", "salary_max", "ote_min", "ote_max",
+    "currency", "location", "remote_type", "logo_path", "notes", "ote_attainment_pct", "product_short", "product_story",
+  ] as const;
+  const copy = Object.fromEntries(keep.map((k) => [k, old[k as keyof SponsoredJobRow] ?? null]));
+  const { data, error } = await adminClient()
+    .from("sponsored_jobs")
+    .insert({ ...copy, amount_cents: Number.isInteger(price) && price >= 100 ? price : old.amount_cents, renewal_of: old.id })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return { id: data.id as string, order: old };
+}
+
+/** The renewal of `oldId` that's already paid for, if any. */
+export async function paidRenewalOf(oldId: string): Promise<SponsoredJobRow | null> {
+  const { data } = await adminClient()
+    .from("sponsored_jobs")
+    .select("*")
+    .eq("renewal_of", oldId)
+    .in("status", ["paid", "live", "done"])
+    .limit(1)
+    .maybeSingle();
+  return (data as SponsoredJobRow) ?? null;
+}
+
+async function scheduleRenewal(row: SponsoredJobRow): Promise<SponsoredJobRow> {
+  const old = row.renewal_of ? await getOrder(row.renewal_of) : null;
+  const now = new Date();
+  const from = old?.ends_at && new Date(old.ends_at) > now ? new Date(old.ends_at) : now;
+  const { data: booked } = await adminClient()
+    .from("sponsored_jobs")
+    .select("live_at, ends_at")
+    .eq("status", "live")
+    .gt("ends_at", from.toISOString());
+  const { data, error } = await adminClient()
+    .from("sponsored_jobs")
+    .update({ status: "live", ...liveWindow(null, from, (booked ?? []) as { live_at: string; ends_at: string }[]) })
+    .eq("id", row.id)
+    .eq("status", "paid")
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as SponsoredJobRow;
+}
+
+export function renderRenewalReceipt(o: SponsoredJobRow, invoice: Invoice | null = null) {
+  const subject = `You're renewed. ${o.job_title} stays up through ${day(o.ends_at!)}.`;
+  const lines = [
+    `Hi ${o.contact_name.trim().split(/\s+/)[0]},`,
+    `Thanks for renewing.`,
+    `${o.job_title} stays at the top of the Braun Board home page for another ${SPONSOR_DAYS} days, through ${day(o.ends_at!)}. Nothing else to do on your end.`,
+    `Want to change the ad? Just reply.`,
+    `Josh`,
+  ];
+  const p = (t: string) => `<p style="font-size:15px;line-height:1.5;color:#222;margin:0 0 14px">${esc(t)}</p>`;
+  const inv = invoice?.hosted_invoice_url
+    ? `<p style="font-size:15px;line-height:1.5;color:#222;margin:0 0 14px"><a href="${esc(invoice.hosted_invoice_url)}" style="color:#111;font-weight:600">View or download your invoice${invoice.number ? ` (${esc(invoice.number)})` : ""} →</a></p>`
+    : "";
+  const html = wrap(subject, lines.slice(0, 3).map(p).join("") + inv + lines.slice(3).map(p).join(""));
+  const text = [...lines.slice(0, 3), ...(invoice?.hosted_invoice_url ? [`Your invoice: ${invoice.hosted_invoice_url}`] : []), ...lines.slice(3)].join("\n\n");
+  return { subject, html, text };
+}
+
+async function sendRenewalEmails(o: SponsoredJobRow, invoiceId?: string | null) {
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://braunboard.com";
+  const owner = adminEmails()[0];
+  const invoice = await getInvoiceLinks(invoiceId);
+  const notice = renderOwnerNotice(o, site, invoice);
+  notice.subject = `Renewed: ${o.job_title} at ${o.company} (through ${day(o.ends_at!)})`;
+  notice.html = notice.html.replace("New sponsored job:", "Renewed:");
+  notice.text = notice.text.replace("New sponsored job:", "Renewed:");
+  await Promise.all([
+    owner ? sendEmail(owner, notice, { replyTo: o.email }) : null,
+    sendEmail(o.email, renderRenewalReceipt(o, invoice), { replyTo: owner }),
+  ]);
 }
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
