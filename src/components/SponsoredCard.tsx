@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CompanyLogo } from "./CompanyLogo";
 import { logoUrl, type SponsoredJobRow } from "@/lib/sponsor";
 import { attainmentBadge, payLine } from "@/lib/sponsor-form";
+import { adPlainText } from "@/lib/ad-text";
 
 export const sponsorWhere = (s: Pick<SponsoredJobRow, "remote_type" | "location">) =>
   s.remote_type === "Remote" ? ["Remote", s.location].filter(Boolean).join(", ") : [s.location, s.remote_type === "Hybrid" ? "Hybrid" : null].filter(Boolean).join(" · ");
@@ -60,7 +61,7 @@ export function SponsoredCard({ s }: { s: SponsoredJobRow }) {
               <span className="font-semibold">{s.product_short}</span>
             </p>
           )}
-          <p className="mt-2 line-clamp-3 text-[15px] leading-relaxed text-ink-2">{s.description}</p>
+          <p className="mt-2 line-clamp-3 text-[15px] leading-relaxed text-ink-2">{adPlainText(s.description)}</p>
         </div>
       </div>
       <div className="mt-4 flex justify-end">

@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { adminClient } from "@/lib/supabase/admin";
-import { cancelAndRefund, markLive, resendReceipt, updateSponsorCopy } from "@/lib/sponsor";
+import { attachVideo, cancelAndRefund, createVideoUpload, getOrder, markLive, resendReceipt, reviewFields, updateSponsorCopy } from "@/lib/sponsor";
+import { adReview } from "@/lib/sponsor-review";
 import { formatPrice, parseSponsorEdit } from "@/lib/sponsor-form";
 
 // Canceling goes through cancelOrder so it always refunds.
@@ -76,13 +77,55 @@ export async function editCopy(formData: FormData) {
     back(false, `Not saved. ${parsed.error}`);
     return;
   }
+  let reReview = false;
   try {
+    const before = await getOrder(id);
     await updateSponsorCopy(id, parsed.edit);
+    const after = await getOrder(id);
+    // They'd weighed in on the old words; the review link now shows the new ones as "Updated" for another look.
+    const was = before ? adReview(reviewFields(before)).status : "waiting";
+    reReview = (was === "up" || was === "down") && !!after && adReview(reviewFields(after)).status === "changed";
   } catch (e) {
     back(false, e instanceof Error ? e.message : "Couldn't save.");
     return;
   }
   revalidatePath("/");
   revalidatePath(`/sponsored/${id}`);
-  back(true, `Saved. ${parsed.edit.job_title} is updated everywhere it shows.`);
+  back(true, `Saved. ${parsed.edit.job_title} is updated everywhere it shows.${reReview ? " The client's review link now shows the new version for her OK." : ""}`);
+}
+
+/** Admin video upload, step 1. Returns where the browser should send the file. */
+export async function startVideoUpload(id: string, contentType: string): Promise<{ ok: true; path: string; token: string } | { ok: false; error: string }> {
+  await requireAdmin();
+  try {
+    return { ok: true, ...(await createVideoUpload(id, contentType)) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Couldn't start the upload." };
+  }
+}
+
+/** Step 2, once the file is up. */
+export async function finishVideoUpload(id: string, path: string): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin();
+  try {
+    await attachVideo(id, path);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Couldn't save the video." };
+  }
+  revalidatePath("/admin/sponsored");
+  revalidatePath(`/sponsored/${id}`);
+  return { ok: true };
+}
+
+export async function removeVideo(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  try {
+    await attachVideo(id, null);
+  } catch (e) {
+    back(false, e instanceof Error ? e.message : "Couldn't remove the video.");
+    return;
+  }
+  revalidatePath(`/sponsored/${id}`);
+  back(true, "Video removed.");
 }

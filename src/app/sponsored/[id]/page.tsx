@@ -4,7 +4,9 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { AttainmentBadge, sponsorWhere } from "@/components/SponsoredCard";
-import { bump, getOrder, logoUrl } from "@/lib/sponsor";
+import { bump, getOrder, logoUrl, reviewFields, videoUrl } from "@/lib/sponsor";
+import { videoApproved } from "@/lib/sponsor-review";
+import { AdText } from "@/components/AdText";
 import { isRunning, payLine } from "@/lib/sponsor-form";
 import { isUuid } from "@/lib/picks-subscribe";
 import { isBot } from "@/lib/visits";
@@ -94,9 +96,14 @@ export default async function SponsoredJobPage({ params }: Props) {
         </p>
       )}
 
-      <div className="mt-5 whitespace-pre-line text-[15px] leading-relaxed text-ink">{s.description}</div>
+      {s.video_path && videoApproved(reviewFields(s)) && (
+        <video src={videoUrl(s.video_path)!} controls playsInline preload="metadata" className="mt-6 aspect-[4/5] w-full max-w-md rounded-2xl bg-ink" />
+      )}
 
-      {(s.product_short || s.product_story) && (
+      <AdText text={s.description} className="mt-6" />
+
+      {/* The headline alone lives on the home page card; the box is for when there's a story to tell. */}
+      {s.product_story && (
         <section className="mt-8 rounded-2xl border border-line bg-surface p-5 sm:p-6">
           <h2 className="text-xs font-bold uppercase tracking-wide text-ink-3">What {s.company} sells, in plain English</h2>
           {s.product_short && <p className="mt-2 text-[17px] font-bold leading-snug">{s.product_short}</p>}
