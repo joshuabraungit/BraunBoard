@@ -5,7 +5,7 @@ import { adminEmails } from "./admin-emails";
 import { sendEmail } from "./alerts/email";
 import { formatPrice, liveWindow, MAX_LIVE_SPONSORS, payLine, SPONSOR_DAYS, type SponsorEdit, type SponsorOrder } from "./sponsor-form";
 import { getCheckoutSession, getInvoiceLinks, isSettled, refundPayment, type CheckoutSession, type Invoice } from "./stripe";
-import { adHash, REVIEW_NOTE_MAX, reviewSummary, verdictLine, type AssetReview, type ReviewFields, type Verdict } from "./sponsor-review";
+import { adHash, adReview, REVIEW_NOTE_MAX, reviewSummary, verdictLine, type AssetReview, type ReviewFields, type Verdict } from "./sponsor-review";
 
 export const LOGO_BUCKET = "sponsor-logos";
 export const VIDEO_BUCKET = "sponsor-videos";
@@ -328,9 +328,9 @@ export async function markLive(id: string): Promise<SponsoredJobRow> {
   const order = await getOrder(id);
   if (!order) throw new Error("Order not found");
   if (order.status !== "paid") throw new Error(`Can't go live from ${order.status}`);
-  // Nothing goes up until the client has approved every piece (the video, if there is one, and the ad).
-  if (!reviewSummary(reviewFields(order)).allApproved)
-    throw new Error(`${order.contact_name.split(" ")[0]} hasn't approved everything yet. Mark live unlocks once every piece has a thumbs up.`);
+  // Nothing goes up until the client approves the job ad. The video is a bonus: it shows on the job page only once approved.
+  if (adReview(reviewFields(order)).status !== "up")
+    throw new Error(`${order.contact_name.split(" ")[0]} hasn't approved the job ad yet. Mark live unlocks once it has a thumbs up.`);
   const { data: booked } = await adminClient()
     .from("sponsored_jobs")
     .select("live_at, ends_at")
@@ -545,6 +545,8 @@ export function renderReviewNotice(o: SponsoredJobRow, input: ReviewInput, siteU
   ];
   const next = sum.allApproved
     ? "Everything's approved. Mark it live in Admin when you're ready."
+    : sum.ad.status === "up" && !sum.changesRequested
+      ? "The job ad is approved, so you can mark it live. The video shows up on the job page once it's approved too."
     : sum.changesRequested
       ? `Make the changes in Admin. The review link shows the new version, and ${first} gets to look again.`
       : "";
