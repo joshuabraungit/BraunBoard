@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { readRenewToken, renderRenewReminder, renewToken } from "../src/lib/sponsor-renew";
+import { readRenewToken, renderRenewReminder, renderThanksEmail, renewToken } from "../src/lib/sponsor-renew";
 
 beforeAll(() => { process.env.ALERTS_LINK_SECRET = "test-secret"; });
 
@@ -28,5 +28,17 @@ describe("5 days left email", () => {
     expect(m.text).toContain(`https://www.braunboard.com/sponsor/renew?t=${renewToken(id)}`);
     expect(m.html).toContain("Renew for 30 more days");
     expect(m.text).not.toMatch(/—/);
+  });
+});
+
+describe("end-of-run thanks", () => {
+  it("thanks them, offers the deck, and doesn't pitch", () => {
+    const m = renderThanksEmail({ id, job_title: "Director of Growth", contact_name: "Abbe Vacek", email: "a@x.com" });
+    expect(m.subject).toBe("Thanks for sponsoring Director of Growth");
+    expect(m.text).toContain("Hi Abbe,");
+    expect(m.text).toContain("Tongue Tied");
+    expect(m.text).toContain("It doesn't matter where you found them.");
+    expect(m.text).not.toMatch(/renew|\$/i);
+    expect(m.text).not.toMatch(/\u2014/);
   });
 });

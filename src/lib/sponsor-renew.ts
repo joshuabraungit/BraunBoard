@@ -91,3 +91,55 @@ export async function sendRenewalReminders(db: SupabaseClient, now = new Date())
   }
   return sent;
 }
+
+type ThanksRow = { id: string; job_title: string; contact_name: string; email: string };
+
+/** The day a run ends (and they didn't renew): a real thank-you and a gift for whoever they hire. No pitch. */
+export function renderThanksEmail(o: ThanksRow) {
+  const subject = `Thanks for sponsoring ${o.job_title}`;
+  const lines = [
+    `Hi ${o.contact_name.trim().split(/\s+/)[0]},`,
+    `${o.job_title} came off the Braun Board home page today. Thanks for trusting me with it.`,
+    `The job page stays up, so any links you shared still work.`,
+    `One more thing. When you hire someone, send me their name and mailing address. I'll send them a deck of Tongue Tied, my objection flashcards. Each card has an objection sellers hear all the time on one side, and a way to handle it on the other. A little something for their first month.`,
+    `It doesn't matter where you found them. If they're joining your sales team, the deck is theirs.`,
+    `Hope you find someone great.`,
+    `Josh`,
+  ];
+  const html = `<!doctype html><html><body style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;background:#faf8f5;padding:24px">
+  <table width="100%" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #eee;border-radius:10px;padding:24px"><tr><td>
+  <div style="font-size:13px;color:#888">Braun Board</div><h1 style="font-size:20px;margin:6px 0 12px">${esc(subject)}</h1>
+  ${lines.map((t) => `<p style="font-size:15px;line-height:1.5;color:#222;margin:0 0 14px">${esc(t)}</p>`).join("")}
+  </td></tr></table></body></html>`;
+  return { subject, html, text: lines.join("\n\n") };
+}
+
+/**
+ * Hourly runner: thanks each sponsor once, the day their run ends. Skips anyone who renewed
+ * (their run keeps going) and anything that ended more than 3 days ago (no surprise emails from the past).
+ */
+export async function sendEndOfRunThanks(db: SupabaseClient, now = new Date()): Promise<number> {
+  const since = new Date(now.getTime() - 3 * 86_400_000).toISOString();
+  const { data, error } = await db
+    .from("sponsored_jobs")
+    .select("id, job_title, contact_name, email")
+    .in("status", ["live", "done"])
+    .is("thanks_sent_at", null)
+    .lte("ends_at", now.toISOString())
+    .gt("ends_at", since);
+  if (error) throw error;
+  let sent = 0;
+  for (const o of (data ?? []) as ThanksRow[]) {
+    const { data: renewed } = await db.from("sponsored_jobs").select("id").eq("renewal_of", o.id).in("status", ["paid", "live", "done"]).limit(1);
+    const { data: claimed } = await db
+      .from("sponsored_jobs")
+      .update({ thanks_sent_at: now.toISOString() })
+      .eq("id", o.id)
+      .is("thanks_sent_at", null)
+      .select("id");
+    if (!claimed?.length || renewed?.length) continue;
+    await sendEmail(o.email, renderThanksEmail(o), { replyTo: adminEmails()[0] });
+    sent++;
+  }
+  return sent;
+}
