@@ -24,7 +24,9 @@ export default async function SponsorThanks({ searchParams }: { searchParams: Pr
             {order ? (
               <>
                 <span className="font-semibold text-ink">{order.job_title}</span> at {order.company} goes on the home page for {SPONSOR_DAYS} days
-                {order.start_date ? ` starting ${order.start_date}` : " as soon as I've set it up, usually within one business day"}. It also goes out in a
+                {order.start_date
+                  ? ` starting ${new Date(`${order.start_date}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" })} (want it sooner? just reply to your receipt)`
+                  : " as soon as you approve the rewrite. I usually send it within one business day"}. It also goes out in a
                 LinkedIn post and a newsletter send.
               </>
             ) : (

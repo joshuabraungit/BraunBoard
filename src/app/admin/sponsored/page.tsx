@@ -178,6 +178,12 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                       {r.stripe_refund_id ? `Refunded ${formatPrice(r.amount_cents)}` : "Canceled"} on {day(r.refunded_at)}.{r.cancel_reason ? ` Reason: ${r.cancel_reason}` : ""}
                     </p>
                   )}
+                  {st === "approve" && r.start_date && new Date(`${r.start_date}T12:00:00Z`).getTime() - new Date(r.created_at).getTime() > 14 * 86_400_000 && (
+                    <p className="mt-2 text-xs text-amber">
+                      They picked a go-live date of {r.start_date}, more than two weeks after ordering. Worth checking they didn&apos;t mean the new hire&apos;s start
+                      date.
+                    </p>
+                  )}
                   {st === "approve" && runningCount >= 2 && (
                     <p className="mt-2 text-xs text-amber">Both home page spots are taken. If you approve it now, it starts automatically when a spot opens, and gets its full 30 days from then.</p>
                   )}
