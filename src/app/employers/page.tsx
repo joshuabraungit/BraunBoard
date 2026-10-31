@@ -13,17 +13,6 @@ export const metadata: Metadata = {
 
 // Josh's voice: plain English, short paragraphs, warm, a little funny. No hype, no em dashes,
 // and no promises about hiring results. Only claims the product actually backs up.
-const LETTER = [
-  "I'm Josh, founder of Braun Board.",
-  "I spend my days in front of salespeople. Here's what I've noticed. The best ones aren't job hunting. They're happy enough, busy, and a little curious.",
-  "Then a job scrolls by. They give it a few seconds. They open the ad.",
-  "\u201cWe're seeking a results-oriented hunter to evangelize our disruptive solution in a fast-paced environment.\u201d",
-  "Everyone's a rock star. Every company's a rocket ship. Apparently, we're starting a band in space.",
-  "Meanwhile, the questions they actually have go unanswered. What will I sell? What's the base? The OTE? How many reps earn it? Where do the leads come from?",
-  "Someone who's job hunting might dig for answers. Someone who isn't won't. When sellers can't picture the job, some move on. Including people you'd want to meet.",
-  "So I started Braun Board. A job board for salespeople, written for humans.",
-] as const;
-
 const GET = [
   ["A plain-English rewrite.", "What you sell, who buys it, and what the job looks like day to day. You approve it before it goes up."],
   [`${SPONSOR_DAYS} days pinned to the top of the home page.`, "Above the newest jobs, where sellers start."],
@@ -91,23 +80,8 @@ export default function EmployersPage() {
         <Cta price={price} big />
       </div>
 
-      {/* The letter */}
-      <section className="mt-16 border-t border-line pt-12">
-        <div className="space-y-5 text-lg leading-relaxed text-ink sm:text-[19px]">
-          <p>Hey there,</p>
-          {LETTER.map((line) => (
-            <p key={line}>{line}</p>
-          ))}
-          <p>
-            I explain, in plain English, what you sell, who buys it, and what the seller will do all day. Pay goes up front. Then I put it in front of the
-            sellers who read my stuff, including the ones who weren&apos;t looking. Let&apos;s make your job easy to say yes to.
-          </p>
-        </div>
-        <p className="mt-8 font-serif text-2xl italic text-ink">Josh</p>
-      </section>
-
       {/* What you get */}
-      <section className="mt-16">
+      <section className="mt-14 border-t border-line pt-12">
         <H2>What {price || "it"} gets you</H2>
         <ul className="mt-5 space-y-4 text-[17px] leading-relaxed">
           {GET.map(([title, rest]) => (
