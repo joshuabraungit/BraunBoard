@@ -15,11 +15,12 @@ export const metadata: Metadata = {
 // and no promises about hiring results. Only claims the product actually backs up.
 const LETTER = [
   "I'm Josh, founder of Braun Board.",
-  "Picture a great seller looking for their next job. They're excited. Then they open the job ad.",
-  "“We're seeking a results-oriented hunter to evangelize our disruptive solution in a fast-paced environment.”",
+  "I spend my days in front of salespeople. Here's what I've noticed. The best ones aren't job hunting. They're happy enough, busy, and a little curious.",
+  "Then a job scrolls by. They give it a few seconds. They open the ad.",
+  "\u201cWe're seeking a results-oriented hunter to evangelize our disruptive solution in a fast-paced environment.\u201d",
   "Everyone's a rock star. Every company's a rocket ship. Apparently, we're starting a band in space.",
-  "Meanwhile, the questions sellers actually have go unanswered. What will I sell? What's the base? The OTE? How many reps earn it? Where do the leads come from?",
-  "When sellers can't picture the job, some move on. Including people you'd want to meet.",
+  "Meanwhile, the questions they actually have go unanswered. What will I sell? What's the base? The OTE? How many reps earn it? Where do the leads come from?",
+  "Someone who's job hunting might dig for answers. Someone who isn't won't. When sellers can't picture the job, some move on. Including people you'd want to meet.",
   "So I started Braun Board. A job board for salespeople, written for humans.",
 ] as const;
 
@@ -98,8 +99,8 @@ export default function EmployersPage() {
             <p key={line}>{line}</p>
           ))}
           <p>
-            I explain, in plain English, what you sell, who buys it, and what the seller will do all day. Pay goes up front. Let&apos;s make your job easier to
-            understand.
+            I explain, in plain English, what you sell, who buys it, and what the seller will do all day. Pay goes up front. Then I put it in front of the
+            sellers who read my stuff, including the ones who weren&apos;t looking. Let&apos;s make your job easy to say yes to.
           </p>
         </div>
         <p className="mt-8 font-serif text-2xl italic text-ink">Josh</p>
