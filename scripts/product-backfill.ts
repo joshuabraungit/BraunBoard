@@ -8,6 +8,8 @@ import { extractProduct } from "../src/lib/ingest/product";
 import { fail, notice, requireEnv, warn } from "./report";
 
 const DAY = 86_400_000;
+// The current story template ("When... usually... The problem is... so..."). Older stories get rewritten in it.
+const inTemplate = (story: string | null) => !!story && /^When\b/.test(story.trim()) && /\bThe problem is\b/.test(story);
 
 async function main() {
   requireEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "ANTHROPIC_API_KEY");
@@ -48,7 +50,10 @@ async function main() {
       const at = checked.get(id)?.at ?? null;
       const noStory = !checked.get(id)?.story;
       // A check that came back empty is retried after 2 days, not left blank for a month.
-      const why = at == null ? 0 : noStory && now - at > 2 * DAY ? 0.5 : now - at > 30 * DAY ? 2 : c.newest > at && now - at > 7 * DAY ? 1 : null;
+      // Stories in an older format get rewritten in the current template (after new jobs, before stale ones),
+      // retried at most once a day if a rewrite doesn't stick.
+      const oldFormat = !noStory && !inTemplate(checked.get(id)?.story ?? null) && now - at! > DAY;
+      const why = at == null ? 0 : noStory && now - at > 2 * DAY ? 0.5 : now - at > 30 * DAY ? 2 : c.newest > at && now - at > 7 * DAY ? 1 : oldFormat ? 1.5 : null;
       return { id, c, why };
     })
     .filter((x) => x.why != null)

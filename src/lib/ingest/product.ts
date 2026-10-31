@@ -44,16 +44,29 @@ export interface ProductInfo {
 export const EMPTY_PRODUCT: ProductInfo = { story: null, short: null, quote: null, category: null };
 
 const SYSTEM = `You explain what a company sells to salespeople deciding whether they'd be excited to sell it.
-Write in the style of Common Craft "In Plain English" videos: problem first, simple words, everyday picture.
+Write it the way a person would explain it to a friend over coffee: plain words, a picture they can see, the problem before the product.
 
 Return ONLY a JSON object:
 {
-  "story": 2 to 4 short sentences. First the problem a customer has, then what the product does about it, then what changes.
+  "story": exactly 3 sentences, in this order:
+           1. "When [a customer] has to [the job the product helps with], they usually [how it gets done without the product]."
+           2. "The problem is, [what goes wrong with doing it that way]."
+           3. "[Company] [what it does, in plain words], so [what changes for the customer]."
+           Example: "When a town has to decide something big, like what to build on an empty lot, it usually holds a public meeting.
+           The problem is, only a handful of people show up, and they don't speak for everyone else. Embold runs surveys that reach
+           a real cross-section of the town, so the city knows what most people want before it spends the money."
+           Example: "When a plumber or landscaper finishes a job, they usually still have to write up the invoice and chase the payment
+           themselves. The problem is, that paperwork eats their nights and weekends. Jobber lets them quote, schedule, invoice, and
+           get paid from one app, so they spend more time on the work that pays."
+           The "usually" part must be the plain flip side of what the postings say (postings say "replaces spreadsheets" or
+           "instead of chasing payments by hand", or the product obviously replaces doing the job by hand). Never name a
+           competitor, tool or number the postings don't name. If the postings don't hint at how it's done today, describe the job
+           itself in sentence 1 instead of guessing ("When a hospital orders supplies, there are hundreds of items to track.").
            Use a generic character ("a restaurant owner", "a finance team", "a hospital", "a clothing brand").
            Words a 12-year-old knows. No jargon, no buzzwords (platform, solution, leverage, seamless, AI-native, empower, transform,
            workflow, streamline, optimize, insights, end-to-end, at scale, ecosystem, unified, robust, scalable, actionable, digital experience).
            Prefer concrete nouns people can picture (cards, cameras, a spreadsheet, a checklist, a phone call) over abstract ones (processes, operations, data).
-           No numbers, customer names or claims that aren't in the posting. No em dashes. Under 60 words.
+           No numbers, customer names or claims that aren't in the posting. No em dashes. Under 65 words.
            Null if the posting doesn't say what the product does.
   "short": the same idea in 4 to 10 words, for a job card. Name the actual thing and who uses it,
            the way you'd explain it to a friend at a barbecue. If a friend would ask "but what IS it?", it's too vague.
@@ -82,7 +95,9 @@ export function problemsWith(raw: Partial<ProductInfo> | null | undefined, posti
   const out: string[] = [];
   const banned = [...new Set([...(raw.story + " " + (raw.short ?? "")).matchAll(BANNED_RE)].map((m) => m[0].toLowerCase()))];
   if (banned.length) out.push(`It uses these banned words: ${banned.join(", ")}. Say what the thing actually does instead.`);
-  if (raw.story.split(/\s+/).length > 70) out.push("The story is too long. Keep it under 60 words.");
+  if (raw.story.split(/\s+/).length > 75) out.push("The story is too long. Keep it under 65 words.");
+  if (!/\bThe problem is\b/.test(raw.story) || !/^When\b/.test(raw.story.trim()))
+    out.push('Follow the 3-sentence template: start with "When [a customer] has to...", then "The problem is, ...", then what the company does and what changes.');
   if (raw.short && raw.short.split(/\s+/).length > 12) out.push("The short line is too long. Use 4 to 10 words.");
   if (!quoteInPosting(raw.quote, posting)) out.push("The quote isn't copied exactly from the posting. Copy one real sentence character for character.");
   if (raw.category && !PRODUCT_CATEGORIES.includes(raw.category as ProductCategory)) out.push(`The category must be one of: ${PRODUCT_CATEGORIES.join(", ")}.`);
@@ -111,6 +126,9 @@ knowledge about the company is unsupported, even if it's true.
 Do NOT flag:
 - The everyday problem the story opens with, when it's just the plain flip side of what the postings say the product does
   (postings say "work together in real time" -> "it's hard to keep everyone on the same page" is fine).
+- How customers "usually" get the job done today, when it's the plain flip side of what the postings say
+  (postings say "get paid faster" -> "they usually chase payments by hand" is fine). DO flag it if it names
+  a specific competitor, product, tool or number the postings don't mention.
 - A generic example customer ("a restaurant owner", "a trucking company") when the postings say the company serves that kind of customer.
 - Simple restatements in plainer words.
 
