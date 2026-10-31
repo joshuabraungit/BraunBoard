@@ -21,7 +21,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(to, 302);
   }
 
-  if (isSupabaseConfigured()) {
+  // The daily health check downloads the kit too. Don't count those.
+  const isHealthCheck = req.headers.get("user-agent") === "BraunBoard-HealthCheck";
+  if (isSupabaseConfigured() && !isHealthCheck) {
     try {
       await adminClient().from("kit_downloads").insert({ source: from });
     } catch (e) {
