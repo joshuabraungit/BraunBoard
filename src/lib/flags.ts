@@ -363,7 +363,7 @@ export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
   } else if (reds >= 1) {
     // A real red flag never gets a positive verdict, however good the rest looks.
     verdict = "Ask hard questions";
-    line = "Some good signs, but there's a red flag here. Get it answered before you invest.";
+    line = "Some good signs, but there's a red light here. Get it answered before you invest.";
   } else if (score >= 6 && reds === 0 && grade("Pay") === "good" && grade("Transparency") === "good") {
     verdict = "Strong posting";
     line = "More honest than most. You know what you're walking into.";

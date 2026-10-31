@@ -44,7 +44,7 @@ export function IntroBanner() {
         <div className="col-span-2 row-start-3 sm:col-span-1 sm:col-start-1 sm:row-start-2 sm:self-start">
           <p className="mt-3 max-w-xl text-ink-2">
             Most sales job posts don&rsquo;t say. I show you what&rsquo;s missing. Tell me the role, pay, where and your dealbreakers.
-            I&rsquo;ll email you when a match shows up, with the red flags and the questions to ask before you say yes.
+            I&rsquo;ll email you when a match shows up, with the red lights and the questions to ask before you say yes.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link

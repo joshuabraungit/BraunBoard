@@ -158,7 +158,7 @@ export default function EmployersPage() {
         <H2>What &ldquo;Sponsored&rdquo; means</H2>
         <div className="mt-4 space-y-4 text-[17px] leading-relaxed text-ink-2">
           <p>
-            Every other job on Braun Board gets a Braun Read. It&apos;s my quick take on the posting: the pay, the red flags and green ones, what it leaves out,
+            Every other job on Braun Board gets a Braun Read. It&apos;s my quick take on the posting: the pay, the red lights and green ones, what it leaves out,
             and what to ask on the first call.
           </p>
           <p>

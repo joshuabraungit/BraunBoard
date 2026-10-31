@@ -57,7 +57,7 @@ export function renderAlert(watchName: string, items: AlertItem[], siteUrl: stri
       [
         `${i.title} - ${i.company}`,
         formatComp(i),
-        ...(i.redFlags ?? []).map((f) => `Red flag: ${f}`),
+        ...(i.redFlags ?? []).map((f) => `Red light: ${f}`),
         ...((i.questions ?? []).length ? ["Ask:", ...i.questions!.map((q) => `- ${q}`)] : []),
         `${siteUrl}/r/${i.match_id}`,
       ]

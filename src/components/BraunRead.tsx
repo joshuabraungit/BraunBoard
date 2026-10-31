@@ -70,14 +70,14 @@ export function BraunReadPanel({ read }: { read: Read }) {
       {(reds.length > 0 || greens.length > 0 || headsUps.length > 0) && (
         <div className="grid gap-4 border-t border-line px-4 py-4 sm:grid-cols-2">
           <div className="space-y-4">
-            <FlagList title="Red flags" flags={reds} empty="None spotted." tone="red" />
-            {headsUps.length > 0 && <FlagList title="Worth asking about" flags={headsUps} empty="" tone="headsUp" />}
+            <FlagList title="Red lights" flags={reds} empty="None spotted." tone="red" />
+            {headsUps.length > 0 && <FlagList title="Yellow lights" flags={headsUps} empty="" tone="headsUp" />}
           </div>
-          <FlagList title="Green flags" flags={greens} empty="None spotted." tone="green" />
+          <FlagList title="Green lights" flags={greens} empty="None spotted." tone="green" />
         </div>
       )}
       <p className="border-t border-line px-4 py-2.5 text-xs text-ink-3">
-        Based only on what the posting says. Flags are a starting point for your first call, not a final judgment.
+        Based only on what the posting says. Lights are a starting point for your first call, not a final judgment.
       </p>
     </section>
   );

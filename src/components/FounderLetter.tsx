@@ -36,7 +36,7 @@ export function FounderLetter() {
           </p>
           <p>
             Then every job gets the Braun Read. It&apos;s what I&apos;d look for if you sent me the posting. A verdict, from &ldquo;strong posting&rdquo; to &ldquo;proceed
-            with caution.&rdquo; The pay, when it&apos;s posted. The red flags and the green ones. What the posting leaves out. And the questions to ask on the first
+            with caution.&rdquo; The pay, when it&apos;s posted. The red lights and the green ones. What the posting leaves out. And the questions to ask on the first
             call.
           </p>
           <p>
