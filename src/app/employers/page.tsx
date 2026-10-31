@@ -45,7 +45,7 @@ const AFTER = [
       "Now picture a town deciding what to build on an empty lot.",
       "Three people at a public meeting want a merry-go-round.",
       "But what about the thousands who aren't there?",
-      "The company surveys a representative mix of residents to find out what matters to them.",
+      "You're selling survey software that helps nonprofits and towns reach a representative mix of residents and find out what matters to them.",
       "So the town can decide what to build before pouring the concrete.",
     ],
   },
