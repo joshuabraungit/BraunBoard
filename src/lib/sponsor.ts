@@ -109,7 +109,6 @@ export function orderLines(o: SponsoredJobRow): [string, string][] {
     ["Base", `${money(o.salary_min, o.currency)} to ${money(o.salary_max, o.currency)}`],
     ["OTE", o.ote_min ? `${money(o.ote_min, o.currency)} to ${money(o.ote_max, o.currency)}` : "Not given"],
     ["Where", [o.remote_type, o.location].filter(Boolean).join(" · ")],
-    ["Listing goes live", o.start_date ?? "As soon as possible"],
     ["Logo", logoUrl(o.logo_path) ?? "None uploaded"],
     ["Paid", formatPrice(o.amount_cents)],
     ["Hit OTE", o.ote_attainment_pct != null ? `${o.ote_attainment_pct}% of ramped reps last year` : "Not given"],

@@ -28,7 +28,7 @@ const STEPS = [
   ["I rewrite it. You approve it.", "I send you the plain-English version. Change anything you like. Nothing goes up until you say yes."],
   [
     "It goes live, and I share it.",
-    "On your start date, or once you approve if that's later. Two jobs are featured at a time, so if both spots are taken, yours starts when one opens. Then the LinkedIn post and the newsletter send.",
+    "As soon as you approve the rewrite. Two jobs are featured at a time, so if both spots are taken, yours starts when one opens. Then the LinkedIn post and the newsletter send.",
   ],
   [`It ends after ${SPONSOR_DAYS} days.`, "No renewal. No surprise charge."],
 ] as const;
