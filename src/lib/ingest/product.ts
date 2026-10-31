@@ -50,10 +50,18 @@ Return ONLY a JSON object:
 {
   "story": 2 to 4 short sentences. First the problem a customer has, then what the product does about it, then what changes.
            Use a generic character ("a restaurant owner", "a finance team", "a hospital", "a clothing brand").
-           Words a 12-year-old knows. No jargon, no buzzwords (platform, solution, leverage, seamless, AI-native, empower, transform).
+           Words a 12-year-old knows. No jargon, no buzzwords (platform, solution, leverage, seamless, AI-native, empower, transform,
+           workflow, streamline, optimize, insights, end-to-end, at scale, ecosystem, unified, robust, scalable, actionable, digital experience).
+           Prefer concrete nouns people can picture (cards, cameras, a spreadsheet, a checklist, a phone call) over abstract ones (processes, operations, data).
            No numbers, customer names or claims that aren't in the posting. No em dashes. Under 60 words.
            Null if the posting doesn't say what the product does.
-  "short": the same idea in 4 to 8 words, for a job card. Example: "Texts and emails picked for each shopper". Null if story is null.
+  "short": the same idea in 4 to 10 words, for a job card. Name the actual thing and who uses it,
+           the way you'd explain it to a friend at a barbecue. If a friend would ask "but what IS it?", it's too vague.
+           Good: "GPS trackers and dash cams for truck fleets", "A to-do list for whole teams",
+                 "Company cards that track what employees spend", "Tablets that replace paper checklists in factories".
+           Bad: "Shared workflows that help teams get work done", "One place to run all hiring work",
+                "Business payments that partners can build in", "Automated checks of jobs and income".
+           Null if story is null.
   "quote": the sentence from the posting that the story is based on, copied character for character (max 300 chars). Null if story is null.
   "category": the category name, following the category rules below. Null if the postings don't say what they sell.
 }
@@ -65,7 +73,8 @@ ${CATEGORY_RULES}
 Use ONLY the postings. Never use anything you know about the company from outside them.
 If the postings are only about the role and never describe the product, return all nulls.`;
 
-const BANNED_RE = /\b(platform|solutions?|leverag\w*|seamless\w*|empower\w*|transform\w*|synerg\w*|cutting-edge|best-in-class|AI-native)\b/gi;
+const BANNED_RE =
+  /\b(platform|solutions?|leverag\w*|seamless\w*|empower\w*|transform\w*|synerg\w*|cutting-edge|best-in-class|AI-native|workflows?|streamlin\w*|optimi[sz]\w*|insights?|end-to-end|at scale|ecosystems?|unified|holistic|robust|scalable|actionable)\b/gi;
 
 /** What's wrong with a draft, in words the model can act on. Empty means it's fine. */
 export function problemsWith(raw: Partial<ProductInfo> | null | undefined, posting: string): string[] {
@@ -74,7 +83,7 @@ export function problemsWith(raw: Partial<ProductInfo> | null | undefined, posti
   const banned = [...new Set([...(raw.story + " " + (raw.short ?? "")).matchAll(BANNED_RE)].map((m) => m[0].toLowerCase()))];
   if (banned.length) out.push(`It uses these banned words: ${banned.join(", ")}. Say what the thing actually does instead.`);
   if (raw.story.split(/\s+/).length > 70) out.push("The story is too long. Keep it under 60 words.");
-  if (raw.short && raw.short.split(/\s+/).length > 10) out.push("The short line is too long. Use 4 to 8 words.");
+  if (raw.short && raw.short.split(/\s+/).length > 12) out.push("The short line is too long. Use 4 to 10 words.");
   if (!quoteInPosting(raw.quote, posting)) out.push("The quote isn't copied exactly from the posting. Copy one real sentence character for character.");
   if (raw.category && !PRODUCT_CATEGORIES.includes(raw.category as ProductCategory)) out.push(`The category must be one of: ${PRODUCT_CATEGORIES.join(", ")}.`);
   return out;
