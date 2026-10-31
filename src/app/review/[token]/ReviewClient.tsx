@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition, type ReactNode } from "react";
 import type { ReviewStatus, Verdict } from "@/lib/sponsor-review";
 import { sendReview } from "./actions";
+import { ExplainerVideo } from "@/components/ExplainerVideo";
 
 type Key = "video" | "ad";
 interface Asset {
@@ -147,7 +148,7 @@ export function ReviewClient({
           title: "The explainer video",
           blurb: "Shows sellers what they'd sell before they read a word.",
           body: (
-            <video src={video!.src} controls playsInline preload="metadata" className="aspect-[4/5] w-full rounded-xl bg-ink" />
+            <ExplainerVideo src={video!.src} label="Play (60 sec)" />
           ),
         }
       : {

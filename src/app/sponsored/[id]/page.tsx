@@ -7,6 +7,7 @@ import { AttainmentBadge, sponsorWhere } from "@/components/SponsoredCard";
 import { bump, getOrder, logoUrl, reviewFields, videoUrl } from "@/lib/sponsor";
 import { videoApproved } from "@/lib/sponsor-review";
 import { AdText } from "@/components/AdText";
+import { ExplainerVideo } from "@/components/ExplainerVideo";
 import { isRunning, payLine } from "@/lib/sponsor-form";
 import { isUuid } from "@/lib/picks-subscribe";
 import { isBot } from "@/lib/visits";
@@ -97,7 +98,7 @@ export default async function SponsoredJobPage({ params }: Props) {
       )}
 
       {s.video_path && videoApproved(reviewFields(s)) && (
-        <video src={videoUrl(s.video_path)!} controls playsInline preload="metadata" className="mt-6 aspect-[4/5] w-full max-w-md rounded-2xl bg-ink" />
+        <ExplainerVideo src={videoUrl(s.video_path)!} label="Watch: what you'd sell" className="mt-6 max-w-md rounded-2xl" />
       )}
 
       <AdText text={s.description} className="mt-6" />
