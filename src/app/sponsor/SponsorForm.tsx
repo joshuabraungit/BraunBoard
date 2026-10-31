@@ -196,7 +196,7 @@ export function SponsorForm({ price, canceled }: { price: string; canceled: bool
 
       <fieldset className="space-y-4">
         <legend className="mb-3 text-lg font-bold tracking-tight">Timing</legend>
-        <Field name="start_date" label="Preferred start date" hint="Optional. Leave blank and it goes live as soon as I've set it up." error={e.start_date}>
+        <Field name="start_date" label="When should your listing go live?" hint="Optional. This is when your ad appears on Braun Board, not the new hire's start date. Leave blank and it goes live as soon as you approve the rewrite." error={e.start_date}>
           <input id="start_date" name="start_date" type="date" min={today} defaultValue={v.start_date} className={`${input} sm:max-w-56`} {...err("start_date")} />
         </Field>
         <Field name="notes" label="Anything else I should know?" hint="Optional." error={e.notes}>
