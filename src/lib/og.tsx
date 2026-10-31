@@ -14,7 +14,9 @@ const OWL = `data:image/svg+xml;utf8,${encodeURIComponent(
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
 
-export function OgCard({ kicker, title, line, sub }: { kicker?: string; title: string; line?: string; sub?: string }) {
+const FOOTER = "braunboard.com · B2B sales jobs, with the pay and what the posting leaves out";
+
+export function OgCard({ kicker, title, line, sub, footer = FOOTER }: { kicker?: string; title: string; line?: string; sub?: string; footer?: string }) {
   const t = clip(title, 90);
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: BG, padding: "64px 72px", fontFamily: "sans-serif" }}>
@@ -30,7 +32,7 @@ export function OgCard({ kicker, title, line, sub }: { kicker?: string; title: s
         {sub && <div style={{ fontSize: 30, color: INK2, marginTop: 14 }}>{clip(sub, 80)}</div>}
       </div>
       <div style={{ display: "flex", fontSize: 26, color: INK2, borderTop: "2px solid #d9d3c7", paddingTop: 22 }}>
-        braunboard.com · B2B sales jobs, with the pay and what the posting leaves out
+        {footer}
       </div>
     </div>
   );
