@@ -109,3 +109,36 @@ describe("Strategic Cuisines", () => {
     expect(classifyTitle("Strategic Account Executive")?.sales_segment).toBe("Strategic");
   });
 });
+
+describe("classifyTitle: medtech field sales", () => {
+  it.each([
+    "Territory Manager - Detroit South",
+    "Associate Territory Manager - Cherry Hill, NJ",
+    "Territory Representative - SF/East Bay",
+    "Houston, TX based Territory Sales Manager - Remote, USA",
+    "Medical Device Sales Associate Territory Account Manager",
+    "Cryo Nerve Block Territory Manager-Minnesota",
+    "Vascular Territory Manager (Inland Empire, CA)",
+    "Medical Sales Representative (Chicago, IL)",
+    "Clinical Sales Representative - Atlanta",
+    "Clinical Sales Associate - Buffalo, NY",
+    "Sales Associate - Medical Device",
+  ])("%s -> individual contributor sales role", (t) => {
+    const c = classifyTitle(t)!;
+    expect(c).not.toBeNull();
+    expect(c.role_family).toBe("Account Executive");
+    expect(c.seniority).toBe("Individual Contributor");
+  });
+
+  it.each([
+    "Clinical Specialist - Kansas City",
+    "Senior Clinical Specialist",
+    "San Antonio, TX based Clinical Specialist - Remote, USA",
+    "Cryo Nerve Block Clinical Specialist - Dallas",
+    "Clinical Account Manager - Cleveland/Upstate New York",
+    "Clinical Account Specialist - Midwest",
+    "Regional Manager, Clinical Excellence (Midwest)",
+  ])("%s -> excluded (clinical, no quota)", (t) => {
+    expect(classifyTitle(t)).toBeNull();
+  });
+});
