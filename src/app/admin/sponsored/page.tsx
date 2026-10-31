@@ -194,7 +194,12 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                         {st === "running" ? "View job page ↗" : "Preview job page ↗"}
                       </Link>
                     )}
-                    {st === "approve" && (
+                    {st === "approve" && !rev.allApproved && (
+                      <button type="button" disabled className="cursor-not-allowed rounded-md bg-line px-3 py-1.5 text-sm font-semibold text-ink-3">
+                        Mark live
+                      </button>
+                    )}
+                    {st === "approve" && rev.allApproved && (
                       <form action={goLive}>
                         <input type="hidden" name="id" value={r.id} />
                         <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">
@@ -247,7 +252,9 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                     </p>
                   )}
                   {st === "approve" && !rev.allApproved && (
-                    <p className="mt-2 text-xs text-amber">Heads up: the client hasn&apos;t approved everything yet.</p>
+                    <p className="mt-2 text-xs text-amber">
+                      Mark live unlocks once {r.contact_name.split(" ")[0]} approves {rev.video ? "both the video and the job ad" : "the job ad"} on the review link.
+                    </p>
                   )}
                   {st === "approve" && runningCount >= 2 && (
                     <p className="mt-2 text-xs text-amber">Both home page spots are taken. If you approve it now, it starts automatically when a spot opens, and gets its full 30 days from then.</p>

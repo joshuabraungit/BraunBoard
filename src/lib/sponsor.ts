@@ -328,6 +328,9 @@ export async function markLive(id: string): Promise<SponsoredJobRow> {
   const order = await getOrder(id);
   if (!order) throw new Error("Order not found");
   if (order.status !== "paid") throw new Error(`Can't go live from ${order.status}`);
+  // Nothing goes up until the client has approved every piece (the video, if there is one, and the ad).
+  if (!reviewSummary(reviewFields(order)).allApproved)
+    throw new Error(`${order.contact_name.split(" ")[0]} hasn't approved everything yet. Mark live unlocks once every piece has a thumbs up.`);
   const { data: booked } = await adminClient()
     .from("sponsored_jobs")
     .select("live_at, ends_at")
