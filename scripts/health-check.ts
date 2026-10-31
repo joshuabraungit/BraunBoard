@@ -11,13 +11,14 @@ import { fail, notice, requireEnv, warn } from "./report";
 
 const SITE = process.env.SITE_URL ?? "https://www.braunboard.com";
 const HOUR = 3_600_000;
+const HEALTH_CHECK_UA = "BraunBoard-HealthCheck";
 
-interface Check { path: string; expect?: RegExp; type?: RegExp }
+interface Check { path: string; expect?: RegExp; type?: RegExp; cookie?: string }
 
 async function load(c: Check): Promise<string | null> {
   const t0 = Date.now();
   try {
-    const res = await fetch(SITE + c.path, { headers: { "user-agent": "BraunBoard-HealthCheck" }, signal: AbortSignal.timeout(30_000) });
+    const res = await fetch(SITE + c.path, { headers: { "user-agent": HEALTH_CHECK_UA, ...(c.cookie ? { cookie: c.cookie } : {}) }, signal: AbortSignal.timeout(30_000) });
     const ms = Date.now() - t0;
     if (!res.ok) return `${c.path} returned ${res.status}`;
     const type = res.headers.get("content-type") ?? "";
@@ -56,7 +57,10 @@ async function main() {
     { path: "/sitemap.xml", expect: /\/jobs\// },
     { path: "/robots.txt", expect: /Sitemap/i },
     { path: "/opengraph-image", type: /image\/png/ },
-    { path: "/kit/before-you-say-yes.pdf", type: /pdf/ },
+    // The kit is behind an email. The old PDF link should send people to the signup form,
+    // and someone who signed up (has the kit cookie) should get the actual PDF.
+    { path: "/kit/before-you-say-yes.pdf", expect: /Before You Say Yes/ },
+    { path: "/kit/download", type: /pdf/, cookie: "bb_kit=1" },
     { path: "/report/braun-board-job-market-report-october-2026.pdf", type: /pdf/ },
   ];
   if (job) {
