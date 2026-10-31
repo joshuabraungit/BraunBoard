@@ -148,10 +148,10 @@ export function renderCustomerReceipt(o: SponsoredJobRow, invoice: Invoice | nul
     `Hi ${o.contact_name.trim().split(/\s+/)[0]},`,
     `Your payment came through.`,
     `Here's what happens next.`,
-    `I read every sponsored job before it goes up. Usually within one business day.`,
-    `If it doesn't qualify, you get a full refund.`,
-    `Once it's approved, it sits at the top of the Braun Board home page for ${SPONSOR_DAYS} days.`,
-    `It also goes out in a LinkedIn post and a newsletter send.`,
+    `I'll read your job and rewrite it in plain English. Usually within one business day.`,
+    `You'll get the rewrite to approve. Change anything you like. Nothing goes up until you say yes.`,
+    `Once you approve it, it sits at the top of the Braun Board home page for ${SPONSOR_DAYS} days. It also goes out in a LinkedIn post and a newsletter send.`,
+    `If your job doesn't qualify, you get a full refund.`,
     `You'll get an email from me when it's live, with a link to the page sellers see.`,
   ];
   const after = [`Something off? Just reply. It comes straight to me.`, `Josh`];
