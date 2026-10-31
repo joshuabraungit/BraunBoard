@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseLocation } from "../src/lib/ingest/location";
+import { cleanCity, parseLocation } from "../src/lib/ingest/location";
 import { titleNamesCanadaOnly, titleNamesForeignOnly } from "../src/lib/ingest/location";
 
 describe("parseLocation", () => {
@@ -98,5 +98,28 @@ describe("Canada", () => {
     expect(titleNamesCanadaOnly("Senior Majors Account Executive, Toronto")).toBe(true);
     expect(titleNamesCanadaOnly("Territory Account Executive, Eastern Canada")).toBe(true);
     expect(titleNamesCanadaOnly("Enterprise AE (US/Canada)")).toBe(false);
+  });
+});
+
+describe("cities as people write them", () => {
+  it("drops the country wedged between city and state", () => {
+    expect(parseLocation("New York, US, New York")).toMatchObject({ city: "New York", state: "NY" });
+    expect(parseLocation("Redwood City, US, California")).toMatchObject({ city: "Redwood City", state: "CA" });
+    expect(parseLocation("Remote, US, Virginia")).toMatchObject({ city: null, state: "VA", markets: ["US"] });
+  });
+  it("spells out short names and fixes casing", () => {
+    expect(parseLocation("CHI, SF,NYC, SEA").city).not.toBe("Nyc");
+    expect(parseLocation("NYC")).toMatchObject({ city: "New York", state: "NY" });
+    expect(parseLocation("SF")).toMatchObject({ city: "San Francisco", state: "CA" });
+    expect(parseLocation("x", { country: "US", region: "NY", city: "new york" }).city).toBe("New York");
+  });
+  it("never uses a country, a state code or a street address as the city", () => {
+    expect(cleanCity("US")).toBeNull();
+    expect(cleanCity("United States")).toBeNull();
+    expect(cleanCity("NC")).toBeNull();
+    expect(cleanCity("300 Montgomery St Suite 500 San Francisco")).toBe("San Francisco");
+    expect(cleanCity("1200 Some Rd Suite 4")).toBeNull();
+    expect(cleanCity("St. Louis")).toBe("St. Louis");
+    expect(cleanCity("Bay Area")).toBe("Bay Area");
   });
 });

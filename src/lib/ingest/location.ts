@@ -60,6 +60,37 @@ const NOT_UK = /\b(new south wales|nsw|australia|ontario|canada|new england|new 
 
 const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
 
+// Short or slangy names job boards use, shown the way people write them.
+const CITY_ALIASES: Record<string, string> = {
+  nyc: "New York", "new york city": "New York City", sf: "San Francisco", "sf bay area": "Bay Area",
+  la: "Los Angeles", "washington dc": "Washington", "washington d.c.": "Washington", "washington, d.c.": "Washington",
+  gta: "Greater Toronto Area",
+};
+const KNOWN_CITIES = [...Object.keys(US_CITIES), ...Object.keys(CA_CITIES), ...UK_CITIES].sort((a, b) => b.length - a.length);
+
+/**
+ * The city as people would write it, or null when it isn't a city at all:
+ * a country ("US"), a state code ("NC"), a street address, "Remote".
+ */
+export function cleanCity(city: string | null | undefined): string | null {
+  const c = city?.trim().replace(/\s+/g, " ");
+  if (!c) return null;
+  const lower = c.toLowerCase();
+  if (/^(us|usa|u\.s\.a?\.?|united states( of america)?|canada|uk|united kingdom|remote|hybrid|anywhere|flexible|n\/a|tbd)$/i.test(c)) return null;
+  if (/^[A-Za-z]{2}$/.test(c) && (US_STATES[c.toUpperCase()] || CA_PROVINCES[c.toUpperCase()]) && !CITY_ALIASES[lower]) return null;
+  if (CITY_ALIASES[lower]) return CITY_ALIASES[lower]!;
+  // A street address: keep the city it ends with, if we know it.
+  if (/\d/.test(c)) {
+    const known = KNOWN_CITIES.find((k) => new RegExp(`(^|[^a-z])${k.replace(/[.,]/g, "\\$&")}$`).test(lower));
+    return known ? CITY_ALIASES[known] ?? titleCase(known) : null;
+  }
+  // "new york" -> "New York"; leave mixed case alone ("McAllen", "St. Louis").
+  return c === lower ? titleCase(c) : c;
+}
+
+/** "Redwood City, US, California" -> "Redwood City, California": drop the country wedged between city and state. */
+const dropMiddleCountry = (part: string) => part.replace(/,\s*(?:US|USA|United States)\s*,/gi, ",");
+
 /** UK-only parsing of one location fragment. */
 function parseUkPart(part: string): { city: string | null; state: string | null; country: "UK" } | null {
   if (NOT_UK.test(part)) return null;
@@ -149,13 +180,14 @@ export function parseLocation(
   const remote_type = parseRemoteType(text, hints.workplace);
   const out = (p: { city: string | null; state: string | null; country: string | null }, markets: Market[]): ParsedLocation => ({
     ...p,
+    city: cleanCity(p.city),
     remote_type,
     markets,
     is_us: markets.includes("US"),
   });
 
   // Every market named anywhere in the string ("Remote - US / Remote - Canada" is both).
-  const parts = text.split(/\s*(?:\/|;|\bor\b|\||•)\s*/i).filter(Boolean);
+  const parts = text.split(/\s*(?:\/|;|\bor\b|\||•)\s*/i).filter(Boolean).map(dropMiddleCountry);
   const markets = new Set<Market>();
   let usPlace: Omit<ParsedLocation, "remote_type" | "is_us" | "markets"> | null = null;
   let caPlace: ReturnType<typeof parseCaPart> = null;
