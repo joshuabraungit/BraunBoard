@@ -77,9 +77,9 @@ export default function EmployersPage() {
     <div className="mx-auto max-w-2xl">
       {/* The offer, up front */}
       <p className="text-xs font-bold uppercase tracking-wide text-accent">For employers</p>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Hiring a salesperson? Help them picture the job.</h1>
+      <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Your job, in front of people who sell for a living.</h1>
       <p className="mt-4 text-lg leading-relaxed text-ink-2">
-        I&apos;ll rewrite your ad in plain English, pin it to Braun Board for {SPONSOR_DAYS} days, and share it on LinkedIn and in my newsletter.
+        Hiring a salesperson? I&apos;ll rewrite your ad in plain English, pin it to Braun Board for {SPONSOR_DAYS} days, and share it on LinkedIn and in my newsletter.
       </p>
       <p className="mt-4 text-xl font-bold">{price || "One price"}. One payment.</p>
       <div className="mt-6">
