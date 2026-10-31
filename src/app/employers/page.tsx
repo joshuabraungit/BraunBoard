@@ -48,6 +48,40 @@ const STEPS = [
   [`${SPONSOR_DAYS === 30 ? "Thirty" : SPONSOR_DAYS} days later, it comes down.`, "No renewals. No surprise charges."],
 ] as const;
 
+// Before and after for "What you'll sell". Based on a real sponsored job; company not named.
+const SELL_BEFORE =
+  "As a mission-driven, insights-led organization, we empower public sector, nonprofit, and enterprise stakeholders to unlock actionable intelligence across diverse audience ecosystems. Leveraging a proprietary blend of quantitative and qualitative methodologies, we deliver end-to-end research solutions that drive evidence-based decision-making at scale.";
+const SELL_AFTER = [
+  "Picture a town deciding whether to build a new park.",
+  "At the public meeting, three people want pickleball courts. Two want a playground. Dave wants a merry-go-round.",
+  "But what about the thousands of residents who weren't there?",
+  "You'll sell research that helps the town hear from them, too.",
+  "The company uses surveys to find out what people want and interviews to understand why. The town can use those answers to decide what to build before spending the money.",
+  "You'll sell that same kind of research to nonprofits, governments, and businesses facing big decisions.",
+];
+
+function SellBeforeAfter() {
+  return (
+    <section className="mt-16">
+      <H2>What you&apos;ll sell, before and after</H2>
+      <p className="mt-2 text-[17px] text-ink-2">Same company. Same product. Which one makes you want the job?</p>
+      <div className="mt-6 rounded-2xl border border-line bg-bg p-6 sm:p-8">
+        <p className="text-xs font-bold uppercase tracking-wide text-ink-3">Before</p>
+        <p className="mt-3 text-[17px] leading-relaxed text-ink-3">{SELL_BEFORE}</p>
+      </div>
+      <div className="mt-4 rounded-2xl border border-line bg-white p-6 shadow-[0_8px_30px_rgba(22,20,15,0.06)] sm:p-8">
+        <p className="text-xs font-bold uppercase tracking-wide text-accent">After</p>
+        <p className="mt-3 text-xl font-bold tracking-tight">What you&apos;ll sell</p>
+        <div className="mt-4 space-y-4 text-[17px] leading-relaxed text-ink">
+          {SELL_AFTER.map((t) => (
+            <p key={t}>{t}</p>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function H2({ children }: { children: React.ReactNode }) {
   return <h2 className="text-2xl font-bold tracking-tight">{children}</h2>;
 }
@@ -117,6 +151,8 @@ export default function EmployersPage() {
           to show. That&apos;s why sellers trust the board you&apos;re on.
         </p>
       </section>
+
+      <SellBeforeAfter />
 
       {/* What it costs */}
       <section className="mt-16 rounded-2xl border border-line bg-surface p-6 sm:p-8">
