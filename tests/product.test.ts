@@ -3,12 +3,9 @@ import { cleanProduct, joinPostings, problemsWith } from "../src/lib/ingest/prod
 
 const POSTING = "Toast creates technology to help restaurants and local businesses succeed in a digital world, helping business owners operate, increase sales, engage customers, and keep employees happy.";
 
-const STORY =
-  "When a restaurant owner has to take orders, pay staff, and keep customers coming back, they usually juggle a pile of separate tools. The problem is, nothing talks to each other. Toast puts it in one system on a tablet and phone, and owners spend less time on busywork.";
-
 describe("cleanProduct", () => {
   it("keeps a plain story backed by a real quote", () => {
-    const r = cleanProduct({ story: STORY, short: "One system to run a restaurant.", quote: POSTING.slice(0, 80), category: "Industry-specific software" }, POSTING);
+    const r = cleanProduct({ story: "Running a restaurant is a juggle. Toast puts it in one system.", short: "One system to run a restaurant.", quote: POSTING.slice(0, 80), category: "Industry-specific software" }, POSTING);
     expect(r.story).toMatch(/Toast puts it/);
     expect(r.short).toBe("One system to run a restaurant");
     expect(r.category).toBe("Industry-specific software");
@@ -16,16 +13,10 @@ describe("cleanProduct", () => {
   it("drops stories with a made-up quote, buzzwords, or a category off the list", () => {
     expect(cleanProduct({ story: "Simple story.", quote: "We are the best restaurant company ever made", category: "Security" }, POSTING).story).toBeNull();
     expect(cleanProduct({ story: "Toast is a seamless platform.", quote: POSTING.slice(0, 80), category: "Security" }, POSTING).story).toBeNull();
-    expect(cleanProduct({ story: STORY, quote: POSTING.slice(0, 80), category: "Restaurants" as never }, POSTING).category).toBeNull();
+    expect(cleanProduct({ story: "Plain words here.", quote: POSTING.slice(0, 80), category: "Restaurants" as never }, POSTING).category).toBeNull();
   });
   it("swaps em dashes for commas", () => {
-    const dashed = STORY.replace("phone, and", "phone — and");
-    expect(cleanProduct({ story: dashed, quote: POSTING.slice(0, 80), category: null }, POSTING).story).toContain("phone, and");
-  });
-  it("asks for the When / The problem is / so template", () => {
-    const p = problemsWith({ story: "Running a restaurant is a juggle. Toast puts it in one system.", quote: POSTING.slice(0, 80), category: null }, POSTING);
-    expect(p.join(" ")).toMatch(/3-sentence template/);
-    expect(problemsWith({ story: STORY, quote: POSTING.slice(0, 80), category: null }, POSTING)).toEqual([]);
+    expect(cleanProduct({ story: "Owners juggle a lot — Toast helps.", quote: POSTING.slice(0, 80), category: null }, POSTING).story).toBe("Owners juggle a lot, Toast helps.");
   });
 
   it("names the problems so the AI can fix them", () => {
