@@ -8,79 +8,51 @@ export const metadata: Metadata = {
   alternates: { canonical: "/employers" },
   title: "For employers: sponsor a sales job · Braun Board",
   description:
-    "Job ads started needing a translator. Braun Board explains your sales job in plain English, with pay up front. Josh rewrites it, you approve it. One price, once.",
+    "Hiring a salesperson? Josh rewrites your job ad in plain English, pins it to Braun Board for 30 days, and shares it on LinkedIn and in his newsletter. $750, one payment.",
 };
 
-// Josh's voice: one idea per line, plain words, a little levity. No em dashes.
-const LETTER: (string | "BADGE")[] = [
-  "Picture a great seller looking for their next job.",
-  "They're excited. Then they open the job ad.",
-  "\u201cWe're seeking a results-oriented hunter to evangelize our disruptive solution in a fast-paced environment.\u201d",
-  "Somewhere along the way, job ads started needing a translator.",
+// Josh's voice: plain English, short paragraphs, warm, a little funny. No hype, no em dashes,
+// and no promises about hiring results. Only claims the product actually backs up.
+const LETTER = [
+  "I'm Josh, founder of Braun Board.",
+  "Picture a great seller looking for their next job. They're excited. Then they open the job ad.",
+  "“We're seeking a results-oriented hunter to evangelize our disruptive solution in a fast-paced environment.”",
   "Everyone's a rock star. Every company's a rocket ship. Apparently, we're starting a band in space.",
-  "Meanwhile, what sellers care about is missing.",
-  "What will I sell? What's the base? The OTE? How many reps actually earn it? Will I get leads, or build my own list between demos?",
-  "\u201cUncapped earning potential\u201d sounds lovely. So does winning the lottery. I'd still like to know the odds.",
-  "When sellers can't picture the job, they don't apply. Even the perfect ones.",
+  "Meanwhile, the questions sellers actually have go unanswered. What will I sell? What's the base? The OTE? How many reps earn it? Where do the leads come from?",
+  "When sellers can't picture the job, some move on. Including people you'd want to meet.",
   "So I started Braun Board. A job board for salespeople, written for humans.",
-  "I explain, in plain English, what you sell, who buys it, and what the seller will actually do all day.",
-  "Pay is up front. Companies that share how many reps hit OTE get a badge.",
-  "BADGE",
-  "A job ad should help a seller decide whether to talk. Not require a decoder ring.",
-  "There are good sales jobs out there.",
-];
+] as const;
 
 const GET = [
-  ["I rewrite your job in plain English.", "What you sell, who buys it, and what the seller will actually do all day. You approve every word."],
-  [`${SPONSOR_DAYS} days at the top of the home page.`, "It's the first thing sellers see."],
-  ["A LinkedIn post.", "I share your job with my audience of sales folks."],
-  ["A newsletter send.", "Your job lands in the inbox of sellers who asked for jobs."],
-  ["Your own job page.", "Pay, what you sell, and an Apply button that goes straight to your posting."],
-  ["The OTE badge, if you want it.", "Share how many reps hit OTE and it shows on your listing."],
+  ["A plain-English rewrite.", "What you sell, who buys it, and what the job looks like day to day. You approve it before it goes up."],
+  [`${SPONSOR_DAYS} days pinned to the top of the home page.`, "Above the newest jobs, where sellers start."],
+  ["One LinkedIn post.", "I share your job with the people who follow me there."],
+  ["One newsletter send.", "Your job goes out in my newsletter."],
+  ["Your own job page.", "Pay, what you sell, and an Apply button that goes to your application."],
+  ["An optional OTE badge.", "More on that below."],
 ] as const;
 
 const STEPS = [
-  ["Paste in your job.", "Plus a few details: pay, location, and when you want it to go live. About five minutes. Then pay."],
-  ["I read it.", "Usually within one business day. If it's not a sales role, or base pay is missing, I'll tell you why and refund you."],
-  ["I rewrite it.", "The job, and what you sell, both in plain English. I'll send it over. Change anything you want. Nothing goes up without your OK."],
-  ["It goes live.", "On the date you picked. I'll email you the link."],
-  ["I share it.", "A LinkedIn post and a newsletter send."],
-  [`${SPONSOR_DAYS === 30 ? "Thirty" : SPONSOR_DAYS} days later, it comes down.`, "No renewals. No surprise charges."],
+  ["Submit and pay.", "Paste in your job and add pay, location, and when you'd like it to start. About five minutes."],
+  ["I review it.", "Usually within one business day. If it isn't a sales role or base pay is missing, you get a full refund."],
+  ["I rewrite it. You approve it.", "I send you the plain-English version. Change anything you like. Nothing goes up until you say yes."],
+  [
+    "It goes live, and I share it.",
+    "On your start date, or once you approve if that's later. Two jobs are featured at a time, so if both spots are taken, yours starts when one opens. Then the LinkedIn post and the newsletter send.",
+  ],
+  [`It ends after ${SPONSOR_DAYS} days.`, "No renewal. No surprise charge."],
 ] as const;
 
-// Before and after for "What you'll sell". Based on a real sponsored job; company not named.
-const SELL_BEFORE =
+// Illustrative: the "before" is written for this page, not taken from a real posting.
+const BEFORE =
   "As a mission-driven, insights-led organization, we empower public sector, nonprofit, and enterprise stakeholders to unlock actionable intelligence across diverse audience ecosystems. Leveraging a proprietary blend of quantitative and qualitative methodologies, we deliver end-to-end research solutions that drive evidence-based decision-making at scale.";
-const SELL_AFTER = [
+const AFTER = [
   "Picture a town deciding whether to build a new park.",
   "At the public meeting, three people want pickleball courts. Two want a playground. Dave wants a merry-go-round.",
   "But what about the thousands of residents who weren't there?",
-  "You'll sell research that helps the town hear from them, too.",
-  "The company uses surveys to find out what people want and interviews to understand why. The town can use those answers to decide what to build before spending the money.",
+  "You'll sell research that helps the town hear from them too: surveys to learn what people want, interviews to learn why. Then the town decides before it spends the money.",
   "You'll sell that same kind of research to nonprofits, governments, and businesses facing big decisions.",
 ];
-
-function SellBeforeAfter() {
-  return (
-    <section className="mt-16">
-      <H2>What you&apos;ll sell, before and after</H2>
-      <p className="mt-2 text-[17px] text-ink-2">Same company. Same product. Which one makes you want the job?</p>
-      <div className="mt-6 rounded-2xl border border-line bg-bg p-6 sm:p-8">
-        <p className="text-xs font-bold uppercase tracking-wide text-ink-3">Before</p>
-        <p className="mt-3 text-[17px] leading-relaxed text-ink-3">{SELL_BEFORE}</p>
-      </div>
-      <div className="mt-4 rounded-2xl border border-line bg-white p-6 shadow-[0_8px_30px_rgba(22,20,15,0.06)] sm:p-8">
-        <p className="text-xs font-bold uppercase tracking-wide text-accent">After</p>
-        <p className="mt-3 text-xl font-bold tracking-tight">What you&apos;ll sell</p>
-        <div className="mt-4 space-y-4 text-[17px] leading-relaxed text-ink">
-          {SELL_AFTER.map((t) => (
-            <p key={t}>{t}</p>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 function H2({ children }: { children: React.ReactNode }) {
   return <h2 className="text-2xl font-bold tracking-tight">{children}</h2>;
@@ -103,66 +75,114 @@ export default function EmployersPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      {/* The letter */}
+      {/* The offer, up front */}
       <p className="text-xs font-bold uppercase tracking-wide text-accent">For employers</p>
-      <div className="mt-5 sm:mt-8">
-        <article>
-          <h1 className="text-[19px] leading-relaxed text-ink sm:text-[21px]">
-            Hey there,
-            <br />
-            <br />
-            I&apos;m Josh, founder of Braun Board.
-          </h1>
-          <div className="mt-6 space-y-6 text-[19px] leading-relaxed text-ink sm:text-[21px]">
-            {LETTER.map((line) =>
-              line === "BADGE" ? (
-                <p key={line}>
-                  <span className="text-base">
-                    <AttainmentBadge pct={70} />
-                  </span>
-                </p>
-              ) : (
-                <p key={line}>{line}</p>
-              ),
-            )}
-            <p>Let&apos;s make yours easier to understand.</p>
-          </div>
-          <p className="mt-10 font-serif text-2xl italic text-ink">Josh</p>
-        </article>
-      </div>
-      <div className="mt-10 text-center">
+      <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Hiring a salesperson? Help them picture the job.</h1>
+      <p className="mt-4 text-lg leading-relaxed text-ink-2">
+        I&apos;ll rewrite your ad in plain English, pin it to Braun Board for {SPONSOR_DAYS} days, and share it on LinkedIn and in my newsletter.
+      </p>
+      <p className="mt-4 text-xl font-bold">{price || "One price"}. One payment.</p>
+      <div className="mt-6">
         <Cta price={price} big />
       </div>
 
+      {/* The letter */}
+      <section className="mt-16 border-t border-line pt-12">
+        <div className="space-y-5 text-lg leading-relaxed text-ink sm:text-[19px]">
+          <p>Hey there,</p>
+          {LETTER.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+          <p>
+            I explain, in plain English, what you sell, who buys it, and what the seller will do all day. Pay goes up front. Let&apos;s make your job easier to
+            understand.
+          </p>
+        </div>
+        <p className="mt-8 font-serif text-2xl italic text-ink">Josh</p>
+      </section>
+
       {/* What you get */}
       <section className="mt-16">
-        <H2>What you get</H2>
+        <H2>What {price || "it"} gets you</H2>
         <ul className="mt-5 space-y-4 text-[17px] leading-relaxed">
           {GET.map(([title, rest]) => (
-            <li key={title}>
-              <span className="font-semibold text-ink">{title}</span> <span className="text-ink-2">{rest}</span>
+            <li key={title} className="flex gap-3">
+              <span aria-hidden="true" className="mt-0.5 font-bold text-accent">
+                ✓
+              </span>
+              <span>
+                <span className="font-semibold text-ink">{title}</span> <span className="text-ink-2">{rest}</span>
+              </span>
             </li>
           ))}
         </ul>
-        <p className="mt-6 text-[17px] leading-relaxed text-ink-2">
-          One thing you won&apos;t get: a Braun Read. Every other job here gets my honest take. Sponsored jobs don&apos;t. I don&apos;t grade what I&apos;m paid
-          to show. That&apos;s why sellers trust the board you&apos;re on.
-        </p>
+        <p className="mt-5 text-[15px] text-ink-3">That&apos;s the whole package. Same price for every job.</p>
       </section>
 
-      <SellBeforeAfter />
-
-      {/* What it costs */}
-      <section className="mt-16 rounded-2xl border border-line bg-surface p-6 sm:p-8">
-        <H2>What it costs</H2>
-        <p className="mt-4 text-3xl font-bold tracking-tight">{price || "One price"}. Once.</p>
-        <div className="mt-4 space-y-3 text-[17px] leading-relaxed text-ink-2">
-          <p>No subscription. No &ldquo;contact sales for pricing.&rdquo; (I&apos;d know. I teach sales.)</p>
-          <p>
-            <span className="font-semibold text-ink">Two rules:</span> it has to be a sales role, and it has to show base pay.
-          </p>
-          <p>If it doesn&apos;t qualify, you get your money back.</p>
+      {/* Before and after */}
+      <section className="mt-16">
+        <H2>What the rewrite looks like</H2>
+        <p className="mt-2 text-[15px] text-ink-3">Illustrative example.</p>
+        <div className="mt-5 rounded-2xl border border-line bg-bg p-6 sm:p-7">
+          <p className="text-xs font-bold uppercase tracking-wide text-ink-3">Before</p>
+          <p className="mt-3 text-[16px] leading-relaxed text-ink-3">{BEFORE}</p>
         </div>
+        <div className="mt-4 rounded-2xl border border-line bg-surface p-6 shadow-[0_8px_30px_rgba(22,20,15,0.06)] sm:p-7">
+          <p className="text-xs font-bold uppercase tracking-wide text-accent">After</p>
+          <p className="mt-3 text-xl font-bold tracking-tight">What you&apos;ll sell</p>
+          <div className="mt-3 space-y-3 text-[17px] leading-relaxed text-ink">
+            {AFTER.map((t) => (
+              <p key={t}>{t}</p>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* OTE badge */}
+      <section className="mt-16">
+        <H2>The OTE badge</H2>
+        <div className="mt-4 space-y-4 text-[17px] leading-relaxed text-ink-2">
+          <p>Sellers want to know how many reps actually earn the OTE. Most job ads don&apos;t say.</p>
+          <p>
+            When you submit your job, there&apos;s one optional question: what percentage of fully ramped reps earned their full OTE last year? Answer it and a
+            badge shows on your listing.
+          </p>
+          <p className="flex flex-wrap items-center gap-2 text-[15px] text-ink-3">
+            <span>Example badge:</span>
+            <AttainmentBadge pct={70} />
+          </p>
+          <p>The number comes from you, and it&apos;s shown as you report it. Skip the question and nothing shows. Nothing says it&apos;s missing either.</p>
+        </div>
+      </section>
+
+      {/* Sponsored-job standards */}
+      <section className="mt-16">
+        <H2>What &ldquo;Sponsored&rdquo; means</H2>
+        <div className="mt-4 space-y-4 text-[17px] leading-relaxed text-ink-2">
+          <p>
+            Every other job on Braun Board gets a Braun Read. It&apos;s my quick take on the posting: the pay, the red flags and green ones, what it leaves out,
+            and what to ask on the first call.
+          </p>
+          <p>
+            Sponsored jobs don&apos;t get one. <span className="font-semibold text-ink">I don&apos;t grade what I&apos;m paid to show.</span>
+          </p>
+          <p>
+            Your job is labeled &ldquo;Sponsored&rdquo; on the home page and on its own page, with a note that you paid to feature it. Sponsorship isn&apos;t an
+            endorsement. Sellers still make their own call.
+          </p>
+          <p>What I do check: it&apos;s a sales role, base pay is listed, and you&apos;ve approved the rewrite.</p>
+        </div>
+      </section>
+
+      {/* Price and eligibility */}
+      <section className="mt-16 rounded-2xl border border-line bg-surface p-6 sm:p-8">
+        <H2>Price</H2>
+        <p className="mt-3 text-3xl font-bold tracking-tight">{price || "One price"}. Once.</p>
+        <ul className="mt-4 space-y-2 text-[17px] leading-relaxed text-ink-2">
+          <li>No subscription. No automatic renewal.</li>
+          <li>Sales roles only, and base pay has to be listed.</li>
+          <li>If your job doesn&apos;t qualify, you get a full refund.</li>
+        </ul>
         <div className="mt-6">
           <Cta price={price} />
         </div>
@@ -190,23 +210,21 @@ export default function EmployersPage() {
         </ol>
       </section>
 
-      {/* How you'll know it worked */}
+      {/* Expectations */}
       <section className="mt-16">
-        <H2>How you&apos;ll know it worked</H2>
-        <div className="mt-5 space-y-4 text-lg leading-relaxed text-ink">
-          <p>You won&apos;t get a dashboard.</p>
-          <p>No impressions. No click-through rates. No charts going up and to the right.</p>
-          <p>Here&apos;s the test.</p>
-          <p>People you&apos;d want to hire apply.</p>
-          <p>If they do, it worked.</p>
-          <p>If they don&apos;t, it didn&apos;t.</p>
-          <p className="font-semibold">That&apos;s the only number that matters.</p>
+        <H2>What should you expect?</H2>
+        <div className="mt-4 space-y-4 text-[17px] leading-relaxed text-ink-2">
+          <p className="text-ink">A clearer job ad and promotion to an audience of salespeople.</p>
+          <p>
+            I can&apos;t promise a certain number of applicants or a hire. The goal is to help the right sellers understand the opportunity and decide whether to
+            apply.
+          </p>
         </div>
       </section>
 
-      {/* Last call */}
+      {/* Invitation */}
       <section className="mt-16 rounded-2xl border border-line bg-surface p-6 text-center sm:p-8">
-        <p className="text-2xl font-bold tracking-tight">Ready when you are.</p>
+        <p className="text-2xl font-bold tracking-tight">Have a sales job worth explaining?</p>
         <p className="mt-2 text-[17px] text-ink-2">Paste in your job. I&apos;ll take it from there.</p>
         <div className="mt-6">
           <Cta price={price} big />
