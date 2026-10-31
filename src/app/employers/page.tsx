@@ -37,11 +37,21 @@ const STEPS = [
 const BEFORE =
   "As a mission-driven, insights-led organization, we empower public sector, nonprofit, and enterprise stakeholders to unlock actionable intelligence across diverse audience ecosystems. Leveraging a proprietary blend of quantitative and qualitative methodologies, we deliver end-to-end research solutions that drive evidence-based decision-making at scale.";
 const AFTER = [
-  "Picture a town deciding whether to build a new park.",
-  "At the public meeting, three people want pickleball courts. Two want a playground. Dave wants a merry-go-round.",
-  "But what about the thousands of residents who weren't there?",
-  "You'll sell research that helps the town hear from them too: surveys to learn what people want, interviews to learn why. Then the town decides before it spends the money.",
-  "You'll sell that same kind of research to nonprofits, governments, and businesses facing big decisions.",
+  {
+    head: "What you'll sell",
+    lines: [
+      "Nonprofits, public affairs teams, governments, and businesses make big decisions about the communities they serve. Without good research, they're guessing.",
+      "The company helps them find out what people actually think, so they can lead with confidence.",
+    ],
+  },
+  {
+    head: "The job",
+    lines: [
+      "They need someone to bring in new customers. That's you.",
+      "You'll focus on opening and growing new markets. You'll start the conversations, run each deal from first call to signed contract, and stay close after the sale.",
+      "It's a quota-carrying role on a small, fully remote team.",
+    ],
+  },
 ];
 
 function H2({ children }: { children: React.ReactNode }) {
@@ -108,12 +118,16 @@ export default function EmployersPage() {
         </div>
         <div className="mt-4 rounded-2xl border border-line bg-surface p-6 shadow-[0_8px_30px_rgba(22,20,15,0.06)] sm:p-7">
           <p className="text-xs font-bold uppercase tracking-wide text-accent">After</p>
-          <p className="mt-3 text-xl font-bold tracking-tight">What you&apos;ll sell</p>
-          <div className="mt-3 space-y-3 text-[17px] leading-relaxed text-ink">
-            {AFTER.map((t) => (
-              <p key={t}>{t}</p>
-            ))}
-          </div>
+          {AFTER.map(({ head, lines }, i) => (
+            <div key={head} className={i ? "mt-6" : "mt-3"}>
+              <p className="text-xl font-bold tracking-tight">{head}</p>
+              <div className="mt-2 space-y-3 text-[17px] leading-relaxed text-ink">
+                {lines.map((t) => (
+                  <p key={t}>{t}</p>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
