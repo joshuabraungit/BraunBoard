@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { listJobs } from "@/lib/data";
+import { listJobsForWatch } from "@/lib/data";
 import { getActiveWatch, getUserState, listWatches } from "@/lib/session";
 import { rankForWatch } from "@/lib/matching";
 import { JobGrid } from "@/components/JobCard";
@@ -22,7 +22,7 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<R
     );
   }
 
-  const [state, jobs, watches] = await Promise.all([getUserState(), listJobs({ markets: watch.prefs.countries ?? ["US"] }, 1000, { withDescription: true }), listWatches()]);
+  const [state, jobs, watches] = await Promise.all([getUserState(), listJobsForWatch(watch.prefs.countries ?? ["US"], watch.prefs.keywords), listWatches()]);
   const ranked = rankForWatch(jobs, watch.prefs, state.hiddenJobIds);
 
   return (

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { byHiringFastest, listCompanies, listJobs } from "@/lib/data";
+import { byHiringFastest, listCompanies, listJobs, listJobsForWatch } from "@/lib/data";
 import { HiringRow } from "@/components/Hiring";
 import { PicksSignup } from "@/components/PicksSignup";
 import { FounderLetter } from "@/components/FounderLetter";
@@ -44,7 +44,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   const rampingUp = companies.filter((c) => c.trend === "ramping").sort(byHiringFastest).slice(0, 6);
   const ctx = { savedJobIds: state.savedJobIds, back: "/" };
   const forYou = watch
-    ? rankForWatch(await listJobs({ markets: watch.prefs.countries ?? ["US"] }, 1000, { withDescription: true }), watch.prefs, state.hiddenJobIds)
+    ? rankForWatch(await listJobsForWatch(watch.prefs.countries ?? ["US"], watch.prefs.keywords), watch.prefs, state.hiddenJobIds)
     : null;
 
   return (

@@ -6,6 +6,7 @@ import { SAMPLE_COMPANIES, SAMPLE_JOBS } from "./sample-data";
 import type { RemoteType, RoleFamily, SalesMotion, SalesSegment, SelfSourcingLevel, Seniority } from "./ingest/types";
 import type { Disclosures } from "./ingest/extract";
 import type { Attainment } from "./attainment";
+import type { TextHits } from "./match";
 
 export interface JobView {
   id: string;
@@ -150,6 +151,24 @@ export async function listJobsWithTotal(
   if (error) throw error;
   const jobs = (data ?? []) as unknown as JobView[];
   return { jobs, total: count ?? jobs.length };
+}
+
+/**
+ * The jobs For You ranks: the newest 1,000 in the person's countries, without the full
+ * descriptions (those were ~6 MB per page load). The three checks that read the description
+ * (commission only, greenfield, keywords) run in the database and come back as text_hits.
+ */
+export async function listJobsForWatch(markets: string[], keywords: string[] = []): Promise<(JobView & { text_hits?: TextHits })[]> {
+  if (!isSupabaseConfigured()) return listJobs({ markets }, 1000, { withDescription: true });
+  const jobs = await listJobs({ markets }, 1000);
+  if (!jobs.length) return jobs;
+  const db = await serverClient();
+  const { data, error } = await db.rpc("job_text_hits", { p_ids: jobs.map((j) => j.id), p_keywords: keywords });
+  // If the check fails, fall back to the old way rather than show wrong matches.
+  if (error) return listJobs({ markets }, 1000, { withDescription: true });
+  const hits = new Map(((data ?? []) as ({ id: string } & TextHits)[]).map(({ id, ...h }) => [id, h]));
+  const none: TextHits = { commission_only: false, greenfield: false, keyword: false };
+  return jobs.map((j) => ({ ...j, text_hits: hits.get(j.id) ?? none }));
 }
 
 export async function getJob(slug: string): Promise<JobView | null> {

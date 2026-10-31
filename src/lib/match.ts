@@ -90,6 +90,17 @@ export interface MatchableJob {
   /** Who the job sells to and in what industry, when we know. */
   buyer?: string | null;
   industry?: string | null;
+  /**
+   * Text checks already run in the database (see job_text_hits), so the full
+   * description doesn't have to be downloaded. When set, these win over description_raw.
+   */
+  text_hits?: TextHits;
+}
+
+export interface TextHits {
+  commission_only: boolean;
+  greenfield: boolean;
+  keyword: boolean;
 }
 
 /** Is the job open where this person can work? */
@@ -144,10 +155,12 @@ function dealbreakerHit(job: MatchableJob, d: Dealbreaker): boolean {
     case "no_salary_listed":
       return job.salary_min == null && job.ote_min == null;
     case "commission_only":
+      if (job.text_hits) return job.text_hits.commission_only;
       return /\b(commission[- ]only|100% commission|straight commission)\b/.test(text);
     case "smb":
       return job.sales_segment === "SMB";
     case "greenfield_territory":
+      if (job.text_hits) return job.text_hits.greenfield;
       return /\bgreenfield\b|build (the|a|your) territory from (scratch|the ground up)/.test(text);
   }
 }
@@ -214,7 +227,7 @@ export function scoreMatch(job: MatchableJob, prefs: WatchPrefs): MatchResult {
     checks.push({
       key: "keyword",
       label: "Keyword",
-      result: prefs.keywords.some((k) => hay.includes(k.toLowerCase())) ? "pass" : "fail",
+      result: (job.text_hits ? job.text_hits.keyword : prefs.keywords.some((k) => hay.includes(k.toLowerCase()))) ? "pass" : "fail",
     });
   }
 

@@ -63,3 +63,24 @@ describe("scoreMatch", () => {
     expect(shouldAlert(m)).toBe(false);
   });
 });
+
+describe("text checks done in the database", () => {
+  const noHits = { commission_only: false, greenfield: false, keyword: false };
+
+  it("blocks commission-only and greenfield jobs from the database answers alone", () => {
+    const prefs = { ...dream, dealbreakers: ["commission_only", "greenfield_territory"] } as WatchPrefs;
+    expect(scoreMatch({ ...job, description_raw: null, text_hits: { ...noHits, commission_only: true } }, prefs).blocked_by).toBe("commission_only");
+    expect(scoreMatch({ ...job, description_raw: null, text_hits: { ...noHits, greenfield: true } }, prefs).blocked_by).toBe("greenfield_territory");
+    expect(scoreMatch({ ...job, description_raw: null, text_hits: noHits }, prefs).blocked_by).toBeNull();
+  });
+
+  it("gives the same answer as reading the description", () => {
+    const prefs = { ...dream, keywords: ["fintech"], dealbreakers: ["commission_only"] } as WatchPrefs;
+    const withText = scoreMatch({ ...job, description_raw: "A fintech role. 100% commission." }, prefs);
+    const withHits = scoreMatch({ ...job, description_raw: null, text_hits: { commission_only: true, greenfield: false, keyword: true } }, prefs);
+    expect(withHits).toEqual(withText);
+    const plain = scoreMatch({ ...job, description_raw: "A payments role." }, { ...prefs, dealbreakers: [] });
+    const plainHits = scoreMatch({ ...job, description_raw: null, text_hits: noHits }, { ...prefs, dealbreakers: [] });
+    expect(plainHits).toEqual(plain);
+  });
+});
