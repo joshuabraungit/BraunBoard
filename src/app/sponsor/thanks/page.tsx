@@ -26,7 +26,8 @@ export default async function SponsorThanks({ searchParams }: { searchParams: Pr
             {order?.renewal_of && order.ends_at ? (
               <>
                 <span className="font-semibold text-ink">{order.job_title}</span> stays at the top of the home page for another {SPONSOR_DAYS} days, through{" "}
-                {new Date(order.ends_at).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "America/New_York" })}. Nothing else to do.
+                {new Date(order.ends_at).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "America/New_York" })}, plus a new LinkedIn post and
+                another newsletter send. Nothing else to do.
               </>
             ) : order ? (
               <>

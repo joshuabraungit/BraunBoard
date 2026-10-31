@@ -1,4 +1,4 @@
-// Renewals: the "7 days left" email and its signed renew link. No server-only import,
+// Renewals: the "5 days left" email and its signed renew link. No server-only import,
 // so the hourly runner (a plain script) can send the reminders.
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -6,7 +6,7 @@ import { sendEmail } from "./alerts/email";
 import { adminEmails } from "./admin-emails";
 import { formatPrice, sponsorPriceCents, SPONSOR_DAYS } from "./sponsor-form";
 
-export const RENEW_REMINDER_DAYS = 7;
+export const RENEW_REMINDER_DAYS = 5;
 
 const secret = () => process.env.ALERTS_LINK_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const sig = (id: string) => createHmac("sha256", secret()).update(`sponsor-renew:${id}`).digest("base64url").slice(0, 22);
@@ -37,12 +37,12 @@ export function renderRenewReminder(o: ReminderRow, siteUrl: string, priceCents:
   const ends = renewDay(o.ends_at);
   const link = renewUrl(siteUrl, o.id);
   const price = priceCents ? formatPrice(priceCents) : null;
-  const subject = `${o.job_title} has a week left on Braun Board`;
+  const subject = `${o.job_title} has ${RENEW_REMINDER_DAYS} days left on Braun Board`;
   const before = [
     `Hi ${o.contact_name.trim().split(/\s+/)[0]},`,
     `Quick heads up. ${o.job_title} comes off the Braun Board home page on ${ends}.`,
     `If you've found your person, congrats. You don't need to do anything.`,
-    `Still looking? You can keep it up for another ${SPONSOR_DAYS} days. Same ad, and it picks up the day the current run ends${price ? `. ${price}, one payment` : ""}.`,
+    `Still looking? You can renew it. Same package as before: ${SPONSOR_DAYS} more days at the top of the home page, another LinkedIn post and another newsletter send. It picks up the day the current run ends${price ? `. ${price}, one payment` : ""}.`,
   ];
   const after = [
     `If you don't renew, here's what happens. On ${ends}, it comes off the home page. The job page stays up with a note that the feature ended, so old links still work. Nothing renews on its own, and you won't be charged again.`,
@@ -62,7 +62,7 @@ export function renderRenewReminder(o: ReminderRow, siteUrl: string, priceCents:
 }
 
 /**
- * Hourly runner: emails each live sponsor once, about a week before their run ends.
+ * Hourly runner: emails each live sponsor once, about 5 days before their run ends.
  * Skips anyone who has already renewed. Claims the row first so a rerun never double-sends.
  */
 export async function sendRenewalReminders(db: SupabaseClient, now = new Date()): Promise<number> {

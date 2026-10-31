@@ -14,11 +14,12 @@ describe("renew links", () => {
   });
 });
 
-describe("a week left email", () => {
+describe("5 days left email", () => {
   const o = { id, job_title: "Director of Growth", company: "Embold Research", contact_name: "Abbe Vacek", email: "a@x.com", ends_at: "2026-12-02T13:00:00Z" };
   it("is low pressure and says what happens either way", () => {
     const m = renderRenewReminder(o, "https://www.braunboard.com", 75000);
-    expect(m.subject).toBe("Director of Growth has a week left on Braun Board");
+    expect(m.subject).toBe("Director of Growth has 5 days left on Braun Board");
+    expect(m.text).toContain("another LinkedIn post and another newsletter send");
     expect(m.text).toContain("Hi Abbe,");
     expect(m.text).toContain("Wednesday, December 2");
     expect(m.text).toContain("If you've found your person, congrats.");

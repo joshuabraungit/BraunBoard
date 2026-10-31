@@ -57,8 +57,9 @@ export default async function RenewPage({ searchParams }: { searchParams: Promis
           {order.ends_at && !ended
             ? `It picks up the day the current run ends, ${renewDay(order.ends_at)}, so there's no gap.`
             : "It goes back to the top of the home page as soon as you pay."}{" "}
-          Same ad, same spot.
+          Same ad.
         </p>
+        <p>You get the same package as before: {SPONSOR_DAYS} more days at the top of the home page, another LinkedIn post and another newsletter send.</p>
         <p>{cents ? `${formatPrice(cents)}, one payment.` : "One payment."} Nothing renews on its own.</p>
         <p>
           Want to change the ad first? Email me at <Email /> before you renew.
