@@ -67,9 +67,9 @@ export default function EmployersPage() {
     <div className="mx-auto max-w-2xl">
       {/* The offer, up front */}
       <p className="text-xs font-bold uppercase tracking-wide text-accent">For employers</p>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Your job, in front of people who sell for a living.</h1>
+      <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Your sales job, in front of sellers who already have one.</h1>
       <div className="mt-5 space-y-3 text-lg leading-relaxed text-ink">
-        <p>The best sellers already have jobs. They aren&apos;t scrolling job boards. They&apos;re busy selling.</p>
+        <p>The best sellers aren&apos;t scrolling job boards. They&apos;re busy selling.</p>
         <p>But they read my posts. I&apos;m in front of sellers all day, and 289,000 people follow me on LinkedIn.</p>
       </div>
       <p className="mt-4 text-lg leading-relaxed text-ink-2">
