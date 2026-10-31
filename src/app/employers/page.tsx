@@ -184,24 +184,36 @@ export default function EmployersPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      {/* The letter */}
+      {/* The letter, on paper: a sheet on top of two slightly turned sheets. */}
       <p className="text-xs font-bold uppercase tracking-wide text-accent">For employers</p>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">I&apos;m Josh, founder of Braun Board.</h1>
-      <div className="mt-6 space-y-5 text-lg leading-relaxed text-ink">
-        {LETTER.map((line) =>
-          line === "BADGE" ? (
-            <p key={line}>
-              <span className="text-base">
-                <AttainmentBadge pct={70} />
-              </span>
-            </p>
-          ) : (
-            <p key={line}>{line}</p>
-          ),
-        )}
-        <p className="font-semibold">Let&apos;s make yours easier to understand.</p>
+      <div className="relative mt-5 sm:mt-8">
+        <div aria-hidden="true" className="absolute inset-0 -translate-x-1 translate-y-1 rounded-sm md:translate-x-0 md:translate-y-0 md:-rotate-[1.2deg] border border-line bg-white shadow-[0_1px_3px_rgba(22,20,15,0.06)]" />
+        <div aria-hidden="true" className="absolute inset-0 translate-x-1 translate-y-2 rounded-sm md:translate-x-0 md:translate-y-0 md:rotate-[0.8deg] border border-line bg-white shadow-[0_1px_3px_rgba(22,20,15,0.06)]" />
+        <article className="relative rounded-sm border border-line bg-white px-6 py-10 shadow-[0_8px_30px_rgba(22,20,15,0.08)] sm:px-14 sm:py-16">
+          <h1 className="text-[19px] leading-relaxed text-ink sm:text-[21px]">
+            Hey there,
+            <br />
+            <br />
+            I&apos;m Josh, founder of Braun Board.
+          </h1>
+          <div className="mt-6 space-y-6 text-[19px] leading-relaxed text-ink sm:text-[21px]">
+            {LETTER.map((line) =>
+              line === "BADGE" ? (
+                <p key={line}>
+                  <span className="text-base">
+                    <AttainmentBadge pct={70} />
+                  </span>
+                </p>
+              ) : (
+                <p key={line}>{line}</p>
+              ),
+            )}
+            <p>Let&apos;s make yours easier to understand.</p>
+          </div>
+          <p className="mt-10 font-serif text-2xl italic text-ink">Josh</p>
+        </article>
       </div>
-      <div className="mt-8">
+      <div className="mt-10 text-center">
         <Cta price={price} big />
       </div>
 
