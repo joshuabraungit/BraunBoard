@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PicksSignup } from "@/components/PicksSignup";
+import { cookies } from "next/headers";
 import { PlaybookTabs } from "@/components/PlaybookTabs";
+import { getKit } from "./actions";
+import { KIT_COOKIE, KIT_FROM } from "@/lib/kit";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -44,12 +46,10 @@ const INSIDE = [
   ["Offer comparison and pay scenarios", "put two offers side by side and see what you'd earn at 50%, 100% and 125% of quota."],
 ] as const;
 
-// Where the visitor came from, carried into the download link so Admin can tell what's working.
-const FROM = new Set(["job-page", "ask", "picks-email", "alert-email", "outreach"]);
-
-export default async function KitPage({ searchParams }: { searchParams: Promise<{ picks?: string; from?: string }> }) {
-  const { picks, from } = await searchParams;
-  const source = from && FROM.has(from) ? from : "kit-page";
+export default async function KitPage({ searchParams }: { searchParams: Promise<{ kit?: string; from?: string }> }) {
+  const { kit, from } = await searchParams;
+  const source = from && KIT_FROM.has(from) ? from : "kit-page";
+  const unlocked = (await cookies()).get(KIT_COOKIE)?.value === "1";
   return (
     <div className="mx-auto max-w-2xl">
       <PlaybookTabs active="/kit" />
@@ -93,21 +93,43 @@ export default async function KitPage({ searchParams }: { searchParams: Promise<
           ))}
         </ul>
         <p className="mt-4 text-sm text-ink-2">You won&apos;t ask all 24. Start with the top five, then pick the few that fit you and the conversation.</p>
-        {/* A plain link, not <Link>, so prefetching never counts as a download. */}
-        <a
-          href={`/kit/download?from=${source}`}
-          target="_blank"
-          rel="nofollow noopener"
-          className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-ink px-5 text-sm font-semibold text-white hover:opacity-90"
-        >
-          Download the kit (PDF) →
-        </a>
-        <p className="mt-2 text-xs text-ink-3">Free. No email needed. 29 pages. Fill it in on your computer, or print it and write by hand.</p>
       </div>
 
-      <p className="mt-10 font-semibold">Want sales jobs that pass these questions, sent to you every Tuesday?</p>
-      <div className="mt-3">
-        <PicksSignup back="/kit" source="kit" status={picks} compact />
+      <div id="get-kit" className="mt-6 scroll-mt-24 rounded-2xl border border-line bg-surface p-5 sm:p-6">
+        {unlocked ? (
+          <>
+            <h2 className="font-bold">{kit === "ok" ? "You\u2019re in. Here\u2019s your kit." : "Your kit"}</h2>
+            {/* A plain link, not <Link>, so prefetching never counts as a download. */}
+            <a
+              href={`/kit/download?from=${source}`}
+              target="_blank"
+              rel="nofollow noopener"
+              className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-ink px-5 text-sm font-semibold text-white hover:opacity-90"
+            >
+              Download the kit (PDF) →
+            </a>
+            <p className="mt-2 text-xs text-ink-3">29 pages. Fill it in on your computer, or print it and write by hand.</p>
+            {kit === "ok" && (
+              <p className="mt-3 text-sm text-ink-2">Braun&apos;s Picks lands Tuesday morning: sales jobs worth a look, and why.</p>
+            )}
+          </>
+        ) : (
+          <>
+            <h2 className="font-bold">Get the kit</h2>
+            <p className="mt-1 text-[15px] text-ink-2">Tell me where to send things and the download&apos;s yours.</p>
+            <form action={getKit} className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <input type="hidden" name="from" value={source} />
+              <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
+              <label className="sr-only" htmlFor="kit-email">Email</label>
+              <input id="kit-email" name="email" type="email" required placeholder="you@company.com" className="min-w-0 flex-1 rounded-lg border border-line bg-bg px-3 py-2.5 text-sm" />
+              <button className="rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90">Get the kit</button>
+            </form>
+            {kit === "invalid" && <p className="mt-2 text-sm text-red">That email doesn&apos;t look right. Try again?</p>}
+            <p className="mt-2 text-xs text-ink-3">
+              Free. You&apos;ll also get Braun&apos;s Picks, 5 sales jobs worth a look every Tuesday. Unsubscribe in one click.
+            </p>
+          </>
+        )}
       </div>
 
       <p className="mt-8 text-sm text-ink-2">

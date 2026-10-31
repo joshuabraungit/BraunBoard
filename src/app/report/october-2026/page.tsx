@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PicksSignup } from "@/components/PicksSignup";
 
 // Braun Board Job Market Report #1. A snapshot. The full-set numbers come from reading all 1,473 live rep
 // postings on Oct 25, 2026 (quote-backed AI read, counted only when the posting gives a number, reviewed by hand).
@@ -72,7 +73,8 @@ const FULL_MISSING: { what: string; n: number; cos: number }[] = [
 ];
 const pct = (n: number) => (n === 0 ? "0%" : n / FULL.postings < 0.01 ? "under 1%" : `${Math.round((n / FULL.postings) * 100)}%`);
 
-export default function Report() {
+export default async function Report({ searchParams }: { searchParams: Promise<{ picks?: string }> }) {
+  const { picks } = await searchParams;
   const total = ROWS.length;
   const anyPay = FULL.postings - 368;
   return (
@@ -218,6 +220,19 @@ export default function Report() {
           </table>
         </div>
       </section>
+
+      <div className="mt-10">
+        <PicksSignup
+          back="/report/october-2026"
+          source="report"
+          status={picks}
+          eyebrow="Free · Next report in your inbox"
+          title="Get the next Job Market Report"
+          blurb="I'll send you the next one when it's out. You'll also get Braun's Picks every Tuesday: 5 sales jobs worth a look, and one to skip."
+          button="Send me the next one"
+          done="You're in. The next report comes straight to you, and Braun's Picks lands Tuesday morning."
+        />
+      </div>
 
       <section className="mt-10 text-sm leading-relaxed text-ink-3">
         <h2 className="font-bold text-ink-2">How I did it</h2>
