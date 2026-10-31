@@ -44,6 +44,10 @@ function Money({ name, label, presets, value, setValue, sym }: { name: string; l
 
 export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null }) {
   const [step, setStep] = useState(0);
+  // Review mode: every answer on one page, each with its own Change. Used when editing a saved watch
+  // and right after a résumé fills things in. First-timers without a résumé get one question at a time.
+  const [mode, setMode] = useState<"steps" | "review">(initial?.roles?.length ? "review" : "steps");
+  const [open, setOpen] = useState<number | null>(null);
   const [roles, setRoles] = useState<RoleChoice[]>(initial?.roles ?? []);
   const [base, setBase] = useState(initial?.min_base ? String(initial.min_base / 1000) : "");
   const [ote, setOte] = useState(initial?.min_ote ? String(initial.min_ote / 1000) : "");
@@ -85,6 +89,8 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
       const exp = [s.sold_to, s.industries].filter(Boolean).join("; ");
       if (exp) setSoldTo(exp.slice(0, 160));
       setSaw(s);
+      setMode("review");
+      setOpen(null);
     } catch {
       setResumeError("Something went wrong reading that. You can fill it in below.");
     } finally {
@@ -107,6 +113,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
         </div>
       ),
       ok: roles.length > 0,
+      summary: roles.length ? roles.map((r) => ROLE_CHOICES[r].label).join(", ") : "",
     },
     {
       q: "Where do you want to work?",
@@ -145,6 +152,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
         </div>
       ),
       ok: true,
+      summary: [COUNTRY_CHOICES[country], WORK_CHOICES[work], location.trim()].filter(Boolean).join(" · "),
     },
     {
       q: "What would it have to pay?",
@@ -156,6 +164,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
         </div>
       ),
       ok: true,
+      summary: [base && `${uk ? "£" : "$"}${base}K+ base`, ote && `${uk ? "£" : "$"}${ote}K+ OTE`].filter(Boolean).join(" · "),
     },
     {
       q: "New business or expansion?",
@@ -170,6 +179,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
         </div>
       ),
       ok: true,
+      summary: MOTION_CHOICES[motion],
     },
     {
       q: "Who have you sold to?",
@@ -185,6 +195,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
         />
       ),
       ok: true,
+      summary: soldTo.trim(),
     },
     {
       q: "What size company?",
@@ -199,6 +210,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
         </div>
       ),
       ok: true,
+      summary: sizes.length ? sizes.map((b) => SIZE_LABELS[b].label).join(", ") : "Any size",
     },
     {
       q: "Any dealbreakers?",
@@ -213,21 +225,13 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
         </div>
       ),
       ok: true,
+      summary: breakers.length ? breakers.map((d) => DEALBREAKER_LABELS[d as keyof typeof DEALBREAKER_LABELS]).join(", ") : "None",
     },
   ];
   const last = step === steps.length - 1;
 
-  return (
-    <form action={saveOnboarding} onSubmit={() => setPending(true)} className="mx-auto max-w-2xl">
-      <p className="text-sm font-medium text-ink-3">
-        {step + 1} of {steps.length}
-      </p>
-      <div className="mt-2 h-1 rounded-full bg-line">
-        <div className="h-1 rounded-full bg-ink transition-all" style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
-      </div>
-
-      {step === 0 && (
-        <div className="mt-8 rounded-2xl border border-line bg-surface p-5">
+  const resumeCard = (
+    <div className="mt-8 rounded-2xl border border-line bg-surface p-5">
           {saw ? (
             <>
               <p className="font-semibold">Here&apos;s what I picked up from your résumé</p>
@@ -238,7 +242,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
                 {saw.industries && <li>Industries: {saw.industries}</li>}
               </ul>
               <p className="mt-3 text-sm text-ink-2">
-                I filled in what I could. Check each step and change anything that&apos;s off. Pay and dealbreakers are up to you.
+                I filled in what I could. Check each answer below and change anything that&apos;s off. Pay and dealbreakers are up to you.
               </p>
             </>
           ) : (
@@ -263,7 +267,75 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
           )}
           {resumeError && <p className="mt-3 text-sm text-red">{resumeError}</p>}
         </div>
-      )}
+  );
+  // Blank answers a résumé can't fill in, called out so people see what's left for them.
+  const empty = (i: number) => (i === 0 && !roles.length) || (i === 2 && !base && !ote);
+  const EMPTY_TEXT: Record<number, string> = { 0: "Pick at least one", 2: "Not set yet. Up to you.", 4: "Not set (optional)" };
+
+  if (mode === "review") {
+    return (
+      <form action={saveOnboarding} onSubmit={() => setPending(true)} className="mx-auto max-w-2xl">
+        <h2 className="text-xl font-bold tracking-tight">{saw ? "Here's your watch" : "Your watch"}</h2>
+        <p className="mt-1 text-sm text-ink-2">
+          {saw ? "Filled in from your résumé. Change anything that's off." : "Change any answer. Everything else stays as it is."}
+        </p>
+        {resumeCard}
+        <ul className="mt-6 divide-y divide-line rounded-2xl border border-line bg-surface">
+          {steps.map((s, i) => {
+            const isOpen = open === i;
+            return (
+              <li key={s.q} className="px-4 py-3.5 sm:px-5">
+                <div className="flex items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">{s.q}</p>
+                    {!isOpen && (
+                      <p className={`mt-0.5 text-[15px] ${empty(i) ? "font-medium text-amber" : s.summary ? "text-ink-2" : "text-ink-3"}`}>
+                        {s.summary || EMPTY_TEXT[i] || "Not set"}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setOpen(isOpen ? null : i)}
+                    aria-expanded={isOpen}
+                    className="shrink-0 rounded-md px-2.5 py-1 text-sm font-semibold text-ink underline-offset-2 hover:underline"
+                  >
+                    {isOpen ? "Done" : "Change"}
+                  </button>
+                </div>
+                {/* Mounted even when closed, so every answer submits. */}
+                <div hidden={!isOpen} className="mt-3">
+                  <p className="mb-3 text-sm text-ink-2">{s.hint}</p>
+                  {s.body}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <button
+            type="submit"
+            disabled={pending || !steps[0].ok}
+            className="rounded-lg bg-ink px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+          >
+            {pending ? "Finding matches…" : "Show my matches →"}
+          </button>
+          {!steps[0].ok && <p className="text-sm text-amber">Pick at least one role first.</p>}
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <form action={saveOnboarding} onSubmit={() => setPending(true)} className="mx-auto max-w-2xl">
+      <p className="text-sm font-medium text-ink-3">
+        {step + 1} of {steps.length}
+      </p>
+      <div className="mt-2 h-1 rounded-full bg-line">
+        <div className="h-1 rounded-full bg-ink transition-all" style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
+      </div>
+
+      {step === 0 && resumeCard}
 
       {steps.map((s, i) => (
         // Every step stays mounted so the whole form submits at once; only the current one shows.
