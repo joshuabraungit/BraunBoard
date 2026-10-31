@@ -194,12 +194,12 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                         {st === "running" ? "View job page ↗" : "Preview job page ↗"}
                       </Link>
                     )}
-                    {st === "approve" && !rev.allApproved && (
+                    {st === "approve" && rev.ad.status !== "up" && (
                       <button type="button" disabled className="cursor-not-allowed rounded-md bg-line px-3 py-1.5 text-sm font-semibold text-ink-3">
                         Mark live
                       </button>
                     )}
-                    {st === "approve" && rev.allApproved && (
+                    {st === "approve" && rev.ad.status === "up" && (
                       <form action={goLive}>
                         <input type="hidden" name="id" value={r.id} />
                         <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">
@@ -251,10 +251,11 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                       {r.stripe_refund_id ? `Refunded ${formatPrice(r.amount_cents)}` : "Canceled"} on {day(r.refunded_at)}.{r.cancel_reason ? ` Reason: ${r.cancel_reason}` : ""}
                     </p>
                   )}
-                  {st === "approve" && !rev.allApproved && (
-                    <p className="mt-2 text-xs text-amber">
-                      Mark live unlocks once {r.contact_name.split(" ")[0]} approves {rev.video ? "both the video and the job ad" : "the job ad"} on the review link.
-                    </p>
+                  {st === "approve" && rev.ad.status !== "up" && (
+                    <p className="mt-2 text-xs text-amber">Mark live unlocks once {r.contact_name.split(" ")[0]} approves the job ad on the review link.</p>
+                  )}
+                  {st === "approve" && rev.ad.status === "up" && rev.video && rev.video.status !== "up" && (
+                    <p className="mt-2 text-xs text-ink-2">The video isn&apos;t approved yet. The ad can go live without it, and the video shows up on the job page once it&apos;s approved.</p>
                   )}
                   {st === "approve" && runningCount >= 2 && (
                     <p className="mt-2 text-xs text-amber">Both home page spots are taken. If you approve it now, it starts automatically when a spot opens, and gets its full 30 days from then.</p>
