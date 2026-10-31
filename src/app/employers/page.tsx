@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/employers" },
   title: "For employers: sponsor a sales job · Braun Board",
   description:
-    "Hiring a salesperson? Josh rewrites your job ad in plain English, pins it to Braun Board for 30 days, and shares it on LinkedIn and in his newsletter. $750, one payment.",
+    "The best sellers already have jobs, but they read Josh Braun's posts. Josh rewrites your sales job ad in plain English, pins it to Braun Board for 30 days, and shares it with his 289,000 LinkedIn followers and his newsletter. $750, one payment.",
 };
 
 // Josh's voice: plain English, short paragraphs, warm, a little funny. No hype, no em dashes,
@@ -26,7 +26,7 @@ const LETTER = [
 const GET = [
   ["A plain-English rewrite.", "What you sell, who buys it, and what the job looks like day to day. You approve it before it goes up."],
   [`${SPONSOR_DAYS} days pinned to the top of the home page.`, "Above the newest jobs, where sellers start."],
-  ["One LinkedIn post.", "I share your job with the people who follow me there."],
+  ["One LinkedIn post.", "I share your job with my 289,000 followers."],
   ["One newsletter send.", "Your job goes out in my newsletter."],
   ["Your own job page.", "Pay, what you sell, and an Apply button that goes to your application."],
   ["An optional OTE badge.", "More on that below."],
@@ -78,6 +78,10 @@ export default function EmployersPage() {
       {/* The offer, up front */}
       <p className="text-xs font-bold uppercase tracking-wide text-accent">For employers</p>
       <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Your job, in front of people who sell for a living.</h1>
+      <div className="mt-5 space-y-3 text-lg leading-relaxed text-ink">
+        <p>The best sellers already have jobs. They aren&apos;t scrolling job boards. They&apos;re busy selling.</p>
+        <p>But they read my posts. I&apos;m in front of sellers all day, and 289,000 people follow me on LinkedIn.</p>
+      </div>
       <p className="mt-4 text-lg leading-relaxed text-ink-2">
         Hiring a salesperson? I&apos;ll rewrite your ad in plain English, pin it to Braun Board for {SPONSOR_DAYS} days, and share it on LinkedIn and in my newsletter.
       </p>
