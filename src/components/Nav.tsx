@@ -16,7 +16,8 @@ const ITEMS: { href: string; label: string; also?: string[] }[] = [
 export function Nav() {
   const path = usePathname();
   return (
-    <nav className="-mx-1 flex gap-0.5 overflow-x-auto xl:gap-1 text-sm [scrollbar-width:none]">
+    // Phones: wrap onto a second line so every link shows (a sideways scroll hid half of them). Wider screens: one row.
+    <nav className="-mx-1 flex flex-wrap gap-0.5 md:flex-nowrap md:overflow-x-auto xl:gap-1 text-sm [scrollbar-width:none]">
       {ITEMS.map((i) => {
         const active = [i.href, ...(i.also ?? [])].some((h) => path === h || (h !== "/" && path.startsWith(h + "/")));
         return (

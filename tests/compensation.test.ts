@@ -88,6 +88,10 @@ describe("crossed labels", () => {
     );
     expect([r.salary_min, r.salary_max, r.ote_min, r.ote_max]).toEqual([130000, 160000, 260000, 320000]);
   });
+  it("drops a base range that tops the OTE (Greenboard BDR)", () => {
+    const r = resolveCompensation({ min: 75000, max: 110000, currency: "USD" }, "BENEFITS\n\n - 401(k) with 5% company match\n\n - $95,000 OTE\n\n - Medical, dental, and vision coverage");
+    expect([r.salary_min, r.salary_max, r.ote_min, r.ote_max]).toEqual([null, null, 95000, 95000]);
+  });
 });
 
 describe("OTE phrasings seen in the wild", () => {

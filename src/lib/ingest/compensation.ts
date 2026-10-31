@@ -191,6 +191,12 @@ export function resolveCompensation(
   if (result.salary_min != null && result.ote_max != null && result.ote_max < result.salary_min) {
     [result.salary_min, result.salary_max, result.ote_min, result.ote_max] = [result.ote_min, result.ote_max, result.salary_min, result.salary_max];
   }
+  // Still overlapping (base $75K-$110K next to "$95,000 OTE"): the two numbers can't both be right.
+  // Keep the OTE the posting spells out and don't show a base that tops it.
+  if (result.salary_max != null && result.ote_max != null && result.ote_max < result.salary_max) {
+    result.salary_min = null;
+    result.salary_max = null;
+  }
   if ((result.salary_min ?? result.ote_min) != null && !result.currency) result.currency = sym === "£" ? "GBP" : "USD";
   return result;
 }
