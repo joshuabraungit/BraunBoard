@@ -5,10 +5,12 @@ import { adminEmails } from "./admin-emails";
 import { sendEmail } from "./alerts/email";
 import { formatPrice, liveWindow, MAX_LIVE_SPONSORS, payLine, SPONSOR_DAYS, type SponsorEdit, type SponsorOrder } from "./sponsor-form";
 import { getCheckoutSession, getInvoiceLinks, isSettled, refundPayment, type CheckoutSession, type Invoice } from "./stripe";
+import { adHash, REVIEW_NOTE_MAX, reviewSummary, verdictLine, type AssetReview, type ReviewFields, type Verdict } from "./sponsor-review";
 
 export const LOGO_BUCKET = "sponsor-logos";
+export const VIDEO_BUCKET = "sponsor-videos";
 
-export interface SponsoredJobRow extends SponsorOrder {
+export interface SponsoredJobRow extends SponsorOrder, Partial<Omit<ReviewFields, keyof SponsorOrder>> {
   id: string;
   created_at: string;
   status: "pending" | "paid" | "live" | "done" | "canceled";
@@ -25,7 +27,24 @@ export interface SponsoredJobRow extends SponsorOrder {
   stripe_refund_id?: string | null;
   cancel_reason?: string | null;
   renewal_of?: string | null;
+  review_token?: string;
+  review_opened_at?: string | null;
+  review_sent_at?: string | null;
 }
+
+/** The row with every review field filled in (missing columns read as null). */
+export const reviewFields = (o: SponsoredJobRow): ReviewFields => ({
+  job_title: o.job_title,
+  description: o.description,
+  product_short: o.product_short ?? null,
+  video_path: o.video_path ?? null,
+  video_review: o.video_review ?? null,
+  video_note: o.video_note ?? null,
+  video_reviewed_path: o.video_reviewed_path ?? null,
+  ad_review: o.ad_review ?? null,
+  ad_note: o.ad_note ?? null,
+  ad_reviewed_hash: o.ad_reviewed_hash ?? null,
+});
 
 /** Josh's edits from Admin. Only the words sellers read; pay and dates stay as the buyer sent them. */
 export async function updateSponsorCopy(id: string, edit: SponsorEdit) {
@@ -418,4 +437,143 @@ export function renderRefundEmail(o: SponsoredJobRow, refundedCents: number, rea
   ];
   const html = wrap(subject, lines.map((l) => `<p style="font-size:15px;line-height:1.5;color:#222;margin:0 0 14px">${esc(l)}</p>`).join(""));
   return { subject, html, text: lines.join("\n\n") };
+}
+
+// ---------------------------------------------------------------------------
+// Client review: the private /review/<token> link Josh sends a sponsor.
+
+export function videoUrl(path: string | null | undefined) {
+  if (!path) return null;
+  return adminClient().storage.from(VIDEO_BUCKET).getPublicUrl(path).data.publicUrl;
+}
+
+export const isReviewToken = (t: string) => /^[a-f0-9]{64}$/.test(t);
+
+export function reviewLink(o: Pick<SponsoredJobRow, "review_token">) {
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://braunboard.com";
+  return o.review_token ? `${site.replace(/\/$/, "")}/review/${o.review_token}` : null;
+}
+
+/** The order behind a review link. Only paid or live orders can be reviewed. */
+export async function getOrderByReviewToken(token: string): Promise<SponsoredJobRow | null> {
+  if (!isReviewToken(token)) return null;
+  const { data } = await adminClient().from("sponsored_jobs").select("*").eq("review_token", token).maybeSingle();
+  const row = (data as SponsoredJobRow) ?? null;
+  return row && ["paid", "live"].includes(row.status) ? row : null;
+}
+
+/** First open only, so Admin can say "Opened Oct 31". Never throws. */
+export async function markReviewOpened(id: string) {
+  await adminClient()
+    .from("sponsored_jobs")
+    .update({ review_opened_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("review_opened_at", null)
+    .then(
+      () => undefined,
+      (e: unknown) => console.error("[sponsor] review open stamp failed", e),
+    );
+}
+
+export interface ReviewInput {
+  ad?: { verdict: Verdict; note: string; hash: string };
+  video?: { verdict: Verdict; note: string; path: string };
+}
+
+export class StaleReviewError extends Error {}
+
+/**
+ * Saves the client's thumbs. Each verdict carries the version it was about (the ad's hash, the
+ * video's file path); if Josh changed it in the meantime, nothing is saved and the client reloads.
+ * Emails Josh what she said.
+ */
+export async function submitClientReview(token: string, input: ReviewInput): Promise<{ row: SponsoredJobRow; line: string }> {
+  const o = await getOrderByReviewToken(token);
+  if (!o) throw new Error("This review link isn't active anymore.");
+  if (!input.ad && !input.video) throw new Error("Nothing to send yet.");
+  if (input.ad && input.ad.hash !== adHash(reviewFields(o))) throw new StaleReviewError("Josh just updated the job ad. Reload to see the latest version.");
+  if (input.video && input.video.path !== o.video_path) throw new StaleReviewError("Josh just swapped in a new video. Reload to see it.");
+  const note = (s: string) => s.trim().slice(0, REVIEW_NOTE_MAX) || null;
+
+  const now = new Date().toISOString();
+  const update: Record<string, unknown> = { review_sent_at: now };
+  if (input.ad) Object.assign(update, { ad_review: input.ad.verdict, ad_note: input.ad.verdict === "down" ? note(input.ad.note) : null, ad_reviewed_hash: input.ad.hash });
+  if (input.video)
+    Object.assign(update, { video_review: input.video.verdict, video_note: input.video.verdict === "down" ? note(input.video.note) : null, video_reviewed_path: input.video.path });
+
+  const { data, error } = await adminClient().from("sponsored_jobs").update(update).eq("id", o.id).select("*").single();
+  if (error) throw error;
+  const row = data as SponsoredJobRow;
+  const line = verdictLine([input.video?.verdict, input.ad?.verdict].filter((v): v is Verdict => !!v));
+
+  const owner = adminEmails()[0];
+  if (owner) {
+    const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://braunboard.com";
+    await sendEmail(owner, renderReviewNotice(row, input, site), { replyTo: row.email }).catch((e) => console.error("[sponsor] review email failed", e));
+  }
+  return { row, line };
+}
+
+const verdictText = (a: AssetReview | null, who: string) =>
+  !a
+    ? null
+    : a.status === "up"
+      ? "Approved"
+      : a.status === "down"
+        ? `Changes requested${a.note ? `: "${a.note}"` : ""}`
+        : a.status === "changed"
+          ? `Changed since ${who}'s last look, waiting on ${who}`
+          : `Waiting on ${who}`;
+
+/** The email Josh gets the moment a sponsor hits "Send to Josh". */
+export function renderReviewNotice(o: SponsoredJobRow, input: ReviewInput, siteUrl: string) {
+  const first = o.contact_name.trim().split(/\s+/)[0];
+  const sum = reviewSummary(reviewFields(o));
+  const sent = [input.video?.verdict, input.ad?.verdict].filter(Boolean) as Verdict[];
+  const ups = sent.filter((v) => v === "up").length;
+  const subject = sum.allApproved
+    ? `${first} approved everything for ${o.company}`
+    : ups === 0
+      ? `${first} asked for changes on ${o.company}`
+      : `${first} approved ${ups} of ${sent.length} for ${o.company}`;
+  const rows: [string, string][] = [
+    ...(sum.video ? [["Video", verdictText(sum.video, first)!] as [string, string]] : []),
+    ["Job ad", verdictText(sum.ad, first)!],
+  ];
+  const next = sum.allApproved
+    ? "Everything's approved. Mark it live in Admin when you're ready."
+    : sum.changesRequested
+      ? `Make the changes in Admin. The review link shows the new version, and ${first} gets to look again.`
+      : "";
+  const html = wrap(
+    subject,
+    `<table style="font-size:15px;margin:0 0 14px">${rows
+      .map(([k, v]) => `<tr><td style="padding:4px 14px 4px 0;color:#888;vertical-align:top">${k}</td><td style="padding:4px 0">${esc(v)}</td></tr>`)
+      .join("")}</table>
+    ${next ? `<p style="font-size:15px;line-height:1.5;color:#222;margin:0 0 14px">${esc(next)}</p>` : ""}
+    <p style="margin-top:16px"><a href="${siteUrl}/admin/sponsored" style="color:#111;font-weight:600">Open in Admin →</a></p>`,
+  );
+  const text = [subject, rows.map(([k, v]) => `${k}: ${v}`).join("\n"), next, `${siteUrl}/admin/sponsored`].filter(Boolean).join("\n\n");
+  return { subject, html, text };
+}
+
+/** Admin video upload, step 1: a one-time URL the browser uploads straight to (skips the 4.5MB request cap). */
+export async function createVideoUpload(id: string, contentType: string) {
+  const ext = { "video/mp4": "mp4", "video/webm": "webm", "video/quicktime": "mov" }[contentType];
+  if (!ext) throw new Error("Upload an MP4, WebM or MOV file.");
+  const path = `${id}/${Date.now()}.${ext}`;
+  const { data, error } = await adminClient().storage.from(VIDEO_BUCKET).createSignedUploadUrl(path);
+  if (error) throw error;
+  return { path, token: data.token };
+}
+
+/** Step 2: point the order at the new file. A new file means the client reviews it again. */
+export async function attachVideo(id: string, path: string | null) {
+  if (path !== null && !path.startsWith(`${id}/`)) throw new Error("That video belongs to another order.");
+  const old = await getOrder(id);
+  const { error } = await adminClient().from("sponsored_jobs").update({ video_path: path }).eq("id", id);
+  if (error) throw error;
+  if (old?.video_path && old.video_path !== path) {
+    await adminClient().storage.from(VIDEO_BUCKET).remove([old.video_path]).catch(() => undefined);
+  }
 }

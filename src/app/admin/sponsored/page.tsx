@@ -2,9 +2,30 @@ import Link from "next/link";
 import { adminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin";
 import { AdminNotice } from "@/components/AdminNotice";
-import { canRefund, orderLines, type SponsoredJobRow } from "@/lib/sponsor";
+import { CopyButton } from "@/components/CopyButton";
+import { canRefund, orderLines, reviewFields, reviewLink, videoUrl, type SponsoredJobRow } from "@/lib/sponsor";
 import { formatPrice, isRunning } from "@/lib/sponsor-form";
-import { cancelOrder, editCopy, goLive, sendReceiptAgain, setSponsoredStatus } from "./actions";
+import { reviewSummary, type AssetReview } from "@/lib/sponsor-review";
+import { cancelOrder, editCopy, goLive, removeVideo, sendReceiptAgain, setSponsoredStatus } from "./actions";
+import { VideoUpload } from "./VideoUpload";
+
+const REVIEW_BADGE: Record<AssetReview["status"], [string, string]> = {
+  waiting: ["Waiting on client", "bg-bg text-ink-2 ring-1 ring-line"],
+  changed: ["Changed since their review", "bg-bg text-ink-2 ring-1 ring-line"],
+  up: ["Approved", "bg-accent-soft text-accent"],
+  down: ["Changes requested", "bg-amber-soft text-amber"],
+};
+
+function ReviewRow({ label, a }: { label: string; a: AssetReview }) {
+  const [text, cls] = REVIEW_BADGE[a.status];
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <span className="w-16 shrink-0 text-ink-3">{label}</span>
+      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>{text}</span>
+      {a.note && (a.status === "down" || a.status === "changed") && <span className="min-w-0 flex-1 text-ink-2">&ldquo;{a.note}&rdquo;</span>}
+    </div>
+  );
+}
 
 const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" });
 
@@ -50,6 +71,10 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
         {rows.map((r) => {
           const st = stage(r, now);
           const [label, cls] = BADGE[st];
+          const reviewable = r.status === "paid" || r.status === "live";
+          const rev = reviewSummary(reviewFields(r));
+          const link = reviewLink(r);
+          const vid = videoUrl(r.video_path);
           return (
             <li key={r.id} className="rounded-xl border border-line bg-surface">
               <details open={st === "approve"}>
@@ -59,6 +84,13 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                     {r.renewal_of && <span className="mr-1.5 rounded bg-accent-soft px-1.5 py-0.5 text-xs font-semibold text-accent">Renewal</span>}
                     {r.job_title} · {r.company}
                   </span>
+                  {st === "approve" && (
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${rev.allApproved ? "bg-accent-soft text-accent" : rev.changesRequested ? "bg-amber-soft text-amber" : "bg-bg text-ink-2 ring-1 ring-line"}`}
+                    >
+                      {rev.allApproved ? "Client approved ✓" : rev.changesRequested ? "Client wants changes" : r.review_opened_at ? "Client opened the link" : "Client hasn't reviewed"}
+                    </span>
+                  )}
                   {r.live_at && r.ends_at ? (
                     <span className="text-ink-3">
                       {day(r.live_at)} to {day(r.ends_at)}
@@ -92,6 +124,41 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                     </tbody>
                   </table>
                   <p className="mt-3 whitespace-pre-wrap text-ink-2">{r.description}</p>
+                  {reviewable && link && (
+                    <section className="mt-4 space-y-3 rounded-lg border border-line px-3 py-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h2 className="text-sm font-semibold">Client review</h2>
+                        <span className="text-xs text-ink-3">
+                          {r.review_sent_at ? `${r.contact_name.split(" ")[0]} sent their thumbs ${day(r.review_sent_at)}` : r.review_opened_at ? `Opened ${day(r.review_opened_at)}, not sent yet` : "Link not opened yet"}
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {rev.video ? <ReviewRow label="Video" a={rev.video} /> : <div className="flex gap-3"><span className="w-16 shrink-0 text-ink-3">Video</span><span className="text-ink-3">None yet. Upload one to add it to the review.</span></div>}
+                        <ReviewRow label="Job ad" a={rev.ad} />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <CopyButton text={link} label="Copy review link" className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90" />
+                        <a href={link} target="_blank" rel="noopener" className="rounded-md border border-line-strong bg-surface px-3 py-1.5 text-sm font-semibold">
+                          See what {r.contact_name.split(" ")[0]} sees ↗
+                        </a>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
+                        <VideoUpload id={r.id} hasVideo={!!r.video_path} />
+                        {vid && (
+                          <>
+                            <a href={vid} target="_blank" rel="noopener" className="text-sm underline">Watch current video</a>
+                            <form action={removeVideo}>
+                              <input type="hidden" name="id" value={r.id} />
+                              <button className="text-sm text-red underline">Remove</button>
+                            </form>
+                          </>
+                        )}
+                      </div>
+                      <p className="text-xs text-ink-3">
+                        The video shows on the job page once she approves it. Edit the copy or swap the video and the review link asks them to look again. Going live is still your button.
+                      </p>
+                    </section>
+                  )}
                   {r.status !== "canceled" && r.status !== "pending" && (
                     <details className="mt-3 rounded-lg border border-line px-3 py-2">
                       <summary className="cursor-pointer text-sm font-semibold">Edit copy</summary>
@@ -101,7 +168,7 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                           [
                             ["job_title", "Job title", r.job_title, 140, 1],
                             ["job_url", "Link to apply", r.job_url, 2000, 1],
-                            ["description", "Description (the card shows about 3 lines)", r.description, 10000, 8],
+                            ["description", "Description (the card shows about 3 lines). Formatting: ## Heading, - bullet, 1. numbered, **bold**", r.description, 10000, 8],
                             ["product_short", "What they sell: headline (4 to 8 words)", r.product_short ?? "", 80, 1],
                             ["product_story", "What they sell: story (2 to 4 sentences, under 60 words)", r.product_story ?? "", 500, 3],
                             ["ote_attainment_pct", "% of ramped reps who hit OTE last year (blank = not shared)", r.ote_attainment_pct?.toString() ?? "", 4, 1],
@@ -178,6 +245,9 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                     <p className="mt-3 text-xs text-ink-2">
                       {r.stripe_refund_id ? `Refunded ${formatPrice(r.amount_cents)}` : "Canceled"} on {day(r.refunded_at)}.{r.cancel_reason ? ` Reason: ${r.cancel_reason}` : ""}
                     </p>
+                  )}
+                  {st === "approve" && !rev.allApproved && (
+                    <p className="mt-2 text-xs text-amber">Heads up: the client hasn&apos;t approved everything yet.</p>
                   )}
                   {st === "approve" && runningCount >= 2 && (
                     <p className="mt-2 text-xs text-amber">Both home page spots are taken. If you approve it now, it starts automatically when a spot opens, and gets its full 30 days from then.</p>
