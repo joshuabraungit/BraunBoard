@@ -159,7 +159,7 @@ export function renderRenewalReceipt(o: SponsoredJobRow, invoice: Invoice | null
   const lines = [
     `Hi ${o.contact_name.trim().split(/\s+/)[0]},`,
     `Thanks for renewing.`,
-    `${o.job_title} stays at the top of the Braun Board home page for another ${SPONSOR_DAYS} days, through ${day(o.ends_at!)}. Nothing else to do on your end.`,
+    `${o.job_title} stays at the top of the Braun Board home page for another ${SPONSOR_DAYS} days, through ${day(o.ends_at!)}. It also goes out in a new LinkedIn post and another newsletter send. Nothing else to do on your end.`,
     `Want to change the ad? Just reply.`,
     `Josh`,
   ];
@@ -177,7 +177,7 @@ async function sendRenewalEmails(o: SponsoredJobRow, invoiceId?: string | null) 
   const owner = adminEmails()[0];
   const invoice = await getInvoiceLinks(invoiceId);
   const notice = renderOwnerNotice(o, site, invoice);
-  notice.subject = `Renewed: ${o.job_title} at ${o.company} (through ${day(o.ends_at!)})`;
+  notice.subject = `Renewed: ${o.job_title} at ${o.company} (through ${day(o.ends_at!)}). Owes a new LinkedIn post + newsletter send.`;
   notice.html = notice.html.replace("New sponsored job:", "Renewed:");
   notice.text = notice.text.replace("New sponsored job:", "Renewed:");
   await Promise.all([

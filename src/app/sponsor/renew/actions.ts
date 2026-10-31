@@ -24,7 +24,7 @@ export async function startRenewal(fd: FormData) {
       email: order.email,
       amountCents: price,
       productName: "Braun Board sponsored job renewal",
-      description: `${order.job_title} at ${order.company}: ${SPONSOR_DAYS} more days featured on the home page.`,
+      description: `${order.job_title} at ${order.company}: ${SPONSOR_DAYS} more days featured on the home page, a LinkedIn post and a newsletter send.`,
       siteUrl: site,
       cancelUrl: renewUrl(site, id),
     });

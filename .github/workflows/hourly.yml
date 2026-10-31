@@ -7,7 +7,7 @@ name: Hourly
 #  - find "who you're selling to" for new jobs
 #  - the daily alert digest, once a day, first run after 8am ET
 #  - build Braun's Picks Monday afternoon, send it Tuesday at 8am ET
-#  - email sponsors a week before their 30 days end, with a renew link
+#  - email sponsors 5 days before their 30 days end, with a renew link
 on:
   schedule:
     - cron: "17 * * * *"
@@ -63,7 +63,7 @@ jobs:
       - name: Send Braun's Picks (if due)
         if: always()
         run: npm run picks:send
-      - name: Sponsor renewal reminders (a week before a run ends)
+      - name: Sponsor renewal reminders (5 days before a run ends)
         if: always()
         run: npx tsx scripts/sponsor-renewals.ts
       # Keeps the hourly rhythm: wait out the rest of the hour, then queue the next run.
