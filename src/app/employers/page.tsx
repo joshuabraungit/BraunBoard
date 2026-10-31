@@ -190,6 +190,12 @@ export default function EmployersPage() {
             josh@joshbraun.com
           </a>
         </p>
+        <p className="mt-1 text-sm text-ink-3">
+          Or call or text:{" "}
+          <a href="tel:+19546950844" className="font-semibold text-ink underline underline-offset-2">
+            954-695-0844
+          </a>
+        </p>
       </section>
 
       {/* How it works */}
