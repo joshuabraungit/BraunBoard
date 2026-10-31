@@ -307,9 +307,19 @@ export function ReviewClient({
         </div>
       ) : (
         !nothingToDo && (
-          <p className="rounded-2xl border-[1.5px] border-dashed border-line-strong px-5 py-5 text-center text-[15px] text-ink-2">
-            Review {keys.length === 2 ? "both pieces" : "it"} and the Send button shows up here.
-          </p>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              disabled
+              aria-describedby="send-hint"
+              className="min-h-[52px] cursor-not-allowed rounded-xl bg-line font-semibold text-ink-3"
+            >
+              Send to Josh
+            </button>
+            <p id="send-hint" className="text-center text-sm text-ink-2">
+              {keys.length === 2 ? "Review both pieces first" : "Review it first"} ({doneCount} of {keys.length} done)
+            </p>
+          </div>
         )
       )}
 
