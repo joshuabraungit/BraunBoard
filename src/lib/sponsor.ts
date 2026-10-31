@@ -139,8 +139,6 @@ export function renderOwnerNotice(o: SponsoredJobRow, siteUrl: string, invoice: 
   return { subject, html, text };
 }
 
-const niceDate = (ymd: string) =>
-  new Date(`${ymd}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "America/New_York" });
 
 /** The autoresponse a buyer gets the moment they pay. Josh's voice: short lines, no hype. */
 export function renderCustomerReceipt(o: SponsoredJobRow, invoice: Invoice | null = null) {
@@ -153,7 +151,7 @@ export function renderCustomerReceipt(o: SponsoredJobRow, invoice: Invoice | nul
     `Here's what happens next.`,
     `I read every sponsored job before it goes up. Usually within one business day.`,
     `If it doesn't qualify, you get a full refund.`,
-    `Once it's approved, it sits at the top of the Braun Board home page for ${SPONSOR_DAYS} days.${o.start_date ? ` It goes live ${niceDate(o.start_date)}, like you asked. Want it sooner? Just reply.` : ""}`,
+    `Once it's approved, it sits at the top of the Braun Board home page for ${SPONSOR_DAYS} days.`,
     `It also goes out in a LinkedIn post and a newsletter send.`,
     `You'll get an email from me when it's live, with a link to the page sellers see.`,
   ];
