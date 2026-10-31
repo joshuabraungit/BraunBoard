@@ -35,9 +35,6 @@ const EXCLUDE = [
   /\b(sales tax|tax)\b/i,
   /\b(compensation|commissions?) (analyst|manager|specialist|administrator)\b/i,
   /\b(sales|solutions) (strategy|planning|programs?)\b/i,
-  // Medtech case coverage and clinical support: in the OR, not carrying a quota.
-  /\bclinical (specialist|account (manager|specialist)|associate|excellence|consultant|educator|support)\b/i,
-  /\b(case coverage|field clinical|clinical (field )?engineer)\b/i,
 ];
 
 // Order matters: first match wins, so more specific families come first.
@@ -47,13 +44,11 @@ const FAMILIES: { family: RoleFamily; re: RegExp }[] = [
   { family: "Sales Director", re: /\b(director|sr\.? director|senior director)\b.*\b(sales|account executives?|business development|solutions engineering|sales engineering|account management)\b/i },
   { family: "Sales Director", re: /\b(sales|regional|area) director\b/i },
   { family: "Sales Engineer", re: /\b(sales engineer|solutions? engineer|solutions? consultant|pre-?sales|solutions? architect.*(sales|pre-?sales)|value engineer)\b/i },
-  // Medtech and field sales: a "Territory Manager" owns a patch and a quota, they don't manage people.
-  { family: "Account Executive", re: /\b(associate )?territory (sales )?(manager|rep(resentative)?|account (manager|representative)|sales specialist|specialist)\b/i },
   { family: "Sales Manager", re: /\b(sales manager|manager,? (sales|account executives?|business development|sales development|sdrs?|bdrs?|solutions engineering)|(sdr|bdr|sales development|business development|ae|account executive) (team )?(manager|lead)|regional sales manager|area sales manager|first[- ]line sales manager)\b/i },
   { family: "SDR/BDR", re: /\b(sdr|bdr|sales development|business development rep(resentative)?|market development rep|lead development|outbound rep)\b/i },
   { family: "Customer Expansion", re: /\b(expansion|growth account (executive|manager)|upsell|account (executive|manager),? (expansion|growth))\b/i },
   { family: "Account Manager", re: /\b(account manager|client partner|customer account manager|named account manager)\b/i },
-  { family: "Account Executive", re: /\b(account executive|ae\b|sales executive|enterprise sales|account director|sales representative|sales rep|(clinical |medical )?sales associate|business development (executive|manager)|new business (sales|executive)|partner (sales )?(manager|executive)|channel (sales )?(manager|account executive)|alliances? manager)\b/i },
+  { family: "Account Executive", re: /\b(account executive|ae\b|sales executive|enterprise sales|account director|sales representative|sales rep|business development (executive|manager)|new business (sales|executive)|partner (sales )?(manager|executive)|channel (sales )?(manager|account executive)|alliances? manager)\b/i },
 ];
 
 const SEGMENTS: { segment: SalesSegment; re: RegExp }[] = [
