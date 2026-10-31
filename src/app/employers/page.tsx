@@ -40,8 +40,10 @@ const AFTER = [
   {
     head: "What you'll sell",
     lines: [
-      "Nonprofits, public affairs teams, governments, and businesses make big decisions about the communities they serve. Without good research, they're guessing.",
-      "The company helps them find out what people actually think, so they can lead with confidence.",
+      "Nonprofits, public affairs teams, governments, and businesses make big decisions about the communities they serve.",
+      "Usually, they hear from whoever shows up. A handful of loud voices. Dave wants a zip line to Costco. Everyone else stays home.",
+      "So a few opinions end up deciding what everyone lives with, and pays for. The town builds the zip line. Most people wanted a playground. Money's spent. Dave loves it. Nobody else does.",
+      "The company helps them hear from everyone, not just the loudest few, so they can lead with confidence.",
     ],
   },
   {
