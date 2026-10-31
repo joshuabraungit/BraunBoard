@@ -314,7 +314,8 @@ export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
 
   // Pipeline
   const pipe: Record<string, [Grade, string]> = {
-    High: ["ok", "Mostly self-sourced. Great if you like outbound, rough if you don't."],
+    // Hunting isn't worse than inbound, just different. Same points, the line tells you which it is.
+    High: ["good", "Mostly self-sourced. Great if you like outbound, rough if you don't."],
     Medium: ["good", "A mix of self-sourced pipeline and inbound or SDR help."],
     Low: ["good", "Mostly inbound or an assigned book."],
     Unknown: ["unknown", "Doesn't say where pipeline comes from. Ask."],
