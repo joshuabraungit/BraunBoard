@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CopyButton } from "@/components/CopyButton";
-import { PicksSignup } from "@/components/PicksSignup";
+import { PicksSignupFromUrl } from "@/components/PicksSignupFromUrl";
 import { PlaybookTabs } from "@/components/PlaybookTabs";
 
-export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   alternates: { canonical: "/cold-call" },
   title: "Cold call talk track · Call the hiring manager · Braun Board",
@@ -97,8 +96,7 @@ function Card({ step, n }: { step: Step; n?: number }) {
   );
 }
 
-export default async function ColdCallPage({ searchParams }: { searchParams: Promise<{ picks?: string }> }) {
-  const { picks } = await searchParams;
+export default async function ColdCallPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <PlaybookTabs active="/cold-call" />
@@ -181,7 +179,7 @@ export default async function ColdCallPage({ searchParams }: { searchParams: Pro
         <Link href="/outreach" className="font-semibold text-ink underline underline-offset-2">See the cold emails</Link>.
       </p>
       <div className="mt-6">
-        <PicksSignup back="/cold-call" source="cold-call" status={picks} compact />
+        <PicksSignupFromUrl back="/cold-call" source="cold-call" compact />
       </div>
     </div>
   );

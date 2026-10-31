@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CopyButton } from "@/components/CopyButton";
-import { PicksSignup } from "@/components/PicksSignup";
+import { PicksSignupFromUrl } from "@/components/PicksSignupFromUrl";
 import { PlaybookTabs } from "@/components/PlaybookTabs";
 
-export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   alternates: { canonical: "/proof-page" },
   title: "Proof page · A one-page case for the hiring manager · Braun Board",
@@ -66,8 +65,7 @@ const READY = [
   "A link to a headshot that's already online (optional)",
 ];
 
-export default async function ProofPage({ searchParams }: { searchParams: Promise<{ picks?: string }> }) {
-  const { picks } = await searchParams;
+export default async function ProofPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <PlaybookTabs active="/proof-page" />
@@ -181,7 +179,7 @@ export default async function ProofPage({ searchParams }: { searchParams: Promis
         <Link href="/outreach" className="font-semibold text-ink underline underline-offset-2">See the cold emails</Link>.
       </p>
       <div className="mt-6">
-        <PicksSignup back="/proof-page" source="proof-page" status={picks} compact />
+        <PicksSignupFromUrl back="/proof-page" source="proof-page" compact />
       </div>
     </div>
   );

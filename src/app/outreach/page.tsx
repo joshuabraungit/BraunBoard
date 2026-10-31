@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PicksSignup } from "@/components/PicksSignup";
+import { PicksSignupFromUrl } from "@/components/PicksSignupFromUrl";
 import { PlaybookTabs } from "@/components/PlaybookTabs";
 import { BeatsLegend, FirstNotes, FollowUps } from "./OutreachEmails";
 
-export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   alternates: { canonical: "/outreach" },
   title: "Cold emails · Reach the hiring manager, not just the ATS · Braun Board",
@@ -12,8 +11,7 @@ export const metadata: Metadata = {
     "Four first notes and four follow-ups for sales job seekers to send the person who owns the hire, with subject lines, LinkedIn versions and the psychology behind each one.",
 };
 
-export default async function OutreachPage({ searchParams }: { searchParams: Promise<{ picks?: string }> }) {
-  const { picks } = await searchParams;
+export default async function OutreachPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <PlaybookTabs active="/outreach" />
@@ -62,7 +60,7 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
         sales jobs worth reaching out about every Tuesday:
       </p>
       <div className="mt-3">
-        <PicksSignup back="/outreach" source="outreach" status={picks} compact />
+        <PicksSignupFromUrl back="/outreach" source="outreach" compact />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use server";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { adminClient } from "@/lib/supabase/admin";
 import { attachVideo, cancelAndRefund, createVideoUpload, getOrder, markLive, resendReceipt, reviewFields, updateSponsorCopy } from "@/lib/sponsor";
@@ -28,6 +28,7 @@ export async function goLive(formData: FormData) {
   }
   revalidatePath("/admin/sponsored");
   revalidatePath("/");
+  revalidateTag("sponsors");
   back(true, msg);
 }
 
@@ -39,6 +40,7 @@ export async function setSponsoredStatus(formData: FormData) {
   const { error } = await adminClient().from("sponsored_jobs").update({ status }).eq("id", id);
   revalidatePath("/admin/sponsored");
   revalidatePath("/");
+  revalidateTag("sponsors");
   back(!error, error ? error.message : `Marked ${status}.`);
 }
 
@@ -66,6 +68,7 @@ export async function cancelOrder(formData: FormData) {
     return;
   }
   revalidatePath("/");
+  revalidateTag("sponsors");
   back(true, msg);
 }
 
@@ -90,6 +93,7 @@ export async function editCopy(formData: FormData) {
     return;
   }
   revalidatePath("/");
+  revalidateTag("sponsors");
   revalidatePath(`/sponsored/${id}`);
   back(true, `Saved. ${parsed.edit.job_title} is updated everywhere it shows.${reReview ? " The client's review link now shows the new version for her OK." : ""}`);
 }

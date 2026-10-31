@@ -1,6 +1,7 @@
 // Keeps the Supabase session cookie fresh on every request (per @supabase/ssr docs).
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { hasAuthCookie } from "@/lib/supabase/auth-cookie";
 
 export async function middleware(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -16,6 +17,9 @@ export async function middleware(request: NextRequest) {
     if (!to.searchParams.has("next")) to.searchParams.set("next", pathname === "/" ? "/for-you" : pathname);
     return NextResponse.redirect(to);
   }
+
+  // Not signed in? Nothing to refresh. Skips a trip to Supabase on most page loads.
+  if (!hasAuthCookie(request.cookies.getAll())) return NextResponse.next();
 
   let response = NextResponse.next({ request });
   const supabase = createServerClient(url, key, {

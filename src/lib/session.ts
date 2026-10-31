@@ -1,17 +1,24 @@
 // Who's looking, and what they're watching. Server-only.
 
+import { cache } from "react";
 import { cookies } from "next/headers";
+import { hasAuthCookie } from "./supabase/auth-cookie";
 import type { User } from "@supabase/supabase-js";
 import { isSupabaseConfigured, serverClient } from "./supabase/server";
 import { decodeWatchCookie, ONBOARDING_COOKIE, rowToPrefs, type OnboardingAnswers } from "./watch-prefs";
 import type { WatchPrefs } from "./match";
 
-export async function getUser(): Promise<User | null> {
+/**
+ * Who's signed in. Asked once per page load (the menu, saved jobs and watches all
+ * share the answer), and not at all when there's no sign-in cookie.
+ */
+export const getUser = cache(async (): Promise<User | null> => {
   if (!isSupabaseConfigured()) return null;
+  if (!hasAuthCookie((await cookies()).getAll())) return null;
   const db = await serverClient();
   const { data } = await db.auth.getUser();
   return data.user ?? null;
-}
+});
 
 export interface ActiveWatch {
   id: string | null; // null = anonymous cookie watch, not saved yet
