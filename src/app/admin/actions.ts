@@ -3,7 +3,7 @@
 // public endpoints, so the page-level check isn't enough on its own.
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { adminClient } from "@/lib/supabase/admin";
 import { adapters } from "@/lib/ingest/adapters";
@@ -24,6 +24,7 @@ export async function setCompanyEnabled(formData: FormData) {
   if (error) back(returnTo, error.message, false);
   await db.rpc("refresh_company_stats");
   revalidatePath("/admin/companies");
+  revalidateTag("jobs");
   back(returnTo, `${data!.name} ${enable ? "is back on. Its jobs show again." : "is switched off. Its jobs are hidden."}`);
 }
 
@@ -39,6 +40,7 @@ export async function setCompanySize(formData: FormData) {
   const { data, error } = await db.from("companies").update(patch).eq("id", id).select("name").single();
   if (error) back(returnTo, error.message, false);
   revalidatePath("/admin/companies");
+  revalidateTag("jobs");
   back(returnTo, `${data!.name} is now ${isSizeBucket(size) ? SIZE_LABELS[size].label : "unknown size"}. The AI won't change it.`);
 }
 
@@ -95,6 +97,7 @@ export async function addCompany(formData: FormData) {
     back(path, dup ? "Another company already uses that job board." : error.message, false);
   }
   revalidatePath("/admin/companies");
+  revalidateTag("jobs");
   back(path, `Added ${name} (${found!.provider}, ${count} open jobs on their board). Its sales jobs show up after the next crawl, within 4 hours.`);
 }
 

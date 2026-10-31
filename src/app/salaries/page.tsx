@@ -3,7 +3,8 @@ import Link from "next/link";
 import { getPayRows } from "@/lib/salary-data";
 import { allSalaryPages, k, rowsFor, salaryStats, SALARY_ROLES, SALARY_SEGMENTS } from "@/lib/salaries";
 
-export const dynamic = "force-dynamic";
+// Pay data refreshes hourly.
+export const revalidate = 3600;
 
 const YEAR = new Date().getFullYear();
 

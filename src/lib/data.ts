@@ -1,7 +1,8 @@
 // Read-side queries for pages. Falls back to sample data when Supabase isn't
 // configured, so the UI can be developed before the database exists.
 
-import { isSupabaseConfigured, serverClient } from "./supabase/server";
+import { unstable_cache } from "next/cache";
+import { isSupabaseConfigured, publicClient } from "./supabase/server";
 import { SAMPLE_COMPANIES, SAMPLE_JOBS } from "./sample-data";
 import type { RemoteType, RoleFamily, SalesMotion, SalesSegment, SelfSourcingLevel, Seniority } from "./ingest/types";
 import type { Disclosures } from "./ingest/extract";
@@ -89,6 +90,9 @@ export interface JobFilters {
   size?: string;
 }
 
+/** How long shared job and company lists are reused before asking the database again. */
+const JOB_CACHE_SECONDS = 300;
+
 const CARD_COLUMNS =
   "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags, currency, markets, attainment, company_size, buyer, industry";
 
@@ -120,13 +124,30 @@ export async function listJobsWithTotal(
   limit = 60,
   opts: { withDescription?: boolean; offset?: number } = {},
 ): Promise<{ jobs: JobView[]; total: number }> {
+  // Jobs only change when the crawler runs, so the same list is shared for a few minutes.
+  // Skipped for free-text searches (too many variations) and big pulls (too large to cache).
+  if (!isSupabaseConfigured() || f.q || limit > 200 || opts.withDescription) return fetchJobs(f, limit, opts);
+  return cachedJobs(f, limit, opts);
+}
+
+const cachedJobs = unstable_cache(
+  (f: JobFilters, limit: number, opts: { offset?: number }) => fetchJobs(f, limit, opts),
+  ["jobs-v1"],
+  { revalidate: JOB_CACHE_SECONDS, tags: ["jobs"] },
+);
+
+async function fetchJobs(
+  f: JobFilters,
+  limit: number,
+  opts: { withDescription?: boolean; offset?: number },
+): Promise<{ jobs: JobView[]; total: number }> {
   const offset = Math.max(0, opts.offset ?? 0);
   if (!isSupabaseConfigured()) {
     const all = applyFiltersLocal(SAMPLE_JOBS, f);
     return { jobs: all.slice(offset, offset + limit), total: all.length };
   }
 
-  const db = await serverClient();
+  const db = publicClient();
   let q = db
     .from("visible_jobs")
     .select(opts.withDescription ? `${CARD_COLUMNS}, description_raw` : CARD_COLUMNS, { count: "exact" })
@@ -162,7 +183,7 @@ export async function listJobsForWatch(markets: string[], keywords: string[] = [
   if (!isSupabaseConfigured()) return listJobs({ markets }, 1000, { withDescription: true });
   const jobs = await listJobs({ markets }, 1000);
   if (!jobs.length) return jobs;
-  const db = await serverClient();
+  const db = publicClient();
   const { data, error } = await db.rpc("job_text_hits", { p_ids: jobs.map((j) => j.id), p_keywords: keywords });
   // If the check fails, fall back to the old way rather than show wrong matches.
   if (error) return listJobs({ markets }, 1000, { withDescription: true });
@@ -173,7 +194,13 @@ export async function listJobsForWatch(markets: string[], keywords: string[] = [
 
 export async function getJob(slug: string): Promise<JobView | null> {
   if (!isSupabaseConfigured()) return SAMPLE_JOBS.find((j) => j.slug === slug) ?? null;
-  const db = await serverClient();
+  return cachedJob(slug);
+}
+
+const cachedJob = unstable_cache(fetchJob, ["job-v1"], { revalidate: JOB_CACHE_SECONDS, tags: ["jobs"] });
+
+async function fetchJob(slug: string): Promise<JobView | null> {
+  const db = publicClient();
   const { data } = await db.from("visible_jobs").select(`${CARD_COLUMNS}, description_raw, employment_type, last_seen_at, buyer, buyer_quote, industry, industry_quote, buyer_checked_at`).eq("slug", slug).maybeSingle();
   return (data as unknown as JobView) ?? null;
 }
@@ -183,7 +210,7 @@ export async function getCompany(slug: string): Promise<{ company: CompanyView; 
   if (!isSupabaseConfigured()) {
     company = SAMPLE_COMPANIES.find((c) => c.slug === slug) ?? null;
   } else {
-    const db = await serverClient();
+    const db = publicClient();
     const { data } = await db.from("companies").select("id, slug, name, domain, logo_url, website_url, industry, size_bucket, size_source, size_quote").eq("slug", slug).maybeSingle();
     company = data as CompanyView | null;
   }
@@ -217,7 +244,7 @@ const STATS_COLUMNS = "open_roles, new_7d, new_30d, new_prev_30d, closed_30d, me
 
 export async function getCompanyStats(companyId: string): Promise<CompanyStats | null> {
   if (!isSupabaseConfigured()) return null;
-  const db = await serverClient();
+  const db = publicClient();
   const { data } = await db.from("company_stats").select(STATS_COLUMNS).eq("company_id", companyId).maybeSingle();
   return (data as CompanyStats | null) ?? null;
 }
@@ -237,7 +264,13 @@ export async function listCompanies(): Promise<CompanyListItem[]> {
     }
     return [...by.values()];
   }
-  const db = await serverClient();
+  return cachedCompanies();
+}
+
+const cachedCompanies = unstable_cache(fetchCompanies, ["companies-v1"], { revalidate: 600, tags: ["jobs"] });
+
+async function fetchCompanies(): Promise<CompanyListItem[]> {
+  const db = publicClient();
   const { data } = await db
     .from("company_stats")
     .select(`${STATS_COLUMNS}, companies!inner(id, slug, name, domain, logo_url, website_url, industry, is_disabled)`)
@@ -259,7 +292,7 @@ export const byPullingBack = (a: CompanyListItem, b: CompanyListItem) =>
 export async function getJobsByIds(ids: string[]): Promise<JobView[]> {
   if (!ids.length) return [];
   if (!isSupabaseConfigured()) return SAMPLE_JOBS.filter((j) => ids.includes(j.id));
-  const db = await serverClient();
+  const db = publicClient();
   const { data } = await db.from("visible_jobs").select(CARD_COLUMNS).in("id", ids);
   return (data ?? []) as unknown as JobView[];
 }

@@ -3,7 +3,6 @@ import Link from "next/link";
 import { formatPrice, sponsorPriceCents, SPONSOR_DAYS } from "@/lib/sponsor-form";
 import { AttainmentBadge } from "@/components/SponsoredCard";
 
-export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   alternates: { canonical: "/employers" },
   title: "For employers: sponsor a sales job · Braun Board",

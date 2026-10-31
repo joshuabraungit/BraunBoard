@@ -1,5 +1,6 @@
 // Sponsored job orders: save, upload logo, mark paid, send the emails. Server-only.
 import "server-only";
+import { unstable_cache } from "next/cache";
 import { adminClient } from "./supabase/admin";
 import { adminEmails } from "./admin-emails";
 import { sendEmail } from "./alerts/email";
@@ -299,7 +300,10 @@ async function sendPaidEmails(o: SponsoredJobRow, invoiceId?: string | null) {
 }
 
 /** Sponsors showing right now, newest first. Never throws: the home page must load regardless. */
-export async function listRunningSponsors(): Promise<SponsoredJobRow[]> {
+/** Live sponsored jobs for the home page. Reused for a minute; admin changes refresh it right away. */
+export const listRunningSponsors = unstable_cache(fetchRunningSponsors, ["running-sponsors-v1"], { revalidate: 60, tags: ["sponsors"] });
+
+async function fetchRunningSponsors(): Promise<SponsoredJobRow[]> {
   try {
     const now = new Date().toISOString();
     const { data } = await adminClient()

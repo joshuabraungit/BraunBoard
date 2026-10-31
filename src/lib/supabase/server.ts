@@ -1,6 +1,7 @@
 // Per-request client for server components / route handlers. Respects RLS and the user's session.
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
 
 export function isSupabaseConfigured(): boolean {
   return !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -20,4 +21,12 @@ export async function serverClient() {
       },
     },
   });
+}
+
+/**
+ * Client for public data (jobs, companies) that looks the same to every visitor.
+ * It doesn't read cookies, so its results can be cached and shared across visitors.
+ */
+export function publicClient() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
 }
