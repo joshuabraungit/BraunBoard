@@ -41,6 +41,9 @@ export default async function SponsoredJobPage({ params }: Props) {
   const hasRun = s.status === "done" || (s.status === "live" && !!s.ends_at && new Date(s.ends_at) <= new Date());
   if (!running && !hasRun && !admin) notFound();
 
+  const ended = hasRun && !!s.live_at && !!s.ends_at;
+  const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" });
+
   const ua = (await headers()).get("user-agent") ?? "";
   if (running && !admin && !isBot(ua)) await bump(s.id, "view");
 
@@ -50,6 +53,27 @@ export default async function SponsoredJobPage({ params }: Props) {
         <p className="mb-5 rounded-lg bg-amber-soft px-4 py-3 text-sm text-amber">
           Admin preview. {hasRun ? "This sponsorship has ended." : "Visitors can't see this until it's live."}
         </p>
+      )}
+      {ended && (
+        <div className="mb-6 rounded-2xl border border-line bg-surface p-5 sm:p-6">
+          <p className="text-[17px] font-semibold text-ink">
+            This job was featured {day(s.live_at!)} to {day(s.ends_at!)}.
+          </p>
+          <p className="mt-1 text-[15px] text-ink-2">It may be filled by now.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <a
+              href={`/sponsored/${s.id}/apply`}
+              rel="nofollow noopener"
+              target="_blank"
+              className="inline-flex min-h-11 items-center rounded-lg border border-line-strong bg-bg px-4 text-sm font-semibold text-ink hover:bg-surface"
+            >
+              Check if it&apos;s still open ↗
+            </a>
+            <Link href="/new" className="inline-flex min-h-11 items-center rounded-lg bg-ink px-4 text-sm font-semibold text-white hover:opacity-90">
+              See today&apos;s sales jobs →
+            </Link>
+          </div>
+        </div>
       )}
       <span className="rounded-full bg-amber-soft px-2.5 py-0.5 text-xs font-semibold text-amber">Sponsored</span>
 
@@ -81,9 +105,6 @@ export default async function SponsoredJobPage({ params }: Props) {
       )}
 
       <div className="mt-8 rounded-2xl border border-line bg-surface p-5 sm:p-6">
-        {hasRun && !admin ? (
-          <p className="text-sm text-ink-2">This job is no longer featured on Braun Board. The posting may still be open on {s.company}&apos;s site.</p>
-        ) : null}
         {/* Plain <a>, not <Link>, so prefetching never counts as an apply click. */}
         <a
           href={`/sponsored/${s.id}/apply`}
@@ -91,7 +112,7 @@ export default async function SponsoredJobPage({ params }: Props) {
           target="_blank"
           className="mt-0 inline-flex min-h-11 items-center rounded-lg bg-ink px-5 text-sm font-semibold text-white hover:opacity-90"
         >
-          Apply on {s.company}&apos;s site ↗
+          {ended ? `Check if it's still open on ${s.company}'s site ↗` : `Apply on ${s.company}'s site ↗`}
         </a>
         <p className="mt-4 text-sm text-ink-2">
           Before your first call, here are{" "}
