@@ -19,9 +19,16 @@ export default async function SponsorThanks({ searchParams }: { searchParams: Pr
       {paid ? (
         <>
           <p className="text-xs font-bold uppercase tracking-wide text-accent">Payment received</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">Thanks{order ? `, ${order.contact_name.split(" ")[0]}` : ""}. You&apos;re booked.</h1>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">
+            Thanks{order ? `, ${order.contact_name.split(" ")[0]}` : ""}. {order?.renewal_of ? "You're renewed." : "You're booked."}
+          </h1>
           <p className="mt-4 text-[15px] leading-relaxed text-ink-2">
-            {order ? (
+            {order?.renewal_of && order.ends_at ? (
+              <>
+                <span className="font-semibold text-ink">{order.job_title}</span> stays at the top of the home page for another {SPONSOR_DAYS} days, through{" "}
+                {new Date(order.ends_at).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "America/New_York" })}. Nothing else to do.
+              </>
+            ) : order ? (
               <>
                 <span className="font-semibold text-ink">{order.job_title}</span> at {order.company} goes on the home page for {SPONSOR_DAYS} days
                 {" "}once it&apos;s approved. It also goes out in a
@@ -32,7 +39,8 @@ export default async function SponsorThanks({ searchParams }: { searchParams: Pr
             )}
           </p>
           <p className="mt-3 text-[15px] leading-relaxed text-ink-2">
-            A receipt is on its way to {order?.email ?? "your inbox"}. I&apos;ll email you when each piece is live. Need to change something? Just reply to that email.
+            A receipt is on its way to {order?.email ?? "your inbox"}.{order?.renewal_of ? "" : " I'll email you when each piece is live."} Need to change something?
+            Just reply to that email.
           </p>
         </>
       ) : (
