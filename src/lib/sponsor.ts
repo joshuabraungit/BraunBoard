@@ -109,7 +109,7 @@ export function orderLines(o: SponsoredJobRow): [string, string][] {
     ["Base", `${money(o.salary_min, o.currency)} to ${money(o.salary_max, o.currency)}`],
     ["OTE", o.ote_min ? `${money(o.ote_min, o.currency)} to ${money(o.ote_max, o.currency)}` : "Not given"],
     ["Where", [o.remote_type, o.location].filter(Boolean).join(" · ")],
-    ["Start", o.start_date ?? "As soon as possible"],
+    ["Listing goes live", o.start_date ?? "As soon as possible"],
     ["Logo", logoUrl(o.logo_path) ?? "None uploaded"],
     ["Paid", formatPrice(o.amount_cents)],
     ["Hit OTE", o.ote_attainment_pct != null ? `${o.ote_attainment_pct}% of ramped reps last year` : "Not given"],
@@ -153,7 +153,7 @@ export function renderCustomerReceipt(o: SponsoredJobRow, invoice: Invoice | nul
     `Here's what happens next.`,
     `I read every sponsored job before it goes up. Usually within one business day.`,
     `If it doesn't qualify, you get a full refund.`,
-    `Once it's approved, it sits at the top of the Braun Board home page for ${SPONSOR_DAYS} days.${o.start_date ? ` Starting ${niceDate(o.start_date)}, like you asked.` : ""}`,
+    `Once it's approved, it sits at the top of the Braun Board home page for ${SPONSOR_DAYS} days.${o.start_date ? ` It goes live ${niceDate(o.start_date)}, like you asked. Want it sooner? Just reply.` : ""}`,
     `It also goes out in a LinkedIn post and a newsletter send.`,
     `You'll get an email from me when it's live, with a link to the page sellers see.`,
   ];
