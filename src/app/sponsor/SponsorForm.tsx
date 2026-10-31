@@ -51,7 +51,6 @@ export function SponsorForm({ price, canceled }: { price: string; canceled: bool
   const v = state.values;
   const [remote, setRemote] = useState(v.remote_type ?? "");
   const [logoName, setLogoName] = useState("");
-  const today = new Date().toISOString().slice(0, 10);
   const err = (n: string) => (e[n] ? { "aria-invalid": true, "aria-describedby": `${n}-error` } : {});
 
   return (
@@ -195,11 +194,8 @@ export function SponsorForm({ price, canceled }: { price: string; canceled: bool
       </fieldset>
 
       <fieldset className="space-y-4">
-        <legend className="mb-3 text-lg font-bold tracking-tight">Timing</legend>
-        <Field name="start_date" label="When should your listing go live?" hint="Optional. This is when your ad appears on Braun Board, not the new hire's start date. Leave blank and it goes live as soon as you approve the rewrite." error={e.start_date}>
-          <input id="start_date" name="start_date" type="date" min={today} defaultValue={v.start_date} className={`${input} sm:max-w-56`} {...err("start_date")} />
-        </Field>
-        <Field name="notes" label="Anything else I should know?" hint="Optional." error={e.notes}>
+        <legend className="mb-3 text-lg font-bold tracking-tight">Notes</legend>
+        <Field name="notes" label="Anything else I should know?" hint="Optional. Need it to go live on a specific date? Say so here." error={e.notes}>
           <textarea id="notes" name="notes" defaultValue={v.notes} rows={3} maxLength={1000} className={input} />
         </Field>
       </fieldset>
