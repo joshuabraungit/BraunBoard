@@ -36,9 +36,15 @@ export function LoginForm({ next }: { next: string }) {
         <span className="h-px flex-1 bg-line" />or<span className="h-px flex-1 bg-line" />
       </div>
       <form onSubmit={sendLink} className="space-y-2">
+        <label htmlFor="login-email" className="sr-only">
+          Email address
+        </label>
         <input
+          id="login-email"
+          name="email"
           type="email"
           required
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@company.com"

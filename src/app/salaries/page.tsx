@@ -9,7 +9,7 @@ export const revalidate = 3600;
 const YEAR = new Date().getFullYear();
 
 export const metadata: Metadata = {
-  title: `What B2B salespeople actually make in ${YEAR} | Braun Board`,
+  title: `What B2B salespeople actually make in ${YEAR} · Braun Board`,
   description: `Real OTE and base pay for AEs, SDRs, SEs, sales managers and sales leaders, built from live job postings that publish pay. Updated every few hours.`,
   alternates: { canonical: "/salaries" },
 };

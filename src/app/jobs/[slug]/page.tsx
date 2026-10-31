@@ -31,8 +31,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const job = await loadJob(slug);
   if (!job) return { title: "Job not found · Braun Board" };
   const pay = formatComp(job);
+  // Where it is, so the same title in two cities doesn't get the same page title ("Remote · US", "New York, NY").
+  const where = formatLocation(job);
   return {
-    title: `${job.title_raw} at ${job.company_name} · Braun Board`,
+    title: `${job.title_raw} at ${job.company_name} (${where}) · Braun Board`,
     description: `${job.title_raw} at ${job.company_name}${pay ? `, ${pay}` : ""}. See what the posting leaves out and the questions to ask on the first call.`,
     alternates: { canonical: `/jobs/${job.slug}` },
     openGraph: {

@@ -9,6 +9,7 @@ import { FlagChips, VerdictPill } from "./BraunRead";
 import { braunRead, cardFlags, flagsFromCodes } from "@/lib/flags";
 import type { MatchResult } from "@/lib/match";
 import { attainmentLabel } from "@/lib/attainment";
+import { collapseOpenings } from "@/lib/openings";
 
 export interface CardContext {
   savedJobIds?: Set<string>;
@@ -28,7 +29,7 @@ export function tagsFor(j: Pick<JobView, "sales_segment" | "sales_motion" | "sel
   return t;
 }
 
-export function JobCard({ job, ctx }: { job: JobView; ctx: CardContext }) {
+export function JobCard({ job, ctx, openings = 1 }: { job: JobView; ctx: CardContext; openings?: number }) {
   const comp = formatComp(job);
   const match = ctx.matches?.get(job.id);
   const fresh = isFresh(job.first_seen_at);
@@ -47,7 +48,10 @@ export function JobCard({ job, ctx }: { job: JobView; ctx: CardContext }) {
           {freshnessLabel(job.first_seen_at)}
         </span>
       </div>
-      <p className="mt-0.5 text-sm text-ink-2">{formatLocation(job)}</p>
+      <p className="mt-0.5 text-sm text-ink-2">
+        {formatLocation(job)}
+        {openings > 1 && <span className="font-medium text-ink"> · {openings} openings</span>}
+      </p>
 
       <p className={`mt-3 text-[15px] font-semibold ${comp ? "text-accent" : "text-ink-3 font-normal text-sm"}`}>
         {comp || "Compensation not listed"}
@@ -111,8 +115,8 @@ export function JobGrid({ jobs, ctx, empty = "Nothing here yet." }: { jobs: JobV
   if (!jobs.length) return <p className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-ink-3">{empty}</p>;
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {jobs.map((j) => (
-        <JobCard key={j.id} job={j} ctx={ctx} />
+      {collapseOpenings(jobs).map(({ job, openings }) => (
+        <JobCard key={job.id} job={job} ctx={ctx} openings={openings} />
       ))}
     </div>
   );
