@@ -102,6 +102,15 @@ const BANNED_RE =
 export const JARGON_RE =
   /\b(models?|AI( \w+)? agents?|agentic|infrastructure|compliance|monitor(ing)?|analytics|observability|API|APIs|SaaS|deploy\w*|inference|pipelines?|stack|fine-tun\w*|tun(e|ing) (a|the|their|its|your)? ?models?|in the cloud|cloud-native|LLMs?|GPUs?|orchestrat\w*|endpoints?|provision\w*|KPIs?|ROI)\b/gi;
 
+// Headlines that name a category of thing instead of what it does for anyone.
+const VAGUE_SHORT = /^(software|tools?|a tool|an? (app|platform|system|suite|set))\b/i;
+
+/** An existing headline or story that breaks the plain-English rules and should be rewritten. */
+export function needsPlainRewrite(short: string | null, story: string | null): boolean {
+  if (!story) return false;
+  return (!!short && VAGUE_SHORT.test(short.trim())) || jargonIn(`${short ?? ""} ${story}`).length > 0;
+}
+
 /** Insider words in a headline or story, lowercased and de-duplicated. */
 export function jargonIn(text: string): string[] {
   return [...new Set([...text.matchAll(JARGON_RE)].map((m) => m[0].toLowerCase()))];
@@ -119,6 +128,7 @@ export function problemsWith(raw: Partial<ProductInfo> | null | undefined, posti
   if (!/\bThe problem is\b/.test(raw.story) || !/^When\b/.test(raw.story.trim()))
     out.push('Follow the 3-sentence template: start with "When [a customer] has to...", then "The problem is, ...", then what the company does and what changes.');
   if (raw.short && raw.short.split(/\s+/).length > 12) out.push("The short line is too long. Use 4 to 10 words.");
+  if (raw.short && VAGUE_SHORT.test(raw.short.trim())) out.push('The short line starts with what kind of thing it is ("Software...", "Tools..."). Start with what it does for the customer, like "Helps restaurants take orders and payments in one place".');
   if (!quoteInPosting(raw.quote, posting)) out.push("The quote isn't copied exactly from the posting. Copy one real sentence character for character.");
   if (raw.category && !PRODUCT_CATEGORIES.includes(raw.category as ProductCategory)) out.push(`The category must be one of: ${PRODUCT_CATEGORIES.join(", ")}.`);
   return out;

@@ -53,3 +53,14 @@ describe("insider tech words", () => {
     expect(jargonIn("Helps restaurants take orders and payments in one place")).toEqual([]);
   });
 });
+
+describe("which existing stories get rewritten", () => {
+  it("rewrites vague or insider headlines and keeps plain ones", async () => {
+    const { needsPlainRewrite } = await import("../src/lib/ingest/product");
+    const story = "When a restaurant owner takes orders, they write tickets by hand. The problem is, it's slow. Toast does it in one place, so the rush moves faster.";
+    expect(needsPlainRewrite("Software that helps companies plan customer conversations", story)).toBe(true);
+    expect(needsPlainRewrite("Tools to tune and run AI models for companies", story)).toBe(true);
+    expect(needsPlainRewrite("Helps restaurants take orders and payments in one place", story)).toBe(false);
+    expect(needsPlainRewrite("Helps restaurants take orders", null)).toBe(false);
+  });
+});

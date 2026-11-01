@@ -4,7 +4,7 @@
 // Usage: npx tsx scripts/product-backfill.ts [max companies, default 40]
 
 import { adminClient } from "../src/lib/supabase/admin";
-import { extractProduct } from "../src/lib/ingest/product";
+import { extractProduct, needsPlainRewrite } from "../src/lib/ingest/product";
 import { fail, notice, requireEnv, warn } from "./report";
 
 const DAY = 86_400_000;
@@ -12,6 +12,9 @@ const DAY = 86_400_000;
 const inTemplate = (story: string | null) => !!story && /^When\b/.test(story.trim()) && /\bThe problem is\b/.test(story);
 // When the current template went live. A story last checked before this hasn't been tried in it yet.
 const TEMPLATE_LIVE = Date.parse("2026-10-31T19:06:17Z");
+// When the plain-English rules (no insider tech words, headlines say what it does) went live.
+// Stories that break them get rewritten; if a rewrite doesn't come out clean, the old one stays.
+const PLAIN_LIVE = Date.parse("2026-11-01T20:00:00Z");
 
 async function main() {
   requireEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "ANTHROPIC_API_KEY");
@@ -38,11 +41,11 @@ async function main() {
   }
 
   const ids = [...byCo.keys()];
-  const checked = new Map<string, { at: number | null; story: string | null }>();
+  const checked = new Map<string, { at: number | null; story: string | null; short: string | null }>();
   for (let i = 0; i < ids.length; i += 300) {
-    const { data, error } = await db.from("companies").select("id, product_checked_at, product_story").in("id", ids.slice(i, i + 300));
+    const { data, error } = await db.from("companies").select("id, product_checked_at, product_story, product_short").in("id", ids.slice(i, i + 300));
     if (error) throw error;
-    for (const c of data ?? []) checked.set(c.id as string, { at: c.product_checked_at ? new Date(c.product_checked_at as string).getTime() : null, story: c.product_story as string | null });
+    for (const c of data ?? []) checked.set(c.id as string, { at: c.product_checked_at ? new Date(c.product_checked_at as string).getTime() : null, story: c.product_story as string | null, short: c.product_short as string | null });
   }
 
   const now = Date.now();
@@ -55,7 +58,9 @@ async function main() {
       // Stories in an older format get rewritten in the current template (after new jobs, before stale ones),
       // right away the first time, then at most once a day if a rewrite doesn't stick.
       const oldFormat = !noStory && !inTemplate(checked.get(id)?.story ?? null) && (at! < TEMPLATE_LIVE || now - at! > DAY);
-      const why = at == null ? 0 : noStory && now - at > 2 * DAY ? 0.5 : now - at > 30 * DAY ? 2 : c.newest > at && now - at > 7 * DAY ? 1 : oldFormat ? 1.5 : null;
+      const k = checked.get(id);
+      const notPlain = !noStory && needsPlainRewrite(k?.short ?? null, k?.story ?? null) && (at! < PLAIN_LIVE || now - at! > DAY);
+      const why = at == null ? 0 : noStory && now - at > 2 * DAY ? 0.5 : now - at > 30 * DAY ? 2 : c.newest > at && now - at > 7 * DAY ? 1 : notPlain ? 1.4 : oldFormat ? 1.5 : null;
       return { id, c, why };
     })
     .filter((x) => x.why != null)
