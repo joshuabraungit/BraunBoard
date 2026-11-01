@@ -30,7 +30,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   // High OTE: $250K+ in USD terms, which is £200K+ for UK jobs. German pay runs lower, so €165K+ there.
   const highOteMin = market === "DE" ? 175_000 : 250_000;
   const [newToday, highOte, remoteEnt, state, watch, companies, sponsors] = await Promise.all([
-    listJobs({ postedWithinDays: 1, markets }, 6),
+    // Quiet days (weekends) can have nothing from the last 24 hours, so fall back to the past week.
+    listJobs({ postedWithinDays: 1, markets }, 6).then(async (today) => (today.length >= 3 ? { jobs: today, week: false } : { jobs: await listJobs({ postedWithinDays: 7, markets }, 6), week: true })),
     listJobs({ minOte: highOteMin, postedWithinDays: 90, markets }, 6),
     listJobs({ role: "Account Executive", segment: "Enterprise", remote: "Remote", postedWithinDays: 90, markets }, 6),
     getUserState(),
@@ -81,8 +82,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         </section>
       )}
 
-      <Section title="New Today" href="/new">
-        <JobGrid jobs={newToday} ctx={ctx} empty="No new sales jobs in the last 24 hours yet." />
+      <Section title={newToday.week ? "Newest this week" : "New Today"} href={newToday.week ? "/jobs?posted=7" : "/new"}>
+        <JobGrid jobs={newToday.jobs} ctx={ctx} empty="No new sales jobs this week yet." />
       </Section>
       {productCounts.size > 0 && (
         <Section title="What You'd Sell" href="/products">

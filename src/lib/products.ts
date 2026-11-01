@@ -108,7 +108,7 @@ async function load(): Promise<{ companies: ProductCompany[]; jobs: ProductJob[]
   return { companies, jobs };
 }
 
-export const loadProductData = unstable_cache(load, ["products-v3"], { revalidate: 600 });
+export const loadProductData = unstable_cache(load, ["products-v3"], { revalidate: 600, tags: ["products"] });
 
 export interface ProductCard extends ProductCompany {
   open: number;

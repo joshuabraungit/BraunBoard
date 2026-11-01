@@ -48,7 +48,7 @@ export default async function Salaries() {
           <p className="mt-1 text-4xl font-bold tracking-tight text-accent">{k(featured.s.ote.median)} <span className="text-lg font-semibold text-ink-2">median OTE</span></p>
           <p className="mt-1 text-sm text-ink-2">
             {featured.s.base && `${k(featured.s.base.median)} median base · `}
-            Middle half {k(featured.s.ote.p25)} to {k(featured.s.ote.p75)} · {featured.s.withPay} postings
+            Middle half {k(featured.s.ote.p25)} to {k(featured.s.ote.p75)} · {featured.s.ote.n} postings
           </p>
           <p className="mt-3 text-sm font-semibold">Read the full breakdown →</p>
         </Link>

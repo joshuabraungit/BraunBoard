@@ -45,7 +45,8 @@ export function VerdictPill({ verdict }: { verdict: Read["verdict"] }) {
 }
 
 /** "The Braun Read" panel on the job page. */
-export function BraunReadPanel({ read }: { read: Read }) {
+/** `hide` drops rows the page already shows elsewhere (they still count toward the verdict). */
+export function BraunReadPanel({ read, hide = [] }: { read: Read; hide?: string[] }) {
   const reds = read.flags.filter(isRedFlag);
   const headsUps = read.flags.filter(isHeadsUp);
   const greens = read.flags.filter((f) => f.tone === "green");
@@ -58,7 +59,7 @@ export function BraunReadPanel({ read }: { read: Read }) {
       </div>
 
       <dl className="divide-y divide-line">
-        {read.checks.map((c) => (
+        {read.checks.filter((c) => !hide.includes(c.label)).map((c) => (
           <div key={c.label} className="flex gap-3 px-4 py-2.5">
             <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${GRADE[c.grade].dot}`} aria-label={GRADE[c.grade].label} />
             <dt className="w-28 shrink-0 sm:w-32 text-sm font-semibold">{c.label}</dt>

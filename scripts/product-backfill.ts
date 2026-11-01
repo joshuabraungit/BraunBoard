@@ -42,15 +42,19 @@ async function main() {
   }
 
   const ids = [...byCo.keys()];
+  const locked = new Set<string>();
   const checked = new Map<string, { at: number | null; story: string | null; short: string | null }>();
   for (let i = 0; i < ids.length; i += 300) {
-    const { data, error } = await db.from("companies").select("id, product_checked_at, product_story, product_short").in("id", ids.slice(i, i + 300));
+    const { data, error } = await db.from("companies").select("id, product_checked_at, product_story, product_short, product_locked").in("id", ids.slice(i, i + 300));
     if (error) throw error;
+    // Written or approved by Josh in Admin: never rewritten.
+    for (const c of data ?? []) if (c.product_locked) locked.add(c.id as string);
     for (const c of data ?? []) checked.set(c.id as string, { at: c.product_checked_at ? new Date(c.product_checked_at as string).getTime() : null, story: c.product_story as string | null, short: c.product_short as string | null });
   }
 
   const now = Date.now();
   const due = ids
+    .filter((id) => !locked.has(id))
     .map((id) => {
       const c = byCo.get(id)!;
       const at = checked.get(id)?.at ?? null;

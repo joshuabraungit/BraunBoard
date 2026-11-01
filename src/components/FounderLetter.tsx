@@ -20,7 +20,7 @@ export function FounderLetter() {
             quota? How many reps hit it?
           </p>
           <p>
-            This October I had AI read 1,473 rep postings.{" "}
+            In October I had AI read 1,473 rep postings.{" "}
             <Link href="/report/october-2026" className="underline decoration-line-strong underline-offset-2 hover:decoration-ink">One said how many reps hit quota.</Link>{" "}
             One.
           </p>

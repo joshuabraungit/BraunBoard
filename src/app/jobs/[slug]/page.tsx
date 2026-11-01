@@ -83,6 +83,8 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
   const showAttainment = ATTAINMENT_ROLES.has(job.role_family) && job.seniority === "Individual Contributor";
   const questions = questionsFor({ ...job, flags: read.flags, company: stats });
   const checked = job.last_seen_at ? checkedLabel(job.last_seen_at) : null;
+  const segment = known(job.customer_segment) ?? known(job.sales_segment);
+  const sizeWords = segment ? SIZE_WORDS[segment] ?? null : null;
   const back = `/jobs/${job.slug}`;
   const saved = state.savedJobIds.has(job.id);
   const btn = "rounded-lg border border-line-strong bg-surface px-4 py-2.5 text-sm font-semibold aria-pressed:border-fresh aria-pressed:text-fresh";
@@ -207,8 +209,8 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
               {job.buyer ? (
                 <>
                   {job.buyer}
-                  {job.industry && <span className="text-ink-2"> · {job.industry}</span>}
-                  {(known(job.customer_segment) ?? known(job.sales_segment)) && <span className="text-ink-2"> · {SIZE_WORDS[(known(job.customer_segment) ?? known(job.sales_segment))!] ?? known(job.customer_segment) ?? known(job.sales_segment)}</span>}
+                  {/* Company size only when the buyer line doesn't already say how big they are. */}
+                  {sizeWords && !/\b(small|medium|mid|large|big|enterprise|fortune|smb|startup)/i.test(job.buyer) && <span className="text-ink-2"> at {sizeWords}</span>}
                   <span className="mt-0.5 block text-sm text-ink-3">In their words: &ldquo;{job.buyer_quote}&rdquo;</span>
                 </>
               ) : job.buyer_checked_at ? (
@@ -233,7 +235,8 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
         </dl>
       </section>
 
-      <BraunReadPanel read={read} />
+      {/* "Where deals come from" in The job box already says this. */}
+      <BraunReadPanel read={read} hide={["Pipeline"]} />
 
       <QuestionsPanel questions={questions} title={job.title_raw} company={job.company_name} roleFamily={job.role_family} />
 

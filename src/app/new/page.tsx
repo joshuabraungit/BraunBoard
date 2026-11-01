@@ -14,13 +14,17 @@ export const metadata: Metadata = {
 
 export default async function NewToday() {
   const market = await visitorMarket();
-  const [jobs, state] = await Promise.all([listJobs({ postedWithinDays: 1, markets: marketsFor(market) }, 120), getUserState()]);
+  const [today, state] = await Promise.all([listJobs({ postedWithinDays: 1, markets: marketsFor(market) }, 120), getUserState()]);
+  // Quiet days (weekends) can have nothing new; show the past week instead of an empty page.
+  const week = today.length === 0;
+  const jobs = week ? await listJobs({ postedWithinDays: 7, markets: marketsFor(market) }, 120) : today;
   return (
     <>
       <PageTabs tabs={JOB_TABS} active="/new" />
       <h1 className="text-2xl font-bold tracking-tight">New Today</h1>
       <p className="mb-6 mt-1 text-sm text-ink-2">
-        Sales jobs posted in the last 24 hours{market !== "all" && ` in ${MARKET_CHOICES[market].label}`}.{" "}
+        {week ? "Nothing posted in the last 24 hours, so here's the past week" : "Sales jobs posted in the last 24 hours"}
+        {market !== "all" && ` in ${MARKET_CHOICES[market].label}`}.{" "}
         <a href={`/jobs?posted=1&country=${market === "UK" ? "NA" : "UK"}`} className="underline">
           {market === "UK" ? "See US + Canada" : "See the UK"}
         </a>

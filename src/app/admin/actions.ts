@@ -44,6 +44,28 @@ export async function setCompanySize(formData: FormData) {
   back(returnTo, `${data!.name} is now ${isSizeBucket(size) ? SIZE_LABELS[size].label : "unknown size"}. The AI won't change it.`);
 }
 
+/**
+ * Write or fix a company's "what they sell" headline and story by hand. Saved ones are locked, so the
+ * AI never rewrites them. Clearing both fields unlocks it and lets the AI write a fresh one.
+ */
+export async function setCompanyProduct(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  const short = String(formData.get("short") ?? "").trim().replace(/[.]$/, "");
+  const story = String(formData.get("story") ?? "").trim();
+  const returnTo = String(formData.get("returnTo") || "/admin/companies");
+  const db = adminClient();
+  const unlock = !short && !story;
+  const patch = unlock
+    ? { product_locked: false, product_checked_at: null }
+    : { product_short: short || null, product_story: story || null, product_locked: true, product_changed_at: new Date().toISOString() };
+  const { data, error } = await db.from("companies").update(patch).eq("id", id).select("name").single();
+  if (error) back(returnTo, error.message, false);
+  revalidateTag("products");
+  revalidateTag("jobs");
+  back(returnTo, unlock ? `${data!.name}: unlocked. The AI will write a new one within the hour.` : `${data!.name}: saved and locked. The AI won't change it.`);
+}
+
 export async function addCompany(formData: FormData) {
   await requireAdmin();
   const name = String(formData.get("name") ?? "").trim();

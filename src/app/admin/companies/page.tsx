@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { adminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin";
-import { addCompany, setCompanyEnabled, setCompanySize } from "../actions";
+import { addCompany, setCompanyEnabled, setCompanyProduct, setCompanySize } from "../actions";
 import { checkSize, SIZE_BUCKETS, SIZE_LABELS } from "@/lib/ingest/size";
 import { AdminNotice } from "@/components/AdminNotice";
 import { ENABLED_PROVIDERS } from "@/lib/ingest/providers";
@@ -31,6 +31,9 @@ interface Row {
   size_source: string | null;
   size_quote: string | null;
   open_jobs_total: number | null;
+  product_short: string | null;
+  product_story: string | null;
+  product_locked: boolean;
   company_stats: { open_roles: number; new_30d: number; trend: string } | null;
 }
 
@@ -64,7 +67,7 @@ export default async function AdminCompanies({ searchParams }: { searchParams: P
   const [{ data: companies }, { data: errs }] = await Promise.all([
     db
       .from("companies")
-      .select("id, slug, name, domain, ats_provider, ats_identifier, last_crawled_at, is_disabled, size_bucket, size_source, size_quote, open_jobs_total, company_stats(open_roles, new_30d, trend)")
+      .select("id, slug, name, domain, ats_provider, ats_identifier, last_crawled_at, is_disabled, size_bucket, size_source, size_quote, open_jobs_total, product_short, product_story, product_locked, company_stats(open_roles, new_30d, trend)")
       .order("name")
       .limit(3000),
     db.from("crawl_runs").select("company_id, error, started_at").not("error", "is", null).gte("started_at", new Date(Date.now() - 86_400_000).toISOString()),
@@ -153,6 +156,21 @@ export default async function AdminCompanies({ searchParams }: { searchParams: P
                   <td className="px-4 py-2.5">
                     <Link href={`/company/${r.slug}`} className="font-medium hover:underline">{r.name}</Link>
                     {r.domain && <span className="block text-xs text-ink-3">{r.domain}</span>}
+                    <details className="mt-1 max-w-sm">
+                      <summary className="cursor-pointer text-xs text-ink-3 hover:text-ink">
+                        {r.product_locked ? "🔒 " : ""}What they sell{r.product_short ? `: ${r.product_short}` : ": none yet"}
+                      </summary>
+                      <form action={setCompanyProduct} className="mt-2 space-y-1.5">
+                        <input type="hidden" name="id" value={r.id} />
+                        <input type="hidden" name="returnTo" value={here} />
+                        <input name="short" defaultValue={r.product_short ?? ""} placeholder='Headline, e.g. "Helps restaurants take orders and payments in one place"' className="w-full rounded border border-line bg-bg px-2 py-1 text-xs" />
+                        <textarea name="story" defaultValue={r.product_story ?? ""} rows={4} placeholder="When [a customer] has to..., they usually... The problem is, ... [Company] ..., so ..." className="w-full rounded border border-line bg-bg px-2 py-1 text-xs" />
+                        <div className="flex items-center gap-2">
+                          <button className="rounded border border-line px-2 py-0.5 text-xs font-semibold hover:border-line-strong">Save and lock</button>
+                          <span className="text-[11px] text-ink-3">Clear both and save to let the AI write it again.</span>
+                        </div>
+                      </form>
+                    </details>
                   </td>
                   <td className="px-4 py-2.5">
                     {open(r)}
