@@ -140,7 +140,7 @@ export function JobCard({ job, ctx, openings = 1, locations = 1 }: { job: JobVie
       <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-2">
         <CompanyLogo name={job.company_name} logoUrl={job.company_logo_url} domain={job.company_domain} size={18} />
         <span className="min-w-0">
-          <span className="font-medium text-ink">{job.company_name}</span> · {formatLocation(job)} ·{" "}
+          <span className="font-medium text-ink">{job.company_name}</span> · {job.remote_type === "Onsite" && "In office · "}{formatLocation(job)} ·{" "}
           <span className={fresh ? "font-medium text-fresh" : ""}>{freshnessLabel(job.first_seen_at)}</span>
           {more && <span className="font-medium text-ink"> · {more}</span>}
         </span>
