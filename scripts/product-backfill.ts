@@ -14,7 +14,7 @@ const inTemplate = (story: string | null) => !!story && /^When\b/.test(story.tri
 const TEMPLATE_LIVE = Date.parse("2026-10-31T19:06:17Z");
 // When the plain-English rules (no insider tech words, headlines say what it does) went live.
 // Stories that break them get rewritten; if a rewrite doesn't come out clean, the old one stays.
-const PLAIN_LIVE = Date.parse("2026-11-01T20:00:00Z");
+const PLAIN_LIVE = Date.parse("2026-11-01T19:40:00Z");
 
 async function main() {
   requireEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "ANTHROPIC_API_KEY");
