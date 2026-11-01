@@ -16,9 +16,12 @@ export function buyerJargonIn(text: string): string[] {
 
 const SYSTEM = `You rewrite a short line about who a salesperson sells to, so anyone can understand it.
 Use words a 12-year-old knows. Keep the same people and the same meaning. Never add anything new. Under 10 words.
+For executives say "heads of security", "finance leaders", "top executives". Never "bosses" or "chiefs".
 
 Examples:
 CISOs and AppSec leaders -> heads of security and app security teams
+CIOs and CTOs -> heads of IT and technology
+CFOs, CIOs and COOs -> finance, IT and operations leaders
 AI/ML teams -> teams building AI
 MSSPs and channel partners -> security service firms and resellers
 CX leaders -> customer support leaders
@@ -58,7 +61,7 @@ export async function plainBuyer(buyer: string, key = process.env.ANTHROPIC_API_
   if (draft && buyerJargonIn(draft).length) {
     draft = await ask(`${buyer}\n\nYour last try still used: ${buyerJargonIn(draft).join(", ")}. Use plain words instead.`, key);
   }
-  if (!draft || buyerJargonIn(draft).length || draft.split(/\s+/).length > 14 || /[—–]/.test(draft)) return buyer;
+  if (!draft || /\b(boss|bosses|chiefs?)\b/i.test(draft) || buyerJargonIn(draft).length || draft.split(/\s+/).length > 14 || /[—–]/.test(draft)) return buyer;
   // Keep the posting's capital letter at the start so it matches the rest of the site.
   return draft[0]!.toUpperCase() + draft.slice(1);
 }
