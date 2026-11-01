@@ -93,7 +93,9 @@ export function cardLights(job: JobView, read: ReturnType<typeof braunRead>, now
   const pipeline: Record<string, string> = { High: "You find your own leads", Medium: "Some leads come to you", Low: "Leads come to you" };
   const fallback: Light | null = !sdr && pipeline[job.self_sourcing_level] ? { tone: "green", text: pipeline[job.self_sourcing_level]! } : null;
 
-  return [pay, quota, standout ?? fallback].filter((l): l is Light => !!l);
+  // When base and OTE are both listed, the pay line and its base/commission bar already say so.
+  const payLight = job.ote_min != null && job.salary_min != null ? null : pay;
+  return [payLight, quota, standout ?? fallback].filter((l): l is Light => !!l);
 }
 
 function Lights({ lights }: { lights: Light[] }) {
@@ -130,7 +132,7 @@ function MoneyRow({ job, extras }: { job: JobView; extras?: CardExtras }) {
     <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs font-medium text-ink-2">
       {share != null && (
         <span className="flex items-center gap-1.5" title={`About ${share}% of the paycheck is base salary and ${100 - share}% is commission, if you hit quota.`}>
-          <span className="flex h-2 w-16 overflow-hidden rounded-full bg-[#f5b400]/70" aria-hidden>
+          <span className="flex h-2 w-16 overflow-hidden rounded-full bg-accent/20" aria-hidden>
             <span className="h-full bg-accent" style={{ width: `${share}%` }} />
           </span>
           {share}/{100 - share} base/commission
