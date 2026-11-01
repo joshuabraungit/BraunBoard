@@ -41,3 +41,15 @@ describe("cleanProduct", () => {
     expect(j).not.toContain("Posting 4");
   });
 });
+
+describe("insider tech words", () => {
+  it("flags the words a friend outside tech wouldn't know", async () => {
+    const { jargonIn } = await import("../src/lib/ingest/product");
+    expect(jargonIn("Tools to tune and run AI models for companies")).toContain("models");
+    expect(jargonIn("AI security agents that find and fix code risks")).toContain("ai security agents");
+    expect(jargonIn("AI agents that answer customer questions")).toContain("ai agents");
+    expect(jargonIn("Software that automates security compliance")).toContain("compliance");
+    expect(jargonIn("Helps insurance agents send quotes faster")).toEqual([]);
+    expect(jargonIn("Helps restaurants take orders and payments in one place")).toEqual([]);
+  });
+});

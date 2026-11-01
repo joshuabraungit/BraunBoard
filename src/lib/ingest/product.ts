@@ -65,15 +65,24 @@ Return ONLY a JSON object:
            Use a generic character ("a restaurant owner", "a finance team", "a hospital", "a clothing brand").
            Words a 12-year-old knows. No jargon, no buzzwords (platform, solution, leverage, seamless, AI-native, empower, transform,
            workflow, streamline, optimize, insights, end-to-end, at scale, ecosystem, unified, robust, scalable, actionable, digital experience).
+           No insider tech words either: say what they mean (not "AI models" but "the AI"; not "agents" but "AI that answers questions";
+           not "compliance" but "passing security checks"; not "monitoring" but "watching for problems"; not "infrastructure", "API",
+           "deploy", "inference", "analytics", "observability", "SaaS", "stack" or "in the cloud" at all).
+           Make the stakes concrete in sentence 2 and 3: what it costs, who notices, what breaks ("costs money", "customers notice",
+           "hackers can break in", "eats their nights and weekends").
            Prefer concrete nouns people can picture (cards, cameras, a spreadsheet, a checklist, a phone call) over abstract ones (processes, operations, data).
            No numbers, customer names or claims that aren't in the posting. No em dashes. Under 65 words.
            Null if the posting doesn't say what the product does.
-  "short": the same idea in 4 to 10 words, for a job card. Name the actual thing and who uses it,
-           the way you'd explain it to a friend at a barbecue. If a friend would ask "but what IS it?", it's too vague.
-           Good: "GPS trackers and dash cams for truck fleets", "A to-do list for whole teams",
-                 "Company cards that track what employees spend", "Tablets that replace paper checklists in factories".
-           Bad: "Shared workflows that help teams get work done", "One place to run all hiring work",
-                "Business payments that partners can build in", "Automated checks of jobs and income".
+  "short": the same idea in 4 to 10 words, for a job card. Say what it does FOR the customer, in plain verbs,
+           the way you'd explain it to a friend at a barbecue who doesn't work in tech. Usually "Helps [who] [get something they care about]",
+           or a plain verb that does the same job ("Finds...", "Keeps...", "Shows...", "Turns...").
+           If a friend would ask "but what IS it?" or "what does that mean?", it's wrong.
+           Good: "Helps restaurants take orders and payments in one place", "Finds and fixes security holes in the code companies write",
+                 "Warns companies the moment their website or app breaks", "Shows companies where customers get stuck on their site",
+                 "Helps apps understand what people say out loud", "GPS trackers and dash cams for truck fleets".
+           Bad: "Tools to tune and run AI models for companies", "AI security agents that find and fix code risks",
+                "Monitoring and security software for cloud apps", "Software that automates security compliance",
+                "Shared workflows that help teams get work done", "Business payments that partners can build in".
            Null if story is null.
   "quote": the sentence from the posting that the story is based on, copied character for character (max 300 chars). Null if story is null.
   "category": the category name, following the category rules below. Null if the postings don't say what they sell.
@@ -89,12 +98,23 @@ If the postings are only about the role and never describe the product, return a
 const BANNED_RE =
   /\b(platform|solutions?|leverag\w*|seamless\w*|empower\w*|transform\w*|synerg\w*|cutting-edge|best-in-class|AI-native|workflows?|streamlin\w*|optimi[sz]\w*|insights?|end-to-end|at scale|ecosystems?|unified|holistic|robust|scalable|actionable)\b/gi;
 
+// Insider tech words a salesperson outside that niche wouldn't know. Like BANNED_RE, but they get a translation hint.
+export const JARGON_RE =
+  /\b(models?|AI( \w+)? agents?|agentic|infrastructure|compliance|monitor(ing)?|analytics|observability|API|APIs|SaaS|deploy\w*|inference|pipelines?|stack|fine-tun\w*|tun(e|ing) (a|the|their|its|your)? ?models?|in the cloud|cloud-native|LLMs?|GPUs?|orchestrat\w*|endpoints?|provision\w*|KPIs?|ROI)\b/gi;
+
+/** Insider words in a headline or story, lowercased and de-duplicated. */
+export function jargonIn(text: string): string[] {
+  return [...new Set([...text.matchAll(JARGON_RE)].map((m) => m[0].toLowerCase()))];
+}
+
 /** What's wrong with a draft, in words the model can act on. Empty means it's fine. */
 export function problemsWith(raw: Partial<ProductInfo> | null | undefined, posting: string): string[] {
   if (!raw?.story) return [];
   const out: string[] = [];
   const banned = [...new Set([...(raw.story + " " + (raw.short ?? "")).matchAll(BANNED_RE)].map((m) => m[0].toLowerCase()))];
   if (banned.length) out.push(`It uses these banned words: ${banned.join(", ")}. Say what the thing actually does instead.`);
+  const jargon = jargonIn(raw.story + " " + (raw.short ?? ""));
+  if (jargon.length) out.push(`It uses insider tech words: ${jargon.join(", ")}. Say what they mean in words a friend outside tech knows.`);
   if (raw.story.split(/\s+/).length > 75) out.push("The story is too long. Keep it under 65 words.");
   if (!/\bThe problem is\b/.test(raw.story) || !/^When\b/.test(raw.story.trim()))
     out.push('Follow the 3-sentence template: start with "When [a customer] has to...", then "The problem is, ...", then what the company does and what changes.');
