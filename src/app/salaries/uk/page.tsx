@@ -95,7 +95,7 @@ export default async function UkSalaries() {
         </table>
       </div>
       <p className="mt-2 text-xs text-ink-3">
-        Medians of the midpoint of each posted range. Where too few postings list OTE, we show base instead. &quot;Too few&quot; means fewer than {MIN_SAMPLE} postings.
+        Medians of the midpoint of each posted range. Where too few postings list OTE, I show base instead. &quot;Too few&quot; means fewer than {MIN_SAMPLE} postings.
       </p>
 
       {all.topCompanies.length > 0 && (
@@ -122,7 +122,7 @@ export default async function UkSalaries() {
         <p>
           Many US states require a pay range in job postings. The UK doesn&apos;t, so most UK sales postings leave pay out. Every figure here
           is published pay in pounds from a live UK posting on the employer&apos;s own career page. We only call it OTE when the posting does,
-          we never estimate, and we skip any group with fewer than {MIN_SAMPLE} postings.
+          I never estimate, and I skip any group with fewer than {MIN_SAMPLE} postings.
         </p>
         <p className="mt-3">
           <Link href="/jobs?country=UK" className="font-semibold text-ink hover:underline">

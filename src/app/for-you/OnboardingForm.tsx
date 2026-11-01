@@ -202,7 +202,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
     },
     {
       q: "What size company?",
-      hint: "Pick any you'd join, or skip it for any size. Companies we can't size still show up, so you don't miss anything.",
+      hint: "Pick any you'd join, or skip it for any size. Companies I can't size still show up, so you don't miss anything.",
       body: (
         <div className="flex flex-wrap gap-2">
           {SIZE_BUCKETS.map((b) => (

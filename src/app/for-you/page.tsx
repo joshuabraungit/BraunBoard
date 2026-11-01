@@ -77,7 +77,7 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<R
       <JobGrid
         jobs={ranked.jobs}
         ctx={{ savedJobIds: state.savedJobIds, matches: ranked.matches, back: "/for-you", allowHide: state.signedIn }}
-        empty="Nothing matches yet. That's the point: we'll tell you when it shows up. Loosen a preference if you want to browse in the meantime."
+        empty="Nothing matches yet. That's the point: I'll tell you when it shows up. Loosen a preference if you want to browse in the meantime."
       />
     </>
   );

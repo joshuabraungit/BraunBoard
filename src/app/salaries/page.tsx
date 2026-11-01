@@ -92,14 +92,14 @@ export default async function Salaries() {
         </table>
       </div>
       <p className="mt-2 text-xs text-ink-3">
-        Medians of the midpoint of each posted range. Where too few postings list OTE, we show base instead. Blank means fewer than 5 postings.
+        Medians of the midpoint of each posted range. Where too few postings list OTE, I show base instead. Blank means fewer than 5 postings.
       </p>
 
       <section className="mt-10 rounded-xl border border-line bg-surface p-5 text-sm leading-relaxed text-ink-2">
         <h2 className="mb-1.5 font-bold text-ink">Why trust these numbers</h2>
         <p>
           They aren&apos;t surveys or self-reported. Every figure is published pay from a live US job posting on the employer&apos;s own
-          career page. We only label pay as OTE when the posting does, we never estimate, and we skip any group with fewer than 5 postings.
+          career page. I only label pay as OTE when the posting does, I never estimate, and I skip any group with fewer than 5 postings.
         </p>
       </section>
     </div>

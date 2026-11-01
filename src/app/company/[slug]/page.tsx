@@ -55,7 +55,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ slug: 
             {isSizeBucket(company.size_bucket) && (
               <>
                 {company.website_url && " · "}
-                <span title={company.size_quote ? `From their posting: "${company.size_quote}"` : company.size_source === "estimate" ? "Our best estimate. Not from the company." : undefined}>
+                <span title={company.size_quote ? `From their posting: "${company.size_quote}"` : company.size_source === "estimate" ? "My best estimate. Not from the company." : undefined}>
                   {SIZE_LABELS[company.size_bucket].label}, {SIZE_LABELS[company.size_bucket].range}
                   {company.size_source === "estimate" ? " (our estimate)" : ""}
                 </span>

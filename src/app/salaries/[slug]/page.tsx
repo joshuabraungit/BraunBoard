@@ -211,11 +211,11 @@ export default async function SalaryReport({ params }: { params: Promise<{ slug:
       </div>
 
       <section className="mt-10 rounded-xl border border-line bg-surface p-5 text-sm leading-relaxed text-ink-2">
-        <h2 className="mb-1.5 font-bold text-ink">How we got these numbers</h2>
+        <h2 className="mb-1.5 font-bold text-ink">How I got these numbers</h2>
         <p>
           Every number comes from a US sales job posting on an employer&apos;s own career page (Greenhouse, Lever and Ashby boards) that
           is open right now and publishes pay. Each posting counts once, at the midpoint of its posted range. We only call a number OTE
-          when the posting says so. We don&apos;t estimate, survey or fill gaps, and we don&apos;t publish a number from fewer than 5 postings.
+          when the posting says so. I don&apos;t estimate, survey or fill gaps, and I don&apos;t publish a number from fewer than 5 postings.
           {s.postings > 0 && ` ${s.postings} open ${p.title} roles are in this report's pool; ${s.withPay} publish pay.`}
         </p>
       </section>

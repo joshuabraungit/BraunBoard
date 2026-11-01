@@ -105,7 +105,7 @@ export function JobCard({ job, ctx, openings = 1, locations = 1 }: { job: JobVie
 }
 
 export function JobGrid({ jobs, ctx, empty = "Nothing here yet." }: { jobs: JobView[]; ctx: CardContext; empty?: string }) {
-  if (!jobs.length) return <p className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-ink-3">{empty}</p>;
+  if (!jobs.length) return empty ? <p className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-ink-3">{empty}</p> : null;
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {collapseOpenings(jobs).map(({ job, openings, locations }) => (

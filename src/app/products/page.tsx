@@ -154,13 +154,13 @@ export default async function Products({ searchParams }: { searchParams: Promise
                     What they sell, in plain English, from their own job posts.{" "}
                     <TrackClick event="report" company={c.id}>
                       <Link href={`/ask?about=${encodeURIComponent(c.name)}`} className="underline underline-offset-2 hover:text-ink">
-                        Something wrong? Tell us
+                        Something wrong? Tell me
                       </Link>
                     </TrackClick>
                   </p>
                 </>
               ) : c.checked ? (
-                <p className="text-[15px] text-ink-3">Their job posts don&apos;t say what they sell, so we won&apos;t guess.</p>
+                <p className="text-[15px] text-ink-3">Their job posts don&apos;t say what they sell, so I won&apos;t guess.</p>
               ) : (
                 <p className="text-[15px] text-ink-3">We haven&apos;t written this one up yet. Check back soon.</p>
               )}

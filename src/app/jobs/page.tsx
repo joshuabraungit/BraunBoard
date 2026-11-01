@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { listJobsWithTotal, type JobFilters } from "@/lib/data";
 import { isMarketChoice, MARKET_CHOICES, marketsFor, payPresets, visitorMarket, type MarketChoice } from "@/lib/market";
 import { JobGrid } from "@/components/JobCard";
@@ -22,6 +21,9 @@ type SP = Record<string, string | undefined>;
 
 const DEFAULT_POSTED_DAYS = 90;
 const PAGE_SIZE = 60;
+// "Load more" shows pages 1 through N on one page. The database hands back at most 1,000 rows at once,
+// so it stops at 16 loads (960 jobs); past that, filters are the better tool.
+const MAX_LOADS = 16;
 
 function toFilters(sp: SP, market: MarketChoice): JobFilters {
   const pick = <T extends string>(v: string | undefined, allowed: readonly T[]) => (allowed.includes(v as T) ? (v as T) : undefined);
@@ -85,25 +87,15 @@ function Select({ name, label, options, value, labels }: { name: string; label: 
 
 export default async function AllJobs({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
-  const page = Math.max(1, Math.floor(Number(sp.page)) || 1);
+  // "page" is how many batches are shown, all on one page ("Load more" adds one).
+  const page = Math.min(MAX_LOADS, Math.max(1, Math.floor(Number(sp.page)) || 1));
   // No country picked: use the visitor's default (UK visitors see UK jobs, North America sees US + Canada).
   const defaultMarket = await visitorMarket();
   const market: MarketChoice = isMarketChoice(sp.country) ? sp.country : defaultMarket;
   const [{ jobs, total, roles }, state] = await Promise.all([
-    listJobsWithTotal(toFilters(sp, market), PAGE_SIZE, { offset: (page - 1) * PAGE_SIZE }),
+    listJobsWithTotal(toFilters(sp, market), page * PAGE_SIZE, { offset: 0 }),
     getUserState(),
   ]);
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  // Past the end (an old link, or results shrank): go to the last real page instead of an empty one.
-  if (page > 1 && jobs.length === 0) {
-    const { total: real } = await listJobsWithTotal(toFilters(sp, market), 1);
-    const last = Math.max(1, Math.ceil(real / PAGE_SIZE));
-    if (last < page) {
-      const p = new URLSearchParams(Object.entries(sp).filter(([k, v]) => v && k !== "page") as [string, string][]);
-      if (last > 1) p.set("page", String(last));
-      redirect(`/jobs${p.toString() ? `?${p}` : ""}`);
-    }
-  }
   // The search itself, without the page number (used for watches and page links).
   const qs = new URLSearchParams(Object.entries(sp).filter(([k, v]) => v && k !== "page") as [string, string][]).toString();
   const pageHref = (n: number) => {
@@ -218,7 +210,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
         <p className="text-sm text-ink-3">
           {roles.toLocaleString()} {roles === 1 ? "job" : "jobs"}
           {!sp.posted && " posted in the last 90 days"}
-          {pages > 1 && jobs.length > 0 && ` · page ${page} of ${pages}`}
+
         </p>
         {hasFilters && (
           <form action={watchSearch} className="flex w-full items-center gap-2 sm:w-auto">
@@ -228,31 +220,26 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
           </form>
         )}
       </div>
+      {/* Jobs already on screen, then the batch "Load more" just added, so the link can jump to where the new ones start. */}
       <JobGrid
-        jobs={jobs}
+        jobs={jobs.slice(0, (page - 1) * PAGE_SIZE)}
         ctx={{ savedJobIds: state.savedJobIds, back: pageHref(page) }}
-        empty={page > 1 ? "That page is past the end of the results." : "No jobs match those filters."}
+        empty=""
       />
-      {(pages > 1 || page > 1) && (
-        <nav aria-label="Pages" className="mt-8 flex items-center justify-center gap-3 text-sm">
-          {page > 1 ? (
-            <Link href={pageHref(Math.min(page - 1, pages))} rel="prev" className="rounded-md border border-line px-3 py-1.5 font-semibold hover:border-ink">
-              ← Newer
-            </Link>
-          ) : (
-            <span className="rounded-md border border-line px-3 py-1.5 text-ink-3">← Newer</span>
-          )}
-          <span className="text-ink-3">
-            Page {page.toLocaleString()} of {pages.toLocaleString()}
-          </span>
-          {page < pages ? (
-            <Link href={pageHref(page + 1)} rel="next" className="rounded-md border border-line px-3 py-1.5 font-semibold hover:border-ink">
-              Older →
-            </Link>
-          ) : (
-            <span className="rounded-md border border-line px-3 py-1.5 text-ink-3">Older →</span>
-          )}
-        </nav>
+      {page > 1 && <div id="more" className="scroll-mt-20" />}
+      <div className={page > 1 ? "mt-3" : ""}>
+        <JobGrid jobs={jobs.slice((page - 1) * PAGE_SIZE)} ctx={{ savedJobIds: state.savedJobIds, back: pageHref(page) }} empty={page > 1 ? "" : "No jobs match those filters."} />
+      </div>
+      {jobs.length < total && page < MAX_LOADS && (
+        <div className="mt-8 flex flex-col items-center gap-1.5 text-sm">
+          <Link href={`${pageHref(page + 1)}#more`} className="rounded-lg border border-line-strong bg-surface px-5 py-2.5 font-semibold hover:border-ink">
+            Load more jobs
+          </Link>
+          <span className="text-ink-3">Showing {jobs.length.toLocaleString()} of {total.toLocaleString()} listings</span>
+        </div>
+      )}
+      {jobs.length < total && page >= MAX_LOADS && (
+        <p className="mt-8 text-center text-sm text-ink-3">That&apos;s a lot of jobs. Try a filter above to narrow it down.</p>
       )}
     </>
   );

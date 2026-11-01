@@ -56,7 +56,7 @@ export default async function Watchlist({ searchParams }: { searchParams: Promis
         </ul>
       ) : (
         <Empty>
-          No watches yet. <Link href="/for-you" className="underline">Tell us the job you&apos;d take</Link> or hit &ldquo;Watch this search&rdquo; on All Jobs.
+          No watches yet. <Link href="/for-you" className="underline">Tell me the job you&apos;d take</Link> or hit &ldquo;Watch this search&rdquo; on All Jobs.
         </Empty>
       )}
 

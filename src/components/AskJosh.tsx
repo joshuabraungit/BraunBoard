@@ -10,7 +10,7 @@ const ERRORS: Partial<Record<AskStatus, string>> = {
   invalid: "That email doesn't look right. Check it and try again?",
   short: "Tell me a little more so I can actually help.",
   slow: "You've sent a few already. Give it a bit and try again.",
-  error: "Something broke on our end and it didn't send. Try again in a minute, or email josh@joshbraun.com.",
+  error: "Something broke on my end and it didn't send. Try again in a minute, or email josh@joshbraun.com.",
 };
 
 const field = "w-full rounded-lg border border-line-strong bg-bg px-3 py-2.5 text-[15px] focus:border-ink focus:outline-none";

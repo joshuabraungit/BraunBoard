@@ -59,12 +59,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
       {forYou ? (
         <Section title={`For You · ${watch!.name}`} href="/for-you">
-          <JobGrid jobs={forYou.jobs.slice(0, 3)} ctx={{ ...ctx, matches: forYou.matches }} empty="No matches yet. We'll tell you when one shows up." />
+          <JobGrid jobs={forYou.jobs.slice(0, 3)} ctx={{ ...ctx, matches: forYou.matches }} empty="No matches yet. I'll tell you when one shows up." />
         </Section>
       ) : showIntro ? null : (
       <div className="mb-10 rounded-2xl border border-line bg-surface p-6 sm:p-8">
         <h1 className="max-w-xl text-2xl font-bold tracking-tight sm:text-3xl">
-          Tell us the sales job you would take. We will tell you when it shows up.
+          Tell me the sales job you would take. I&apos;ll tell you when it shows up.
         </h1>
         <p className="mt-2 text-ink-2">Fresh B2B sales jobs pulled straight from employer career pages, with the stuff sellers actually care about up front.</p>
         <Link href="/for-you" className="mt-5 inline-block rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90">
