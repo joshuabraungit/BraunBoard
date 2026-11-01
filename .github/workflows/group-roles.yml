@@ -1,0 +1,26 @@
+name: Link multi-city roles
+
+# Catch-up for jobs stored before the crawler started linking one role posted in several cities.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only report, don't write"
+        type: boolean
+        default: true
+
+jobs:
+  group:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/group-roles.ts ${{ inputs.dry_run && '--dry-run' || '' }}

@@ -59,6 +59,8 @@ export interface JobView {
   company_domain: string | null;
   /** Size bucket of the company ("startup"...), when known. */
   company_size?: string | null;
+  /** Set on a copy of a role posted in several cities: the id of the role's first posting. */
+  role_group?: string | null;
 }
 
 export interface CompanyView {
@@ -94,7 +96,7 @@ export interface JobFilters {
 const JOB_CACHE_SECONDS = 300;
 
 const CARD_COLUMNS =
-  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags, currency, markets, attainment, company_size, buyer, industry";
+  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags, currency, markets, attainment, company_size, buyer, industry, role_group";
 
 function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
   const since = f.postedWithinDays ? Date.now() - f.postedWithinDays * 86_400_000 : 0;
@@ -123,7 +125,7 @@ export async function listJobsWithTotal(
   f: JobFilters = {},
   limit = 60,
   opts: { withDescription?: boolean; offset?: number } = {},
-): Promise<{ jobs: JobView[]; total: number }> {
+): Promise<{ jobs: JobView[]; total: number; roles: number }> {
   // Jobs only change when the crawler runs, so the same list is shared for a few minutes.
   // Skipped for free-text searches (too many variations) and big pulls (too large to cache).
   if (!isSupabaseConfigured() || f.q || limit > 200 || opts.withDescription) return fetchJobs(f, limit, opts);
@@ -132,28 +134,12 @@ export async function listJobsWithTotal(
 
 const cachedJobs = unstable_cache(
   (f: JobFilters, limit: number, opts: { offset?: number }) => fetchJobs(f, limit, opts),
-  ["jobs-v1"],
+  ["jobs-v2"],
   { revalidate: JOB_CACHE_SECONDS, tags: ["jobs"] },
 );
 
-async function fetchJobs(
-  f: JobFilters,
-  limit: number,
-  opts: { withDescription?: boolean; offset?: number },
-): Promise<{ jobs: JobView[]; total: number }> {
-  const offset = Math.max(0, opts.offset ?? 0);
-  if (!isSupabaseConfigured()) {
-    const all = applyFiltersLocal(SAMPLE_JOBS, f);
-    return { jobs: all.slice(offset, offset + limit), total: all.length };
-  }
-
-  const db = publicClient();
-  let q = db
-    .from("visible_jobs")
-    .select(opts.withDescription ? `${CARD_COLUMNS}, description_raw` : CARD_COLUMNS, { count: "exact" })
-    .order("posted_at", { ascending: false })
-    .order("id")
-    .range(offset, offset + limit - 1);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function withFilters<Q extends { or: any; eq: any; overlaps: any; gte: any }>(q: Q, f: JobFilters): Q {
   if (f.q) q = q.or(`title_raw.ilike.%${f.q.replace(/[%,()]/g, "")}%,company_name.ilike.%${f.q.replace(/[%,()]/g, "")}%`);
   if (f.role) q = q.eq("role_family", f.role);
   if (f.segment) q = q.eq("sales_segment", f.segment);
@@ -166,12 +152,38 @@ async function fetchJobs(
   if (f.companySlug) q = q.eq("company_slug", f.companySlug);
   if (f.size) q = q.eq("company_size", f.size);
   if (f.postedWithinDays) q = q.gte("posted_at", new Date(Date.now() - f.postedWithinDays * 86_400_000).toISOString());
-  const { data, error, count } = await q;
+  return q;
+}
+
+async function fetchJobs(
+  f: JobFilters,
+  limit: number,
+  opts: { withDescription?: boolean; offset?: number },
+): Promise<{ jobs: JobView[]; total: number; roles: number }> {
+  const offset = Math.max(0, opts.offset ?? 0);
+  if (!isSupabaseConfigured()) {
+    const all = applyFiltersLocal(SAMPLE_JOBS, f);
+    return { jobs: all.slice(offset, offset + limit), total: all.length, roles: all.filter((j) => !j.role_group).length };
+  }
+
+  const db = publicClient();
+  const q = withFilters(
+    db
+      .from("visible_jobs")
+      .select(opts.withDescription ? `${CARD_COLUMNS}, description_raw` : CARD_COLUMNS, { count: "exact" })
+      .order("posted_at", { ascending: false })
+      .order("id")
+      .range(offset, offset + limit - 1),
+    f,
+  );
+  // Distinct roles: a role posted in six cities counts once.
+  const rq = withFilters(db.from("visible_jobs").select("id", { count: "exact", head: true }).is("role_group", null), f);
+  const [{ data, error, count }, { count: roles }] = await Promise.all([q, rq]);
   // Asking for a page past the end is not an error, just an empty page.
-  if (error && error.code === "PGRST103") return { jobs: [], total: count ?? 0 };
+  if (error && error.code === "PGRST103") return { jobs: [], total: count ?? 0, roles: roles ?? count ?? 0 };
   if (error) throw error;
   const jobs = (data ?? []) as unknown as JobView[];
-  return { jobs, total: count ?? jobs.length };
+  return { jobs, total: count ?? jobs.length, roles: roles ?? count ?? jobs.length };
 }
 
 /**
@@ -203,6 +215,20 @@ async function fetchJob(slug: string): Promise<JobView | null> {
   const db = publicClient();
   const { data } = await db.from("visible_jobs").select(`${CARD_COLUMNS}, description_raw, employment_type, last_seen_at, buyer, buyer_quote, industry, industry_quote, buyer_checked_at`).eq("slug", slug).maybeSingle();
   return (data as unknown as JobView) ?? null;
+}
+
+/** The same role open in other cities, for "Also open in" on a job page. */
+export async function getRoleSiblings(job: Pick<JobView, "id" | "role_group">): Promise<Pick<JobView, "slug" | "city" | "state" | "remote_type" | "location_raw" | "markets">[]> {
+  if (!isSupabaseConfigured()) return [];
+  const root = job.role_group ?? job.id;
+  const db = publicClient();
+  const { data } = await db
+    .from("visible_jobs")
+    .select("slug, city, state, remote_type, location_raw, markets")
+    .or(`id.eq.${root},role_group.eq.${root}`)
+    .neq("id", job.id)
+    .limit(30);
+  return (data ?? []) as never;
 }
 
 export async function getCompany(slug: string): Promise<{ company: CompanyView; jobs: JobView[]; added7: number; added30: number } | null> {

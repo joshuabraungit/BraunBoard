@@ -5,11 +5,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { adapters } from "./adapters";
 import { fetchGreenhousePayRange } from "./adapters/greenhouse";
+import { primeWorkable } from "./adapters/workable";
 import { classifyTitle, isTalentPool } from "./classify";
 import { canadaPlaceFromTitle, parseLocation, titleNamesCanadaOnly, namesForeignPlace, titleNamesUkOnly, titleOutOfMarket, ukPlaceFromTitle, type ParsedLocation } from "./location";
 import { payCurrency, resolveCompensation } from "./compensation";
 import { extractAttributes } from "./extract";
-import { dedupeKey, descriptionSimilarity, DUPLICATE_THRESHOLD, normalizeLocationKey } from "./dedupe";
+import { dedupeKey, descriptionSimilarity, DUPLICATE_THRESHOLD, normalizeLocationKey, sameRole } from "./dedupe";
 import type { AtsProvider, CompanyRef, RawJob } from "./types";
 import { ENABLED_PROVIDERS } from "./providers";
 import { jobSlug } from "../slug";
@@ -141,6 +142,9 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
       if (removed) stats.removed++;
     }
 
+    // If the first city of a multi-city role closed, the next oldest open copy takes its place.
+    if (stats.removed) await db.rpc("regroup_roles", { p_company: company.id });
+
     // Every opening on the careers page, not just sales ones: a sanity check on company size.
     await db.from("companies").update({ last_crawled_at: now, open_jobs_total: raw.length }).eq("id", company.id);
     if (newJobIds.length) await matchNewJobs(db, newJobIds);
@@ -248,6 +252,43 @@ async function insertNewJob(
     }
   }
 
+  // Same role already open in another city? Then this is a copy, not a new opening.
+  let roleGroup: string | null = null;
+  if (!duplicateOf) {
+    const { data: siblings } = await db
+      .from("jobs")
+      .select("id, description_raw, markets, remote_type, posted_at, city, state")
+      .eq("company_id", company.id)
+      .eq("title_normalized", cls.title_normalized)
+      .eq("is_active", true)
+      .is("duplicate_of", null)
+      .is("role_group", null)
+      .neq("dedupe_key", key)
+      .limit(25);
+    const me = {
+      title_normalized: cls.title_normalized,
+      markets: loc.markets,
+      remote_type: loc.remote_type,
+      posted_at: job.posted_at ?? new Date().toISOString(),
+      description: job.description,
+      places: [loc.city ?? "", job.location],
+    };
+    for (const s of siblings ?? []) {
+      const them = {
+        title_normalized: cls.title_normalized,
+        markets: (s.markets as string[]) ?? [],
+        remote_type: s.remote_type as string,
+        posted_at: s.posted_at as string | null,
+        description: (s.description_raw as string) ?? "",
+        places: [(s.city as string) ?? ""],
+      };
+      if (sameRole(me, them)) {
+        roleGroup = s.id as string;
+        break;
+      }
+    }
+  }
+
   const { data, error } = await db
     .from("jobs")
     .insert({
@@ -279,6 +320,7 @@ async function insertNewJob(
       customer_segment: attrs.customer_segment,
       dedupe_key: key,
       duplicate_of: duplicateOf,
+      role_group: roleGroup,
       // "Remote" with no country stated is kept but flagged for a human to confirm it's US.
       needs_review: loc.country == null,
     })
@@ -289,7 +331,8 @@ async function insertNewJob(
     console.warn(`[ingest] insert failed for ${company.name} / ${job.title}: ${error.message}`);
     return null;
   }
-  return duplicateOf ? null : (data.id as string);
+  // Copies of a role already alerted on don't send another alert.
+  return duplicateOf || roleGroup ? null : (data.id as string);
 }
 
 export { ENABLED_PROVIDERS };
@@ -311,7 +354,16 @@ export async function ingestAll(
   if (error) throw error;
 
   const totals: RunStats = { seen: 0, kept: 0, new: 0, removed: 0 };
-  const queue = [...((companies ?? []) as CompanyRow[])];
+  // Workable is one shared feed: read it once for every Workable company in this run.
+  const wk = ((companies ?? []) as CompanyRow[]).filter((c) => c.ats_provider === "workable").map((c) => c.ats_identifier);
+  let skipWorkable = false;
+  if (wk.length)
+    await primeWorkable(wk).catch((e) => {
+      // Skip Workable companies this run (no strikes) rather than re-download the feed once per company.
+      skipWorkable = true;
+      console.warn(`[ingest] Workable feed failed, skipping ${wk.length} Workable companies: ${(e as Error).message}`);
+    });
+  const queue = ((companies ?? []) as CompanyRow[]).filter((c) => !(skipWorkable && c.ats_provider === "workable"));
   const worker = async () => {
     for (let c = queue.shift(); c; c = queue.shift()) {
       const s = await ingestCompany(db, c, { reprocess });

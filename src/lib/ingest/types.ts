@@ -1,6 +1,6 @@
 // Shared types for the ingestion pipeline. Spec section 6 + 8.
 
-export type AtsProvider = "greenhouse" | "lever" | "ashby" | "workday" | "smartrecruiters";
+export type AtsProvider = "greenhouse" | "lever" | "ashby" | "workday" | "smartrecruiters" | "workable";
 
 export const ROLE_FAMILIES = [
   "SDR/BDR",

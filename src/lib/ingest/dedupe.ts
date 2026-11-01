@@ -28,3 +28,41 @@ export function descriptionSimilarity(a: string, b: string): number {
 }
 
 export const DUPLICATE_THRESHOLD = 0.85;
+
+/**
+ * Same role, different city: one company posting one job once per location. Same title,
+ * same countries, same remote setup, posted within a week of each other, and the
+ * descriptions match once place names are taken out. Different headcount usually comes
+ * with a different date or different text, so those stay separate.
+ */
+export const SAME_ROLE_DAYS = 7;
+
+export interface RoleCandidate {
+  title_normalized: string;
+  markets: string[];
+  remote_type: string;
+  posted_at: string | null;
+  description: string;
+  places: string[];
+}
+
+function stripPlaces(text: string, places: string[]): string {
+  let t = text;
+  for (const p of places) {
+    if (!p || p.length < 3) continue;
+    t = t.replace(new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), " ");
+  }
+  return t;
+}
+
+export function sameRole(a: RoleCandidate, b: RoleCandidate): boolean {
+  if (a.title_normalized !== b.title_normalized) return false;
+  if (a.remote_type !== b.remote_type) return false;
+  if ([...a.markets].sort().join() !== [...b.markets].sort().join()) return false;
+  if (a.posted_at && b.posted_at) {
+    const gap = Math.abs(new Date(a.posted_at).getTime() - new Date(b.posted_at).getTime());
+    if (gap > SAME_ROLE_DAYS * 86_400_000) return false;
+  }
+  const places = [...a.places, ...b.places];
+  return descriptionSimilarity(stripPlaces(a.description, places), stripPlaces(b.description, places)) >= DUPLICATE_THRESHOLD;
+}
