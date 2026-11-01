@@ -29,10 +29,23 @@ export function tagsFor(j: Pick<JobView, "sales_segment" | "sales_motion" | "sel
   return t;
 }
 
-/** The one light worth showing on a card: real attainment numbers first, then the most telling flag. */
-function topLight(job: JobView) {
-  if (job.attainment?.kind === "hit") return <span title={`In their words: "${job.attainment.quote}"`} className="rounded border border-accent/25 bg-accent-soft px-1.5 py-0.5 text-xs font-semibold text-accent">✓ {attainmentLabel(job.attainment)}</span>;
-  return <FlagChips flags={cardFlags(flagsFromCodes(job.flags))} max={1} inline />;
+/** The Braun Read's specifics on a card: what the posting says about quota attainment, then the two most telling flags. */
+function readDetails(job: JobView) {
+  const a = job.attainment;
+  return (
+    <>
+      {a && (
+        <span
+          title={`In their words: "${a.quote}"`}
+          className={`rounded border px-1.5 py-0.5 text-xs font-semibold ${a.kind === "hit" ? "border-accent/25 bg-accent-soft text-accent" : "border-line-strong bg-surface text-ink-2"}`}
+        >
+          {a.kind === "hit" ? "✓ " : ""}
+          {attainmentLabel(a)}
+        </span>
+      )}
+      <FlagChips flags={cardFlags(flagsFromCodes(job.flags))} max={2} inline />
+    </>
+  );
 }
 
 /**
@@ -78,8 +91,9 @@ export function JobCard({ job, ctx, openings = 1, locations = 1 }: { job: JobVie
       </p>
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <span className="text-xs text-ink-3">Braun Read:</span>
         <VerdictPill verdict={read.verdict} />
-        {topLight(job)}
+        {readDetails(job)}
       </div>
 
       {job.company_sells && (
