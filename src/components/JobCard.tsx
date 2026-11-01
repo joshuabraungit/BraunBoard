@@ -30,8 +30,18 @@ export function tagsFor(j: Pick<JobView, "sales_segment" | "sales_motion" | "sel
 }
 
 /** The Braun Read's specifics on a card: what the posting says about quota attainment, then the two most telling flags. */
-function readDetails(job: JobView) {
+function readDetails(job: JobView, read: ReturnType<typeof braunRead>) {
   const a = job.attainment;
+  const flags = cardFlags(flagsFromCodes(job.flags));
+  // When there are fewer than two flags, say why the verdict landed where it did, in a few words.
+  const why: string[] = [];
+  const check = (label: string) => read.checks.find((c) => c.label === label);
+  if (check("Transparency")?.grade === "bad") why.push("No quota or deal details");
+  if (check("Time on market")?.grade === "bad") why.push(check("Time on market")!.detail.split(".")[0]!);
+  if (check("Company hiring")?.grade === "bad") why.push("Hiring slowing");
+  if (job.self_sourcing_level === "High") why.push("Mostly outbound");
+  if (job.self_sourcing_level === "Low") why.push("Mostly inbound");
+  const extra = why.slice(0, Math.max(0, 2 - flags.length));
   return (
     <>
       {a && (
@@ -43,7 +53,12 @@ function readDetails(job: JobView) {
           {attainmentLabel(a)}
         </span>
       )}
-      <FlagChips flags={cardFlags(flagsFromCodes(job.flags))} max={2} inline />
+      <FlagChips flags={flags} max={2} inline />
+      {extra.map((w) => (
+        <span key={w} className="rounded border border-line-strong bg-surface px-1.5 py-0.5 text-xs font-medium text-ink-2">
+          {w}
+        </span>
+      ))}
     </>
   );
 }
@@ -93,7 +108,7 @@ export function JobCard({ job, ctx, openings = 1, locations = 1 }: { job: JobVie
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <span className="text-xs text-ink-3">Braun Read:</span>
         <VerdictPill verdict={read.verdict} />
-        {readDetails(job)}
+        {readDetails(job, read)}
       </div>
 
       {job.company_sells && (
