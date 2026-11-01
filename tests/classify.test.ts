@@ -115,6 +115,27 @@ describe("classifyTitle: excluded roles", () => {
   });
 });
 
+describe("classifyTitle: industry verticals", () => {
+  it.each([
+    ["Strategic Core Account Executive - Retail", "Account Executive"],
+    ["Strategic Core Account Executive - Insurance, m/f/d", "Account Executive"],
+    ["(Strategic) Account Executive - Retail / CPG", "Account Executive"],
+    ["Sales Director, Retail & Consumer Goods", "Sales Director"],
+    ["Enterprise Account Executive, Insurance", "Account Executive"],
+    ["Retail Account Executive", "Account Executive"],
+    ["Account Executive, Real Estate", "Account Executive"],
+  ])("%s -> %s", (t, family) => {
+    expect(classifyTitle(t)?.role_family).toBe(family);
+  });
+
+  it.each(["Retail Sales Associate", "Retail Sales Manager", "Insurance Sales Agent", "Insurance Sales Representative", "Real Estate Agent", "Mortgage Sales Executive", "Store Associate"])(
+    "%s -> excluded",
+    (t) => {
+      expect(classifyTitle(t)).toBeNull();
+    },
+  );
+});
+
 describe("normalizeTitle", () => {
   it("collapses variants", () => {
     expect(normalizeTitle("Sr. Enterprise AE (Remote, US)")).toBe("senior enterprise account executive");
