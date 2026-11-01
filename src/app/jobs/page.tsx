@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { listJobsWithTotal, type JobFilters } from "@/lib/data";
 import { isMarketChoice, MARKET_CHOICES, marketsFor, payPresets, visitorMarket, type MarketChoice } from "@/lib/market";
 import { JobGrid } from "@/components/JobCard";
+import { AutoSubmitForm } from "@/components/AutoSubmitForm";
 import { getUserState } from "@/lib/session";
 import { watchSearch } from "@/app/actions";
 import { REMOTE_TYPES, ROLE_FAMILIES, SALES_MOTIONS, SALES_SEGMENTS } from "@/lib/ingest/types";
@@ -57,9 +58,20 @@ const ROLE_OPTIONS = [...ROLE_FAMILIES, PARTNERSHIPS_ROLE];
 const ROLE_LABELS: Record<string, string> = { [PARTNERSHIPS_ROLE]: "Partnerships & Channel" };
 const MOTION_LABELS: Record<string, string> = { Channel: "Partnerships & Channel" };
 
+const SELECT = "rounded-md border border-line bg-surface px-2 py-1.5 text-sm";
+
+const POSTED_OPTIONS: [string, string][] = [
+  ["", "Last 90 days"],
+  ["30", "Last 30 days"],
+  ["7", "Last 7 days"],
+  ["3", "Last 3 days"],
+  ["1", "Last 24h"],
+  ["all", "Any time"],
+];
+
 function Select({ name, label, options, value, labels }: { name: string; label: string; options: readonly string[]; value?: string; labels?: Record<string, string> }) {
   return (
-    <select name={name} defaultValue={value ?? ""} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label={label}>
+    <select name={name} defaultValue={value ?? ""} className={SELECT} aria-label={label}>
       <option value="">{label}</option>
       {options.filter((o) => o !== "Unknown").map((o) => (
         <option key={o} value={o}>
@@ -74,7 +86,8 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
   const sp = await searchParams;
   const page = Math.max(1, Math.floor(Number(sp.page)) || 1);
   // No country picked: use the visitor's default (UK visitors see UK jobs, North America sees US + Canada).
-  const market: MarketChoice = isMarketChoice(sp.country) ? sp.country : await visitorMarket();
+  const defaultMarket = await visitorMarket();
+  const market: MarketChoice = isMarketChoice(sp.country) ? sp.country : defaultMarket;
   const [{ jobs, total, roles }, state] = await Promise.all([
     listJobsWithTotal(toFilters(sp, market), PAGE_SIZE, { offset: (page - 1) * PAGE_SIZE }),
     getUserState(),
@@ -99,6 +112,31 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
     return `/jobs${s ? `?${s}` : ""}`;
   };
   const hasFilters = qs.length > 0;
+
+  // What's filtered right now, each with a link that drops just that filter.
+  const without = (key: string) => {
+    const p = new URLSearchParams(qs);
+    p.delete(key);
+    const s = p.toString();
+    return `/jobs${s ? `?${s}` : ""}`;
+  };
+  const payLabel = (kind: "base" | "ote", v?: string) => payOptions(market, kind, v).find((o) => String(o.value) === v)?.label;
+  const chips = [
+    sp.q && { key: "q", label: `“${sp.q}”` },
+    sp.role && ROLE_OPTIONS.includes(sp.role as never) && { key: "role", label: ROLE_LABELS[sp.role] ?? sp.role },
+    isMarketChoice(sp.country) && sp.country !== defaultMarket && { key: "country", label: MARKET_CHOICES[sp.country].label },
+    sp.remote && (REMOTE_TYPES as readonly string[]).includes(sp.remote) && { key: "remote", label: sp.remote },
+    sp.minOte && payLabel("ote", sp.minOte) && { key: "minOte", label: payLabel("ote", sp.minOte)! },
+    sp.minBase && payLabel("base", sp.minBase) && { key: "minBase", label: payLabel("base", sp.minBase)! },
+    sp.segment && (SALES_SEGMENTS as readonly string[]).includes(sp.segment) && { key: "segment", label: sp.segment },
+    sp.motion && (SALES_MOTIONS as readonly string[]).includes(sp.motion) && { key: "motion", label: MOTION_LABELS[sp.motion] ?? sp.motion },
+    isSizeBucket(sp.size) && { key: "size", label: SIZE_LABELS[sp.size].label },
+    sp.posted && POSTED_OPTIONS.some(([v]) => v === sp.posted) && { key: "posted", label: POSTED_OPTIONS.find(([v]) => v === sp.posted)![1] },
+  ]
+    .filter((c): c is { key: string; label: string } => !!c)
+    .map((c) => ({ ...c, href: without(c.key) }));
+  // How many of the tucked-away filters are on, so "More filters" can say so (and stay open).
+  const moreActive = ["minOte", "minBase", "segment", "motion", "size", "posted"].filter((k) => chips.some((c) => c.key === k)).length;
   // A watch should cover the countries the person was looking at, even if they never touched the picker.
   const watchQs = (() => {
     const p = new URLSearchParams(qs);
@@ -121,45 +159,66 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
           </>
         )}
       </p>
-      <form className="mb-6 mt-4 flex flex-wrap gap-2" action="/jobs">
-        <input name="q" defaultValue={sp.q} placeholder="Keyword or company" className="min-w-0 flex-1 basis-48 rounded-md border border-line bg-surface px-3 py-1.5 text-sm" />
-        <Select name="role" label="Any role" options={ROLE_OPTIONS} value={sp.role} labels={ROLE_LABELS} />
-        <Select name="segment" label="Any segment" options={SALES_SEGMENTS} value={sp.segment} />
-        <Select name="motion" label="Any motion" options={sp.motion === "Channel" ? SALES_MOTIONS : SALES_MOTIONS.filter((m) => m !== "Channel")} value={sp.motion} labels={MOTION_LABELS} />
-        <Select name="remote" label="Any workplace" options={REMOTE_TYPES} value={sp.remote} />
-        <select name="size" defaultValue={isSizeBucket(sp.size) ? sp.size : ""} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label="Company size">
-          <option value="">Any company size</option>
-          {SIZE_BUCKETS.map((b) => (
-            <option key={b} value={b}>
-              {SIZE_LABELS[b].label} ({SIZE_LABELS[b].range})
-            </option>
+      <AutoSubmitForm className="mb-4 mt-4 space-y-2" action="/jobs">
+        <div className="flex gap-2">
+          <input name="q" type="search" enterKeyHint="search" defaultValue={sp.q} placeholder="Keyword or company" aria-label="Keyword or company" className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm" />
+          <button className="rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white">Search</button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select name="role" label="Any role" options={ROLE_OPTIONS} value={sp.role} labels={ROLE_LABELS} />
+          <select name="country" defaultValue={market} className={SELECT} aria-label="Country">
+            {(Object.keys(MARKET_CHOICES) as MarketChoice[]).map((m) => (
+              <option key={m} value={m}>
+                {MARKET_CHOICES[m].label}
+              </option>
+            ))}
+          </select>
+          <Select name="remote" label="Any workplace" options={REMOTE_TYPES} value={sp.remote} />
+        </div>
+        <details className="group" open={moreActive > 0}>
+          <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-1 text-sm font-semibold text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
+            <span className="transition group-open:rotate-90">›</span> More filters
+            {moreActive > 0 && <span className="rounded-full bg-ink px-1.5 text-xs text-white">{moreActive}</span>}
+          </summary>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <select name="minOte" defaultValue={sp.minOte ?? ""} className={SELECT} aria-label="Minimum OTE">
+              <option value="">Any OTE</option>
+              {payOptions(market, "ote", sp.minOte).map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+            </select>
+            <select name="minBase" defaultValue={sp.minBase ?? ""} className={SELECT} aria-label="Minimum base">
+              <option value="">Any base</option>
+              {payOptions(market, "base", sp.minBase).map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+            </select>
+            <Select name="segment" label="Any segment" options={SALES_SEGMENTS} value={sp.segment} />
+            <Select name="motion" label="Any motion" options={sp.motion === "Channel" ? SALES_MOTIONS : SALES_MOTIONS.filter((m) => m !== "Channel")} value={sp.motion} labels={MOTION_LABELS} />
+            <select name="size" defaultValue={isSizeBucket(sp.size) ? sp.size : ""} className={SELECT} aria-label="Company size">
+              <option value="">Any company size</option>
+              {SIZE_BUCKETS.map((b) => (
+                <option key={b} value={b}>
+                  {SIZE_LABELS[b].label} ({SIZE_LABELS[b].range})
+                </option>
+              ))}
+            </select>
+            <select name="posted" defaultValue={sp.posted ?? ""} className={SELECT} aria-label="Posted">
+              {POSTED_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+        </details>
+      </AutoSubmitForm>
+      {chips.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+          {chips.map((c) => (
+            <Link key={c.key} href={c.href} aria-label={`Remove ${c.label}`} className="inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3 py-1 hover:border-ink">
+              {c.label} <span aria-hidden className="text-ink-3">✕</span>
+            </Link>
           ))}
-        </select>
-        <select name="country" defaultValue={market} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label="Country">
-          {(Object.keys(MARKET_CHOICES) as MarketChoice[]).map((m) => (
-            <option key={m} value={m}>
-              {MARKET_CHOICES[m].label}
-            </option>
-          ))}
-        </select>
-        <select name="minBase" defaultValue={sp.minBase ?? ""} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label="Minimum base">
-          <option value="">Any base</option>
-          {payOptions(market, "base", sp.minBase).map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-        </select>
-        <select name="minOte" defaultValue={sp.minOte ?? ""} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label="Minimum OTE">
-          <option value="">Any OTE</option>
-          {payOptions(market, "ote", sp.minOte).map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-        </select>
-        <select name="posted" defaultValue={sp.posted ?? ""} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label="Posted">
-          <option value="">Last 90 days</option>
-          <option value="30">Last 30 days</option>
-          <option value="7">Last 7 days</option>
-          <option value="3">Last 3 days</option>
-          <option value="1">Last 24h</option>
-          <option value="all">Any time</option>
-        </select>
-        <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white">Search</button>
-      </form>
+          {chips.length > 1 && (
+            <Link href="/jobs" className="px-1 font-semibold text-ink-2 underline underline-offset-2 hover:text-ink">
+              Clear all
+            </Link>
+          )}
+        </div>
+      )}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-ink-3">
           {roles.toLocaleString()} {roles === 1 ? "job" : "jobs"}
