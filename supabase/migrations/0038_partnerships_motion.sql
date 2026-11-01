@@ -3,11 +3,11 @@
 -- Also hides HR "People Business Partner" roles that slipped in because their titles mention sales.
 
 update jobs
-set sales_motion = case
+set sales_motion = (case
     when title_raw ~* '\m(channel|partners?|partnerships?|alliances?|resellers?|ecosystems?)\M'
      and title_raw !~* '\m(client|account) partners?\M' then 'Channel'
     else 'Unknown'
-  end
+  end)::sales_motion
 where not classification_overridden
   and (sales_motion = 'Channel') <> (
     title_raw ~* '\m(channel|partners?|partnerships?|alliances?|resellers?|ecosystems?)\M'
