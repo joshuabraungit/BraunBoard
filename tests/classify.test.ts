@@ -53,6 +53,23 @@ describe("classifyTitle: included roles (spec section 3)", () => {
   it("flags channel roles", () => {
     expect(classifyTitle("Channel Account Executive")!.is_channel).toBe(true);
   });
+
+  it.each([
+    "Partner Manager, RFQ",
+    "Strategic Account Executive - AI & LLM Partnerships",
+    "Startups Sales Manager, Platform Partnerships",
+    "Alliances Manager",
+    "Technical Business Development Manager, Startup & VC Ecosystem",
+  ])("%s -> partnerships", (t) => {
+    expect(classifyTitle(t)!.is_channel).toBe(true);
+  });
+
+  it.each(["Client Partner", "Client Partner, Scaled Accounts", "Account Partner - Crossix Enterprise Sales", "Enterprise Account Executive"])(
+    "%s -> not partnerships",
+    (t) => {
+      expect(classifyTitle(t)?.is_channel ?? false).toBe(false);
+    },
+  );
 });
 
 describe("classifyTitle: excluded roles", () => {
@@ -64,6 +81,8 @@ describe("classifyTitle: excluded roles", () => {
     "Store Associate",
     "Customer Service Representative",
     "Technical Recruiter",
+    "Director, People Business Partner – AMER Field Sales",
+    "People Business Partner, GTM (Post Sales & Sales Development)",
     "Product Marketing Manager",
     "Revenue Operations Manager",
     "Sales Operations Analyst",

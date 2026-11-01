@@ -23,7 +23,7 @@ export function tagsFor(j: Pick<JobView, "sales_segment" | "sales_motion" | "sel
   const lang = j.title_raw ? languageFor(j.title_raw) : null;
   if (lang) t.push(lang);
   if (j.sales_segment !== "Unknown") t.push(j.sales_segment);
-  if (j.sales_motion !== "Unknown") t.push(j.sales_motion);
+  if (j.sales_motion !== "Unknown") t.push(j.sales_motion === "Channel" ? "Partnerships" : j.sales_motion);
   if (j.self_sourcing_level === "High") t.push("Outbound");
   if (j.self_sourcing_level === "Low") t.push("Inbound");
   return t;
