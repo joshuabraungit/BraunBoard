@@ -36,7 +36,8 @@ interface Light {
   why?: string;
 }
 
-const DOT: Record<Tone, string> = { green: "bg-accent", yellow: "bg-amber", red: "bg-red" };
+// Traffic-light colors for the dots. The site's amber and red are tuned for text and look muddy as dots.
+const DOT: Record<Tone, string> = { green: "bg-[#22a35a]", yellow: "bg-[#f5b400]", red: "bg-[#e0352b]" };
 
 // Flags the pay and quota lights already cover, or that are too routine to be the standout.
 const NOT_STANDOUT = new Set(["publishes_ote", "shares_attainment", "attainment_average", "states_quota", "states_deal_size", "open_90_days"]);
