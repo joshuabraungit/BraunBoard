@@ -1,0 +1,27 @@
+name: Find deal sizes
+
+# Catch-up: deal size for postings that mention one. New jobs are checked by the crawler.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only report, don't change anything"
+        type: boolean
+        default: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/deal-size-backfill.ts ${{ inputs.dry_run && '--dry-run' || '' }}

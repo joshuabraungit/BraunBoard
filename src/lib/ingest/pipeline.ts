@@ -11,6 +11,7 @@ import { canadaPlaceFromTitle, germanyPlaceFrom, parseLocation, titleNamesGerman
 import { payCurrency, resolveCompensation } from "./compensation";
 import { extractAttributes } from "./extract";
 import { plainRole } from "./role-plain";
+import { dealSize } from "./deal-size";
 import { resolveCountry } from "./country";
 import { dedupeKey, descriptionSimilarity, DUPLICATE_THRESHOLD, normalizeLocationKey, sameRole } from "./dedupe";
 import type { AtsProvider, CompanyRef, RawJob } from "./types";
@@ -270,6 +271,11 @@ async function insertNewJob(
     (v) => ({ role_plain: v, role_plain_checked_at: new Date().toISOString() }),
     () => ({}),
   );
+  // What a deal is worth, when the posting says. Optional, like the plain line.
+  const deal = await dealSize(job.title, job.description).then(
+    (v) => ({ deal_size: v, deal_size_checked_at: new Date().toISOString() }),
+    () => ({}),
+  );
   const locKey = normalizeLocationKey(loc.city, loc.state, loc.remote_type);
   const key = dedupeKey(company.id, cls.title_normalized, locKey);
 
@@ -354,6 +360,7 @@ async function insertNewJob(
       source_posted_at: job.posted_at ?? null,
       summary: attrs.summary,
       ...rolePlain,
+      ...deal,
       disclosures: attrs.disclosures,
       sales_motion: attrs.sales_motion,
       self_sourcing_level: attrs.self_sourcing_level,

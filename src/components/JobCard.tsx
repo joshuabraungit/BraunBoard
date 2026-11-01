@@ -10,6 +10,7 @@ import { braunRead, flagsFromCodes, isHeadsUp, isRedFlag, type Flag } from "@/li
 import type { MatchResult } from "@/lib/match";
 import { attainmentLabel } from "@/lib/attainment";
 import { collapseOpenings, openingsLabel } from "@/lib/openings";
+import { cardExtrasFor, type CardExtras } from "@/lib/card-extras";
 
 export interface CardContext {
   savedJobIds?: Set<string>;
@@ -112,7 +113,40 @@ function Lights({ lights }: { lights: Light[] }) {
  * A job card answers one question: is this worth a click? Title, who and where, the pay, the
  * Braun Read, and what you'd sell in plain English. Tags and the long summary live on the job page.
  */
-export function JobCard({ job, ctx, openings = 1, locations = 1 }: { job: JobView; ctx: CardContext; openings?: number; locations?: number }) {
+/** Share of the paycheck that's base, from the middle of each range. Null unless both are listed. */
+function baseShare(job: JobView): number | null {
+  if (job.salary_min == null || job.ote_min == null) return null;
+  const base = (job.salary_min + (job.salary_max ?? job.salary_min)) / 2;
+  const ote = (job.ote_min + (job.ote_max ?? job.ote_min)) / 2;
+  if (ote <= 0 || base > ote) return null;
+  return Math.round((base / ote) * 10) * 10; // nearest 10%, so it reads "60/40"
+}
+
+/** The money row under the pay: base vs. commission, how the pay ranks, and deal size. */
+function MoneyRow({ job, extras }: { job: JobView; extras?: CardExtras }) {
+  const share = baseShare(job);
+  if (share == null && !extras?.pay && !job.deal_size) return null;
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs font-medium text-ink-2">
+      {share != null && (
+        <span className="flex items-center gap-1.5" title={`About ${share}% of the paycheck is base salary and ${100 - share}% is commission, if you hit quota.`}>
+          <span className="flex h-2 w-16 overflow-hidden rounded-full bg-[#f5b400]/70" aria-hidden>
+            <span className="h-full bg-accent" style={{ width: `${share}%` }} />
+          </span>
+          {share}/{100 - share} base/commission
+        </span>
+      )}
+      {extras?.pay && (
+        <span className={extras.pay.dir === "up" ? "font-semibold text-accent" : "text-ink-3"}>
+          {extras.pay.dir === "up" ? "↑" : "↓"} {extras.pay.text}
+        </span>
+      )}
+      {job.deal_size && <span title="What a deal in this job is worth, per the posting">Deals: {job.deal_size}</span>}
+    </div>
+  );
+}
+
+export function JobCard({ job, ctx, openings = 1, locations = 1, extras }: { job: JobView; ctx: CardContext; openings?: number; locations?: number; extras?: CardExtras }) {
   const more = openingsLabel({ openings, locations });
   const comp = formatComp(job);
   const match = ctx.matches?.get(job.id);
@@ -146,7 +180,10 @@ export function JobCard({ job, ctx, openings = 1, locations = 1 }: { job: JobVie
         </span>
       </p>
 
+      {extras?.hiring && <p className="mt-1 text-xs font-semibold text-fresh">🔥 {extras.hiring}</p>}
+
       {comp && <p className="mt-2 text-[15px] font-semibold text-accent">{comp}</p>}
+      <MoneyRow job={job} extras={extras} />
 
       {/* Only the two ends of the verdict earn a spot on the card; the lights carry the rest. */}
       {(read.verdict === "Strong posting" || read.verdict === "Proceed with caution") && (
@@ -180,12 +217,14 @@ export function JobCard({ job, ctx, openings = 1, locations = 1 }: { job: JobVie
   );
 }
 
-export function JobGrid({ jobs, ctx, empty = "Nothing here yet." }: { jobs: JobView[]; ctx: CardContext; empty?: string }) {
+export async function JobGrid({ jobs, ctx, empty = "Nothing here yet." }: { jobs: JobView[]; ctx: CardContext; empty?: string }) {
   if (!jobs.length) return empty ? <p className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-ink-3">{empty}</p> : null;
+  const cards = collapseOpenings(jobs);
+  const extras = await cardExtrasFor(cards.map((c) => c.job)).catch(() => new Map<string, CardExtras>());
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {collapseOpenings(jobs).map(({ job, openings, locations }) => (
-        <JobCard key={job.id} job={job} ctx={ctx} openings={openings} locations={locations} />
+      {cards.map(({ job, openings, locations }) => (
+        <JobCard key={job.id} job={job} ctx={ctx} openings={openings} locations={locations} extras={extras.get(job.id)} />
       ))}
     </div>
   );
