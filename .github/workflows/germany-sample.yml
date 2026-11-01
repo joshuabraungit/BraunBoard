@@ -1,10 +1,10 @@
-name: Germany market count
+name: Germany sample postings
 
 # Read-only: counts German sales jobs at companies we already track. Saves nothing.
 on:
   workflow_dispatch:
   push:
-    branches: [germany-count]
+    branches: [germany-sample]
 
 jobs:
   count:
@@ -20,4 +20,4 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx tsx scripts/germany-count.ts
+      - run: npx tsx scripts/germany-sample.ts
