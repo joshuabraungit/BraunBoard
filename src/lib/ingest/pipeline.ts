@@ -11,6 +11,7 @@ import { canadaPlaceFromTitle, germanyPlaceFrom, parseLocation, titleNamesGerman
 import { payCurrency, resolveCompensation } from "./compensation";
 import { extractAttributes } from "./extract";
 import { plainRole } from "./role-plain";
+import { resolveCountry } from "./country";
 import { dedupeKey, descriptionSimilarity, DUPLICATE_THRESHOLD, normalizeLocationKey, sameRole } from "./dedupe";
 import type { AtsProvider, CompanyRef, RawJob } from "./types";
 import { ENABLED_PROVIDERS } from "./providers";
@@ -50,7 +51,7 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
   try {
     const { data: existingRows, error: exErr } = await db
       .from("jobs")
-      .select("id, source_job_id, is_active, missed_checks, classification_overridden, sales_motion, title_raw, salary_min, salary_max, ote_min, ote_max")
+      .select("id, source_job_id, is_active, missed_checks, classification_overridden, sales_motion, title_raw, salary_min, salary_max, ote_min, ote_max, country_resolved")
       .eq("company_id", company.id);
     if (exErr) throw exErr;
     const existing = new Map((existingRows ?? []).map((r) => [r.source_job_id as string, r]));
@@ -69,6 +70,9 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
     for (const raw_job of raw) {
       const job = { ...raw_job, title: stripGenderTag(raw_job.title) };
       const prior = existing.get(job.source_job_id);
+
+      // Already found to be outside our countries (or impossible to place): stays hidden, no second AI call.
+      if (prior && !prior.is_active && (prior.country_resolved === "other" || prior.country_resolved === "unknown")) continue;
 
       // Active, seen again, not reprocessing: it passed our rules when stored, so just confirm it's still up.
       // (Some adapters return known jobs without details, so don't re-judge them here.)
@@ -245,8 +249,20 @@ async function insertNewJob(
   company: CompanyRow,
   job: RawJob,
   cls: NonNullable<ReturnType<typeof classifyTitle>>,
-  loc: ReturnType<typeof parseLocation>,
+  parsed: ReturnType<typeof parseLocation>,
 ): Promise<string | null> {
+  // "Remote" or "Distributed" with no country: read the posting to find out where it is.
+  // In one of our countries: list it there. Abroad, or no way to tell: store it hidden.
+  let loc = parsed;
+  let place: Record<string, unknown> = {};
+  if (loc.country == null) {
+    const r = await resolveCountry(job.title, job.location, job.description).catch(() => null);
+    if (r) {
+      place = { country_resolved: r.country, country_evidence: r.evidence };
+      if (r.country === "other" || r.country === "unknown") place = { ...place, is_active: false, removed_at: new Date().toISOString() };
+      else loc = { ...loc, country: r.country, markets: [r.country], is_us: r.country === "US" };
+    }
+  }
   const comp = await payFor(company, job, loc);
   const attrs = await extractAttributes(job.title, job.description, cls);
   // The job in plain English for the job page. Optional: the catch-up script retries misses.
@@ -345,8 +361,9 @@ async function insertNewJob(
       dedupe_key: key,
       duplicate_of: duplicateOf,
       role_group: roleGroup,
-      // "Remote" with no country stated is kept but flagged for a human to confirm it's US.
+      // Only left for a human when the country check itself failed (an API error); it retries on reprocess.
       needs_review: loc.country == null,
+      ...place,
     })
     .select("id")
     .single();
@@ -355,8 +372,8 @@ async function insertNewJob(
     console.warn(`[ingest] insert failed for ${company.name} / ${job.title}: ${error.message}`);
     return null;
   }
-  // Copies of a role already alerted on don't send another alert.
-  return duplicateOf || roleGroup ? null : (data.id as string);
+  // Copies of a role already alerted on don't send another alert; hidden ones never do.
+  return duplicateOf || roleGroup || place.is_active === false ? null : (data.id as string);
 }
 
 export { ENABLED_PROVIDERS };
