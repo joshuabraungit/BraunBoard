@@ -49,35 +49,35 @@ const RULES: Rule[] = [
   {
     code: "commission_only",
     tone: "red",
-    label: "Commission only",
+    label: "No base pay, commission only",
     why: "The posting says pay is commission only. No base means you carry all the risk.",
     test: (t) => /\b(commission[- ]only|100% commission|straight commission)\b/.test(t),
   },
   {
     code: "uncapped_no_numbers",
     tone: "red",
-    label: "\"Unlimited earnings,\" no numbers",
+    label: "Big earnings claims, no numbers",
     why: "It sells uncapped or unlimited earnings but never says what anyone actually earns.",
     test: (t, j) => !hasPay(j) && /\b(uncapped|unlimited)\s+(commission|earning|income|upside|potential)/.test(t),
   },
   {
     code: "hustle_language",
     tone: "red",
-    label: "Hustle-culture language",
+    label: "Hints at long hours",
     why: "Words like rockstar, grind, work hard / play hard, or \"no excuses\" usually mean long hours and high turnover.",
     test: (t) => /\b(rock ?star|ninja|work hard,? play hard|grind(ing)?|killer instinct|hungry to crush|crush(ing)? (your )?quota|thick[- ]skinned|no[- ]excuses?|all gas,? no brakes)\b/.test(t),
   },
   {
     code: "dial_quotas",
     tone: "red",
-    label: "Heavy call quotas",
+    label: "High daily call targets",
     why: "It sets a daily dial or activity number. Expect to be managed on activity, not outcomes.",
     test: (t) => /\b\d{2,3}\+?\s*(cold )?(calls|dials)\s*(a|per|each)\s*day\b/.test(t),
   },
   {
     code: "clawbacks",
     tone: "red",
-    label: "Commission clawbacks",
+    label: "Commission can be taken back",
     why: "The posting mentions clawbacks. Ask exactly when commission can be taken back.",
     test: (t) => /\bclaw[- ]?backs?\b/.test(t),
   },
@@ -93,14 +93,14 @@ const RULES: Rule[] = [
   {
     code: "many_hats",
     tone: "red",
-    label: "\"Wear many hats\"",
+    label: "Do-everything job",
     why: "Often code for an under-resourced team where sales also does marketing, CS, and ops.",
     test: (t) => /\bwear(ing)? (many|multiple|a lot of) hats\b/.test(t),
   },
   {
     code: "wide_pay_range",
     tone: "red",
-    label: "Pay range too wide to mean much",
+    label: "Pay range too wide to trust",
     why: "The top of the range is more than double the bottom. Ask where in that range this offer would really land.",
     scored: false, // often covers several levels or locations; a question, not a verdict
     test: (_t, j) => (j.salary_min != null && (j.salary_max ?? 0) >= j.salary_min * 2.2) || (j.ote_min != null && (j.ote_max ?? 0) >= j.ote_min * 2.2),
@@ -116,7 +116,7 @@ const RULES: Rule[] = [
   {
     code: "mass_posting",
     tone: "red",
-    label: "Same role posted many times",
+    label: "Same job posted many times",
     why: "The company has 8 or more open postings with this exact title. Could be a big build-out, could be a revolving door. Ask how many reps they hired last year and how many are still there.",
     scored: false, // a question to ask, not a verdict
     test: (_t, j) => (j.same_title_open ?? 0) >= 8,
@@ -124,7 +124,7 @@ const RULES: Rule[] = [
   {
     code: "player_coach",
     tone: "red",
-    label: "Player-coach",
+    label: "Leads a team and sells",
     why: "You'd lead a team and work deals yourself. Ask whether you carry a personal quota and how your pay splits between the two.",
     scored: false,
     test: (t, j) => /\bplayer[- ]coach\b/.test(t) && ["Sales Manager", "Sales Director", "VP Sales", "CRO"].includes(j.role_family ?? ""),
@@ -132,7 +132,7 @@ const RULES: Rule[] = [
   {
     code: "aggressive_split",
     tone: "red",
-    label: "Most of the pay is variable",
+    label: "Most pay depends on commission",
     why: "OTE is more than double the base. You only make the big number if you hit quota.",
     test: (_t, j) => j.salary_min != null && j.ote_min != null && j.ote_min >= j.salary_min * 2.2,
   },
@@ -178,7 +178,7 @@ const RULES: Rule[] = [
   {
     code: "pipeline_support",
     tone: "green",
-    label: "SDR or inbound support",
+    label: "Gets leads from SDRs",
     why: "You won't be building all of your own pipeline from zero.",
     test: (t, j) =>
       j.self_sourcing_level === "Low" ||
@@ -187,14 +187,14 @@ const RULES: Rule[] = [
   {
     code: "ramp_support",
     tone: "green",
-    label: "Ramp or draw",
+    label: "Paid while you ramp up",
     why: "It mentions a ramp period or guaranteed draw, so you're not on full quota from day one.",
     test: (t) => /\b(ramp(ed)? (period|quota|time|schedule)|\d+[- ]month ramp|guaranteed (draw|commission)|non[- ]recoverable draw)\b/.test(t),
   },
   {
     code: "accelerators",
     tone: "green",
-    label: "Pays accelerators",
+    label: "Pays more past quota",
     why: "Higher commission rates once you pass quota. Overperformance actually pays.",
     test: (t) => /\baccelerators?\b/.test(t),
   },
@@ -212,7 +212,7 @@ const RULES: Rule[] = [
   {
     code: "coaching",
     tone: "green",
-    label: "Real coaching",
+    label: "Real sales coaching",
     why: "The posting commits to regular coaching or call reviews. A bad attainment number usually means no coaching and no standard, not bad reps.",
     // Only for people carrying a number. For managers, "provide regular coaching" is their job, not support.
     test: (t, j) =>

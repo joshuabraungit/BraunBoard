@@ -1,3 +1,4 @@
+import { LightsKey } from "@/components/BraunRead";
 import type { Metadata } from "next";
 import { JOB_TABS, PageTabs } from "@/components/PageTabs";
 import Link from "next/link";
@@ -69,7 +70,7 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<R
       {!state.signedIn && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent-soft px-4 py-3">
           <p className="text-sm">
-            <span className="font-semibold">Want an email when a new one shows up?</span> Sign in and we&apos;ll save this as your watch.
+            <span className="font-semibold">Want an email when a new one shows up?</span> Sign in and I&apos;ll save this as your watch.
           </p>
           <Link href="/login?next=/for-you" className="rounded-lg bg-ink px-3.5 py-2 text-sm font-semibold text-white">
             Get alerts →
@@ -77,6 +78,7 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<R
         </div>
       )}
 
+      <LightsKey className="mb-3" />
       <JobGrid
         jobs={ranked.jobs}
         ctx={{ savedJobIds: state.savedJobIds, matches: ranked.matches, back: "/for-you", allowHide: state.signedIn }}

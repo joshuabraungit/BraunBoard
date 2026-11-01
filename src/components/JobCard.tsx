@@ -5,7 +5,7 @@ import { languageFor, formatComp, formatLocation } from "@/lib/format";
 import { CompanyLogo } from "./CompanyLogo";
 import { SaveJobButton, HideJobButton } from "./Actions";
 import { MatchBadge, matchShowsOnCard } from "./MatchBadge";
-import { VerdictPill } from "./BraunRead";
+import { LIGHT, VerdictPill } from "./BraunRead";
 import { braunRead, flagsFromCodes, isHeadsUp, isRedFlag, type Flag } from "@/lib/flags";
 import type { MatchResult } from "@/lib/match";
 import { attainmentLabel } from "@/lib/attainment";
@@ -36,12 +36,10 @@ interface Light {
   why?: string;
 }
 
-// Traffic-light colors for the dots. The site's amber and red are tuned for text and look muddy as dots.
-const DOT: Record<Tone, string> = { green: "bg-[#22a35a]", yellow: "bg-[#f5b400]", red: "bg-[#e0352b]" };
+const DOT: Record<Tone, string> = LIGHT;
 
 // Flags the pay and quota lights already cover, or that are too routine to be the standout.
 const NOT_STANDOUT = new Set(["publishes_ote", "shares_attainment", "attainment_average", "states_quota", "states_deal_size", "open_90_days"]);
-const SHORT: Record<string, string> = { wide_pay_range: "Wide pay range", aggressive_split: "Mostly variable pay", mass_posting: "Posted many times" };
 
 /**
  * The Braun Read on a card: three lights a rep can scan. Pay, quota, and the one thing that
@@ -74,7 +72,7 @@ export function cardLights(job: JobView, read: ReturnType<typeof braunRead>, now
   // The standout: a red flag first, then a stale posting, then a heads-up, then the best green flag, then freshness.
   const flags = flagsFromCodes(job.flags).filter((f) => !NOT_STANDOUT.has(f.code));
   const days = Math.floor((now - new Date(job.first_seen_at).getTime()) / 86_400_000);
-  const asLight = (f: Flag, tone: Tone): Light => ({ tone, text: SHORT[f.code] ?? f.label, why: f.why });
+  const asLight = (f: Flag, tone: Tone): Light => ({ tone, text: f.label, why: f.why });
   const red = flags.find(isRedFlag);
   const headsUp = flags.find(isHeadsUp);
   const green = flags.find((f) => f.tone === "green");
@@ -91,7 +89,7 @@ export function cardLights(job: JobView, read: ReturnType<typeof braunRead>, now
             : null;
   // Nothing stands out: say where deals come from, which matters to AEs (SDRs prospect by definition).
   const sdr = job.role_family === "SDR/BDR";
-  const pipeline: Record<string, string> = { High: "Mostly outbound", Medium: "Inbound + outbound", Low: "Mostly inbound" };
+  const pipeline: Record<string, string> = { High: "You find your own leads", Medium: "Some leads come to you", Low: "Leads come to you" };
   const fallback: Light | null = !sdr && pipeline[job.self_sourcing_level] ? { tone: "green", text: pipeline[job.self_sourcing_level]! } : null;
 
   return [pay, quota, standout ?? fallback].filter((l): l is Light => !!l);

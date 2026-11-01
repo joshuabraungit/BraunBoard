@@ -1,3 +1,4 @@
+import { LightsKey } from "@/components/BraunRead";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { byHiringFastest, listCompanies, listJobs, listJobsForWatch } from "@/lib/data";
@@ -58,6 +59,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
       {showIntro && <IntroBanner />}
 
+      <LightsKey className="mb-4" />
       {forYou ? (
         <Section title={`For You · ${watch!.name}`} href="/for-you">
           <JobGrid jobs={forYou.jobs.slice(0, 3)} ctx={{ ...ctx, matches: forYou.matches }} empty="No matches yet. I'll tell you when one shows up." />

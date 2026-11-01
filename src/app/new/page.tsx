@@ -1,3 +1,4 @@
+import { LightsKey } from "@/components/BraunRead";
 import type { Metadata } from "next";
 import { listJobs } from "@/lib/data";
 import { JOB_TABS, PageTabs } from "@/components/PageTabs";
@@ -29,6 +30,7 @@ export default async function NewToday() {
           {market === "UK" ? "See US + Canada" : "See the UK"}
         </a>
       </p>
+      <LightsKey className="-mt-3 mb-4" />
       <JobGrid jobs={jobs} ctx={{ savedJobIds: state.savedJobIds, back: "/new" }} empty="Nothing new in the last 24 hours. Check back after the next refresh." />
     </>
   );

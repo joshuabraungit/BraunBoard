@@ -1,3 +1,4 @@
+import { LightsKey } from "@/components/BraunRead";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { listJobsWithTotal, type JobFilters } from "@/lib/data";
@@ -212,8 +213,8 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
         <p className="text-sm text-ink-3">
           {roles.toLocaleString()} {roles === 1 ? "job" : "jobs"}
           {!sp.posted && " posted in the last 90 days"}
-
         </p>
+        <LightsKey />
         {hasFilters && (
           <form action={watchSearch} className="flex w-full items-center gap-2 sm:w-auto">
             <input type="hidden" name="qs" value={watchQs} />

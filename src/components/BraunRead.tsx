@@ -25,6 +25,24 @@ export function FlagChips({ flags, max = 3, inline = false }: { flags: Flag[]; m
   );
 }
 
+/** Traffic-light dot colors. The site's amber and red are tuned for text and look muddy as dots. */
+export const LIGHT = { green: "bg-[#22a35a]", yellow: "bg-[#f5b400]", red: "bg-[#e0352b]" } as const;
+
+/** What the colors mean, shown once above a list of jobs. */
+export function LightsKey({ className = "" }: { className?: string }) {
+  const items: [keyof typeof LIGHT, string][] = [["green", "good sign"], ["yellow", "ask about it"], ["red", "watch out"]];
+  return (
+    <p className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-3 ${className}`}>
+      {items.map(([tone, text]) => (
+        <span key={tone} className="flex items-center gap-1.5">
+          <span className={`h-2 w-2 rounded-full ${LIGHT[tone]}`} aria-hidden />
+          {text}
+        </span>
+      ))}
+    </p>
+  );
+}
+
 const VERDICT_STYLE: Record<Read["verdict"], string> = {
   "Strong posting": "bg-accent text-white",
   "Worth a look": "bg-accent-soft text-accent",
@@ -33,9 +51,9 @@ const VERDICT_STYLE: Record<Read["verdict"], string> = {
 };
 
 const GRADE: Record<Grade, { dot: string; label: string }> = {
-  good: { dot: "bg-accent", label: "Good" },
-  ok: { dot: "bg-amber", label: "Mixed" },
-  bad: { dot: "bg-red", label: "Weak" },
+  good: { dot: LIGHT.green, label: "Good" },
+  ok: { dot: LIGHT.yellow, label: "Mixed" },
+  bad: { dot: LIGHT.red, label: "Weak" },
   unknown: { dot: "bg-line-strong", label: "Unknown" },
 };
 
@@ -85,11 +103,15 @@ export function BraunReadPanel({ read, hide = [] }: { read: Read; hide?: string[
 }
 
 const TITLE_TONE = { red: "text-red", headsUp: "text-amber", green: "text-accent" };
+const TITLE_DOT = { red: LIGHT.red, headsUp: LIGHT.yellow, green: LIGHT.green };
 
 function FlagList({ title, flags, empty, tone }: { title: string; flags: Flag[]; empty: string; tone: keyof typeof TITLE_TONE }) {
   return (
     <div>
-      <h3 className={`mb-1.5 text-xs font-bold uppercase tracking-wide ${TITLE_TONE[tone]}`}>{title}</h3>
+      <h3 className={`mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide ${TITLE_TONE[tone]}`}>
+        <span className={`h-2 w-2 rounded-full ${TITLE_DOT[tone]}`} aria-hidden />
+        {title}
+      </h3>
       {flags.length ? (
         <ul className="space-y-2">
           {flags.map((f) => (
