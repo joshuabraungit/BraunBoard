@@ -136,6 +136,55 @@ describe("classifyTitle: industry verticals", () => {
   );
 });
 
+describe("classifyTitle: titles we used to miss", () => {
+  it.each([
+    ["Partner Development Manager, AI Partnerships", "Account Executive", true],
+    ["Sr. Partner Business Manager - SLED - TOLA", "Account Executive", true],
+    ["Senior Manager, Partner Sales", "Sales Manager", true],
+    ["Partner Development Representative | Reseller", "SDR/BDR", true],
+    ["Channel Partnership Representative", "Account Executive", true],
+    ["Manager, Strategic Partnerships", "Account Executive", true],
+    ["Strategic Alliances Senior Manager", "Account Executive", true],
+    ["Partner Sales Specialist - Hyperscalers", "Account Executive", true],
+    ["Account Partner - CRO", "Account Executive", false],
+    ["Enterprise Account Partner - Veeva Data Cloud", "Account Executive", false],
+    ["Sales Lead - Enterprise - Healthcare", "Account Executive", false],
+    ["Enterprise Security Sales Specialist", "Account Executive", false],
+    ["Principal, Strategic AI Sales", "Account Executive", false],
+    ["Manager, Commercial Sales", "Sales Manager", false],
+    ["Manager, Mid-Market Sales", "Sales Manager", false],
+    ["Front Line Sales Leader - Life Sciences - Corporate", "Sales Manager", false],
+    ["Business Development Director", "Sales Director", false],
+  ])("%s -> %s", (t, family, channel) => {
+    const c = classifyTitle(t)!;
+    expect(c.role_family).toBe(family);
+    expect(c.is_channel).toBe(channel);
+  });
+
+  it.each([
+    "Senior Strategic Sourcing Manager, Cloud & Strategic Partnerships",
+    "Senior Technical Account Manager (Strategic Alliances)",
+    "Sales Development Representative Intern (Hybrid)",
+    "Business Development Representative - Future Consideration",
+    "Partner Marketing Manager",
+    "People Partner, GTM",
+    "AI Field Engineer - Strategic Partnerships",
+    "Program Manager, Strategic Partnerships",
+    "Customer Success Manager, Inside Sales",
+    "Principal AI Architect, Sales - Life Sciences",
+    "Senior Principal, Sales Compensation Design & Strategy",
+    "Senior Partner Solutions Manager, Strategic Partnerships",
+  ])("%s -> excluded", (t) => {
+    expect(classifyTitle(t)).toBeNull();
+  });
+});
+
+describe("classifyTitle: kept despite the new exclusions", () => {
+  it.each(["Partner Solutions Engineer, Ecosystem", "Sales Engineer (Customer Success)"])("%s -> Sales Engineer", (t) => {
+    expect(classifyTitle(t)?.role_family).toBe("Sales Engineer");
+  });
+});
+
 describe("normalizeTitle", () => {
   it("collapses variants", () => {
     expect(normalizeTitle("Sr. Enterprise AE (Remote, US)")).toBe("senior enterprise account executive");

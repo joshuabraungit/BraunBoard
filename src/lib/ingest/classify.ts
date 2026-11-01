@@ -38,6 +38,8 @@ const EXCLUDE = [
   /\b(sales|solutions) (strategy|planning|programs?)\b/i,
   // Partnerships that aren't selling: ops, and creator / media / school partnerships.
   /\bpartner(ship)?s? (operations|ops)\b/i,
+  /\b(strategic sourcing|procurement)\b/i,
+  /\b(field engineer|technologist|program manager|customer success manager|sales compensation|partner solutions manager)\b/i,
   /\b(creator|influencer|affiliate|content|media|university|academic|school|nonprofit|community) partner(ship)?s?\b/i,
 ];
 
@@ -57,19 +59,24 @@ const PARTNER = "(partnerships?|channel|alliances?)";
 
 // Order matters: first match wins, so more specific families come first.
 const FAMILIES: { family: RoleFamily; re: RegExp }[] = [
+  // Veeva and Gusto call AEs "Account Partner". First, so "Account Partner - CRO" (a research org) isn't a CRO job.
+  { family: "Account Executive", re: /\baccount partner\b/i },
   { family: "CRO", re: /\b(chief revenue officer|cro|chief sales officer|cso)\b/i },
   { family: "CRO", re: new RegExp(`\\bchief ${PARTNER} officer\\b`, "i") },
   { family: "VP Sales", re: new RegExp(`\\b(vp|rvp|avp|gvp|vice president|svp|evp|head)\\b.*\\b${PARTNER}`, "i") },
   { family: "Sales Director", re: new RegExp(`\\b(director\\b.*\\b${PARTNER}|${PARTNER}( sales)? director)\\b`, "i") },
   { family: "VP Sales", re: /\b(vp|rvp|avp|gvp|vice president|svp|evp|head)\b.*\b(sales|revenue|business development)\b/i },
   { family: "Sales Director", re: /\b(director|sr\.? director|senior director)\b.*\b(sales|account executives?|business development|solutions engineering|sales engineering|account management)\b/i },
-  { family: "Sales Director", re: /\b(sales|regional|area) director\b/i },
+  { family: "Sales Director", re: /\b(sales|regional|area|business development) director\b/i },
   { family: "Sales Engineer", re: /\b(sales engineer|solutions? engineer|solutions? consultant|pre-?sales|solutions? architect.*(sales|pre-?sales)|value engineer)\b/i },
   { family: "Sales Manager", re: /\b(sales manager|manager,? (sales|account executives?|business development|sales development|sdrs?|bdrs?|solutions engineering)|(sdr|bdr|sales development|business development|ae|account executive) (team )?(manager|lead)|regional sales manager|area sales manager|first[- ]line sales manager)\b/i },
+  { family: "Sales Manager", re: /\b(manager,? (commercial|regional|strategic|mid[- ]?market|enterprise|smb|field|inside|majors?|named|corporate|partner|channel) sales|(front[- ]line |inside )?sales leader|team lead,? sales)\b/i },
+  { family: "SDR/BDR", re: /\bpartner development rep(resentative)?\b/i },
   { family: "SDR/BDR", re: /\b(sdr|bdr|sales development|business development rep(resentative)?|market development rep|lead development|outbound rep)\b/i },
   { family: "Customer Expansion", re: /\b(expansion|growth account (executive|manager)|upsell|account (executive|manager),? (expansion|growth))\b/i },
   { family: "Account Manager", re: /\b(account manager|client partner|customer account manager|named account manager)\b/i },
   { family: "Account Executive", re: /\b(account executive|ae\b|sales executive|enterprise sales|account director|sales representative|sales rep|business development (executive|manager)|new business (sales|executive)|partner (sales )?(manager|executive)|channel (sales )?(manager|account executive)|alliances? manager)\b/i },
+  { family: "Account Executive", re: /\b(partner (development|business) (manager|lead|direct(or)?)|partner sales (specialist|manager|executive)|channel (partnerships?|account management|development) (manager|representative|lead)|channel partnership representative|(manager,? )?strategic partnerships|alliances? (senior )?manager|reseller manager|sales lead|sales specialist|principal,? (strategic |enterprise |ai )*sales|^sales, (enterprise|mid[- ]?market|commercial|smb))\b/i },
   { family: "Account Executive", re: /\b(partnerships? (manager|lead|executive|specialist)|channel (sales )?(lead|executive|specialist)|alliances? (lead|executive))\b/i },
 ];
 
