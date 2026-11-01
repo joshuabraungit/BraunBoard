@@ -44,3 +44,15 @@ describe("location lines that still include one of our countries", () => {
     expect(descriptionPlacesRoleAbroad("Location: Colombia, Brazil, Costa Rica, Mexico. Work US hours.", ["US"])).toBe("Brazil");
   });
 });
+
+describe("regression cases from live postings", () => {
+  it("doesn't drop a Denver company that mentions teammates abroad", () => {
+    expect(descriptionPlacesRoleAbroad("Headquartered and based in Denver, Colorado, our team spans the globe, with teammates across Brazil, Poland, the Philippines, Mexico. Sell to home services pros.", ["US"])).toBeNull();
+  });
+  it("still catches the Korea role when the boilerplate says worldwide", () => {
+    const d =
+      "Lead growth across our largest strategic accounts in Korea. You will report to the Director of Sales, Korea. Korea's largest enterprise accounts. " +
+      "Work with global partners. More than 20,000 organizations worldwide trust us.";
+    expect(descriptionPlacesRoleAbroad(d, ["US"])).toBe("Korea");
+  });
+});

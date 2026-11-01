@@ -424,7 +424,8 @@ const BEYOND_EUROPE = [
 const OUR_PLACES = /\b(United States|U\.S\.A?|USA|US|North America|Americas|Canada|United Kingdom|UK|Britain|Germany|DACH)\b/g;
 // Same, plus the parts of our countries a posting might name on its location line.
 const OUR_PLACES_ONE = /\b(United States|U\.S\.A?|USA|US|North America|Americas|Canada|United Kingdom|UK|Britain|England|Scotland|Wales|Northern Ireland|London|Germany|DACH|Berlin|Munich|Remote US|[A-Z][a-z]+, [A-Z]{2})\b/;
-const OTHER_REGIONS = /\b(Europe|EMEA|APAC|APJ|Asia|LATAM|Latin America|Middle East|Africa|global(ly)?|worldwide)\b/i;
+// "Global" and "worldwide" show up in every company boilerplate, so only real regions count here.
+const OTHER_REGIONS = /\b(Europe|EMEA|APAC|APJ|Asia|LATAM|Latin America|Middle East|Africa)\b/i;
 const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
@@ -442,7 +443,7 @@ export function descriptionPlacesRoleAbroad(description: string, markets: readon
   // "Location: UK or Singapore" or "based in the UK or Ireland" is still one of ours.
   for (const m of description.matchAll(/(?:\b(?:available )?locations?\s*:|\b(?:based|located) in\b)([^.\n]{0,80})/gi)) {
     const line = m[1]!;
-    if (OUR_PLACES_ONE.test(line)) continue;
+    if (OUR_PLACES_ONE.test(line) || parseLocation(line.slice(0, 60)).markets.length) continue;
     const c = countries.find((x) => new RegExp(`\\b${esc(x)}\\b`).test(line));
     if (c) return c;
   }
