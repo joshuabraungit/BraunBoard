@@ -65,3 +65,40 @@ export async function plainBuyer(buyer: string, key = process.env.ANTHROPIC_API_
   // Keep the posting's capital letter at the start so it matches the rest of the site.
   return draft[0]!.toUpperCase() + draft.slice(1);
 }
+
+const SHORT_SYSTEM = `You turn a line about who a salesperson sells to into a short label for a job card.
+2 or 3 words, 4 at most. Plain words anyone knows. Pick the main buyer; drop the rest. No acronyms except IT, HR, CEOs, CFOs.
+
+Examples:
+Prospective clients for family law and estate planning -> Family law clients
+Heads of security, app security leaders and engineering executives -> Security leaders
+Restaurant owners and local small business owners -> Restaurant owners
+Offices, hospitals, schools and distribution centers -> Offices and hospitals
+Finance leaders, cash managers, money teams and risk-rule leaders -> Finance teams
+Teams that build and run software -> Software teams
+Founders and engineering leaders at AI startups -> AI startup founders
+Government agencies, security service firms and Fortune 500 companies -> Government and big companies
+
+Return ONLY JSON: {"short": "..."}`;
+
+/** A 2-3 word "Sells to" label for cards. Null when no clean one comes back. Throws on API errors. */
+export async function shortBuyer(buyer: string, key = process.env.ANTHROPIC_API_KEY): Promise<string | null> {
+  if (!key) return null;
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+      body: JSON.stringify({ model: process.env.EXTRACTION_MODEL ?? "claude-haiku-5-5", max_tokens: 800, system: SHORT_SYSTEM, messages: [{ role: "user", content: buyer }] }),
+    });
+    if ([429, 529].includes(res.status) && attempt < 4) {
+      await new Promise((r) => setTimeout(r, 5_000 * 2 ** attempt));
+      continue;
+    }
+    if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 200)}`);
+    const data = (await res.json()) as { content: { type: string; text?: string }[] };
+    const r = firstJsonObject(data.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("")) as { short?: string } | null;
+    const short = r?.short?.trim().replace(/\.\s*$/, "") || null;
+    if (!short || short.split(/\s+/).length > 4 || short.length > 32 || buyerJargonIn(short).length) return null;
+    return short[0]!.toUpperCase() + short.slice(1);
+  }
+}

@@ -115,15 +115,16 @@ function baseShare(job: JobView): number | null {
   return Math.round((base / ote) * 10) * 10; // nearest 10%, so it reads "60/40"
 }
 
-const SIZE_WORDS: Record<string, string> = { SMB: "small businesses", "Mid-Market": "medium-size companies", Enterprise: "big companies", Strategic: "a short list of very big companies" };
+const SIZE_WORDS: Record<string, string> = { SMB: "small businesses", "Mid-Market": "medium-size companies", Enterprise: "big companies", Strategic: "very big companies" };
 
-/** "restaurant owners", from the posting; or the size of company, when that's all it says. */
+/** "Restaurant owners", from the posting; or the size of company, when that's all it says. */
 function sellsTo(job: JobView): string | null {
-  const b = job.buyer?.trim().replace(/\.\s*$/, "");
-  // Lowercase the first letter so it reads as part of the line, but leave "UK rail" and "CISOs" alone.
-  if (b) return /^[A-Z][a-z]/.test(b) ? b[0]!.toLowerCase() + b.slice(1) : b;
+  // The short label ("Restaurant owners"); the full buyer line is on the job page.
+  const b = job.buyer_short?.trim();
+  if (b) return b;
   const seg = job.customer_segment !== "Unknown" ? job.customer_segment : job.sales_segment !== "Unknown" ? job.sales_segment : null;
-  return seg ? SIZE_WORDS[seg] ?? null : null;
+  const words = seg ? SIZE_WORDS[seg] ?? null : null;
+  return words ? words[0]!.toUpperCase() + words.slice(1) : null;
 }
 
 /** The money row under the pay: base vs. commission, how the pay ranks, and deal size. */

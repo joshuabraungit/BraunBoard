@@ -1,13 +1,15 @@
 // "Who you're selling to": the buyer and industry, only as the posting states them.
 // Every answer must come with a quote that really appears in the posting, or it's dropped.
 
-import { plainBuyer } from "./buyer-plain";
+import { plainBuyer, shortBuyer } from "./buyer-plain";
 
 export interface BuyerInfo {
   buyer: string | null;
   buyer_quote: string | null;
   industry: string | null;
   industry_quote: string | null;
+  /** 2-3 word label for job cards ("Restaurant owners"). */
+  buyer_short?: string | null;
 }
 
 export const EMPTY_BUYER: BuyerInfo = { buyer: null, buyer_quote: null, industry: null, industry_quote: null };
@@ -110,6 +112,9 @@ export async function extractBuyer(title: string, description: string, key = pro
   const text = data.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("");
   const out = cleanBuyer(firstJsonObject(text) as Partial<BuyerInfo>, description);
   // Shorthand like "CISOs" or "AI/ML teams" gets rewritten in plain words; the quote keeps the posting's own.
-  if (out.buyer) out.buyer = await plainBuyer(out.buyer, key).catch(() => out.buyer);
+  if (out.buyer) {
+    out.buyer = await plainBuyer(out.buyer, key).catch(() => out.buyer);
+    out.buyer_short = await shortBuyer(out.buyer!, key).catch(() => null);
+  }
   return out;
 }

@@ -1,0 +1,27 @@
+name: Short Sells-to labels
+
+# Catch-up: 2-3 word "Sells to" labels for cards. New ones get it as they come in.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only report, don't change anything"
+        type: boolean
+        default: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/buyer-short-backfill.ts ${{ inputs.dry_run && '--dry-run' || '' }}
