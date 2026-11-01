@@ -36,11 +36,20 @@ const EXCLUDE = [
   /\b(sales tax|tax)\b/i,
   /\b(compensation|commissions?) (analyst|manager|specialist|administrator)\b/i,
   /\b(sales|solutions) (strategy|planning|programs?)\b/i,
+  // Partnerships that aren't selling: ops, and creator / media / school partnerships.
+  /\bpartner(ship)?s? (operations|ops)\b/i,
+  /\b(creator|influencer|affiliate|content|media|university|academic|school|nonprofit|community) partner(ship)?s?\b/i,
 ];
+
+// Partnerships / channel leadership and ICs. Kept apart so the sales patterns below stay readable.
+const PARTNER = "(partnerships?|channel|alliances?)";
 
 // Order matters: first match wins, so more specific families come first.
 const FAMILIES: { family: RoleFamily; re: RegExp }[] = [
   { family: "CRO", re: /\b(chief revenue officer|cro|chief sales officer|cso)\b/i },
+  { family: "CRO", re: new RegExp(`\\bchief ${PARTNER} officer\\b`, "i") },
+  { family: "VP Sales", re: new RegExp(`\\b(vp|rvp|avp|gvp|vice president|svp|evp|head)\\b.*\\b${PARTNER}`, "i") },
+  { family: "Sales Director", re: new RegExp(`\\b(director\\b.*\\b${PARTNER}|${PARTNER}( sales)? director)\\b`, "i") },
   { family: "VP Sales", re: /\b(vp|rvp|avp|gvp|vice president|svp|evp|head)\b.*\b(sales|revenue|business development)\b/i },
   { family: "Sales Director", re: /\b(director|sr\.? director|senior director)\b.*\b(sales|account executives?|business development|solutions engineering|sales engineering|account management)\b/i },
   { family: "Sales Director", re: /\b(sales|regional|area) director\b/i },
@@ -50,6 +59,7 @@ const FAMILIES: { family: RoleFamily; re: RegExp }[] = [
   { family: "Customer Expansion", re: /\b(expansion|growth account (executive|manager)|upsell|account (executive|manager),? (expansion|growth))\b/i },
   { family: "Account Manager", re: /\b(account manager|client partner|customer account manager|named account manager)\b/i },
   { family: "Account Executive", re: /\b(account executive|ae\b|sales executive|enterprise sales|account director|sales representative|sales rep|business development (executive|manager)|new business (sales|executive)|partner (sales )?(manager|executive)|channel (sales )?(manager|account executive)|alliances? manager)\b/i },
+  { family: "Account Executive", re: /\b(partnerships? (manager|lead|executive|specialist)|channel (sales )?(lead|executive|specialist)|alliances? (lead|executive))\b/i },
 ];
 
 const SEGMENTS: { segment: SalesSegment; re: RegExp }[] = [

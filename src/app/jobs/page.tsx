@@ -28,7 +28,8 @@ function toFilters(sp: SP, market: MarketChoice): JobFilters {
     q: sp.q || undefined,
     role: pick(sp.role, ROLE_FAMILIES),
     segment: pick(sp.segment, SALES_SEGMENTS),
-    motion: pick(sp.motion, SALES_MOTIONS),
+    // "Partnerships" sits in the role list but is the Channel motion underneath (any level, IC to chief).
+    motion: sp.role === PARTNERSHIPS_ROLE ? "Channel" : pick(sp.motion, SALES_MOTIONS),
     remote: pick(sp.remote, REMOTE_TYPES),
     markets: marketsFor(market),
     minBase: num(sp.minBase),
@@ -50,7 +51,10 @@ function payOptions(market: MarketChoice, kind: "base" | "ote", current?: string
   return list;
 }
 
-/** What people call a motion in the filter. "Channel" alone reads like a TV listing. */
+/** Partnerships people look for themselves in the role list, so it lives there. */
+const PARTNERSHIPS_ROLE = "Partnerships";
+const ROLE_OPTIONS = [...ROLE_FAMILIES, PARTNERSHIPS_ROLE];
+const ROLE_LABELS: Record<string, string> = { [PARTNERSHIPS_ROLE]: "Partnerships & Channel" };
 const MOTION_LABELS: Record<string, string> = { Channel: "Partnerships & Channel" };
 
 function Select({ name, label, options, value, labels }: { name: string; label: string; options: readonly string[]; value?: string; labels?: Record<string, string> }) {
@@ -102,7 +106,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
     if (!p.get("country")) p.set("country", market);
     return p.toString();
   })();
-  const suggestedName = [isSizeBucket(sp.size) ? SIZE_LABELS[sp.size].label : null, sp.segment, sp.role === "Account Executive" ? "AE" : sp.role, sp.motion === "Channel" ? "Partnerships" : null, sp.remote, market === "CA" ? "Canada" : market === "UK" ? "UK" : null, sp.minOte && payOptions(market, "ote", sp.minOte).find((p) => String(p.value) === sp.minOte)?.label, sp.q]
+  const suggestedName = [isSizeBucket(sp.size) ? SIZE_LABELS[sp.size].label : null, sp.segment, sp.role === "Account Executive" ? "AE" : sp.role, sp.role === PARTNERSHIPS_ROLE || sp.motion === "Channel" ? "Partnerships" : null, sp.remote, market === "CA" ? "Canada" : market === "UK" ? "UK" : null, sp.minOte && payOptions(market, "ote", sp.minOte).find((p) => String(p.value) === sp.minOte)?.label, sp.q]
     .filter(Boolean)
     .join(" · ");
   return (
@@ -111,18 +115,18 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
       <p className="mt-1 text-sm text-ink-2">
         Not sure what you want to sell?{" "}
         <Link href="/products" className="font-semibold text-ink underline underline-offset-2 hover:no-underline">Browse by product →</Link>
-        {sp.motion !== "Channel" && (
+        {sp.role !== PARTNERSHIPS_ROLE && sp.motion !== "Channel" && (
           <>
             {" "}Partnerships person?{" "}
-            <Link href="/jobs?motion=Channel" className="font-semibold text-ink underline underline-offset-2 hover:no-underline">Just the partner and channel roles →</Link>
+            <Link href="/jobs?role=Partnerships" className="font-semibold text-ink underline underline-offset-2 hover:no-underline">Just the partner and channel roles →</Link>
           </>
         )}
       </p>
       <form className="mb-6 mt-4 flex flex-wrap gap-2" action="/jobs">
         <input name="q" defaultValue={sp.q} placeholder="Keyword or company" className="min-w-0 flex-1 basis-48 rounded-md border border-line bg-surface px-3 py-1.5 text-sm" />
-        <Select name="role" label="Any role" options={ROLE_FAMILIES} value={sp.role} />
+        <Select name="role" label="Any role" options={ROLE_OPTIONS} value={sp.role} labels={ROLE_LABELS} />
         <Select name="segment" label="Any segment" options={SALES_SEGMENTS} value={sp.segment} />
-        <Select name="motion" label="Any motion" options={SALES_MOTIONS} value={sp.motion} labels={MOTION_LABELS} />
+        <Select name="motion" label="Any motion" options={sp.motion === "Channel" ? SALES_MOTIONS : SALES_MOTIONS.filter((m) => m !== "Channel")} value={sp.motion} labels={MOTION_LABELS} />
         <Select name="remote" label="Any workplace" options={REMOTE_TYPES} value={sp.remote} />
         <select name="size" defaultValue={isSizeBucket(sp.size) ? sp.size : ""} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" aria-label="Company size">
           <option value="">Any company size</option>

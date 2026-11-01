@@ -87,7 +87,8 @@ export async function watchSearch(formData: FormData) {
   const prefs: WatchPrefs = {
     role_families: pick(sp.get("role"), ROLE_FAMILIES),
     segments: pick(sp.get("segment"), SALES_SEGMENTS),
-    motions: pick(sp.get("motion"), SALES_MOTIONS),
+    // "Partnerships" in the role list is the Channel motion.
+    motions: sp.get("role") === "Partnerships" ? ["Channel"] : pick(sp.get("motion"), SALES_MOTIONS),
     remote_types: pick(sp.get("remote"), REMOTE_TYPES),
     locations: [],
     keywords: sp.get("q") ? [sp.get("q")!] : [],

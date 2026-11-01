@@ -64,6 +64,27 @@ describe("classifyTitle: included roles (spec section 3)", () => {
     expect(classifyTitle(t)!.is_channel).toBe(true);
   });
 
+  it.each([
+    ["Partnerships Manager", "Account Executive"],
+    ["Channel Manager", "Account Executive"],
+    ["Channel Account Manager", "Account Manager"],
+    ["Head of Partnerships", "VP Sales"],
+    ["Head of Channel Sales", "VP Sales"],
+    ["Partnerships Director", "Sales Director"],
+    ["Channel Director", "Sales Director"],
+    ["VP Partnerships", "VP Sales"],
+    ["VP Channel", "VP Sales"],
+    ["Chief Partnerships Officer", "CRO"],
+  ])("%s -> %s, partnerships", (t, family) => {
+    const c = classifyTitle(t)!;
+    expect(c.role_family).toBe(family);
+    expect(c.is_channel).toBe(true);
+  });
+
+  it.each(["Partner Operations Manager", "Creator Partnerships Lead", "Director of Channel Marketing"])("%s -> excluded", (t) => {
+    expect(classifyTitle(t)).toBeNull();
+  });
+
   it.each(["Client Partner", "Client Partner, Scaled Accounts", "Account Partner - Crossix Enterprise Sales", "Enterprise Account Executive"])(
     "%s -> not partnerships",
     (t) => {
