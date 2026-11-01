@@ -7,6 +7,7 @@ import "./globals.css";
 import { Nav } from "@/components/Nav";
 import { UserMenu } from "@/components/UserMenu";
 import { MobileTabBar } from "@/components/MobileTabBar";
+import { PhoneMenu } from "@/components/PhoneMenu";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.braunboard.com"),
@@ -21,7 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body className="min-h-screen">
         <header className="sticky top-0 z-20 border-b border-line bg-bg/90 backdrop-blur">
-          {/* Phones: just the name up top; the menu is the tab bar at the bottom. */}
+          {/* Phones: the name and a ☰ menu up top, plus the tab bar at the bottom. */}
           <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-2.5 sm:py-3 xl:gap-6">
             <Link href="/" className="shrink-0 text-[17px] font-bold tracking-tight">
               Braun Board
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <Nav />
             </div>
             <UserMenu />
+            <PhoneMenu />
           </div>
         </header>
         <main className="mx-auto max-w-6xl px-4 pb-24 pt-6">{children}</main>
