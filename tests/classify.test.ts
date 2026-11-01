@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyTitle, normalizeTitle } from "../src/lib/ingest/classify";
+import { classifyTitle, isTalentPool, normalizeTitle } from "../src/lib/ingest/classify";
 
 describe("classifyTitle: spec section 8 examples", () => {
   it.each([
@@ -217,5 +217,19 @@ describe("Strategic Cuisines", () => {
   it("is a restaurant category, not the Strategic segment", () => {
     expect(classifyTitle("Bilingual Strategic Cuisines Account Executive (Mandarin) - West Coast")?.sales_segment).toBe("Unknown");
     expect(classifyTitle("Strategic Account Executive")?.sales_segment).toBe("Strategic");
+  });
+});
+
+describe("isTalentPool", () => {
+  it("spots resume drops", () => {
+    expect(isTalentPool("By submitting your details, you'll be added to our talent pool and considered for current and future Account Executive roles.")).toBe(true);
+    expect(isTalentPool("This is not an active role. We are building a pipeline.")).toBe(true);
+  });
+  it("leaves real jobs alone", () => {
+    expect(isTalentPool("You will own a territory and close new business. Join our team!")).toBe(false);
+    expect(isTalentPool(null)).toBe(false);
+  });
+  it("drops Open Application titles", () => {
+    expect(classifyTitle("Account Executive - Open Application")).toBeNull();
   });
 });

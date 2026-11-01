@@ -33,6 +33,7 @@ const EXCLUDE = [
   /\b(software|data|backend|back-end|frontend|front-end|full[- ]stack|platform|infrastructure|site reliability|ml|machine learning|security|qa|test|devops|mobile|ios|android|staff|principal) engineer/i, // post-sales technical support, not a selling role
   /\b(future|talent (pool|community|network)|general (application|interest)|evergreen|pipeline req)\b/i,
   /\bopportunities\s*$/i,
+  /\bopen application\b/i,
   /\b(sales tax|tax)\b/i,
   /\b(compensation|commissions?) (analyst|manager|specialist|administrator)\b/i,
   /\b(sales|solutions) (strategy|planning|programs?)\b/i,
@@ -147,4 +148,13 @@ export function classifyTitle(rawTitle: string): TitleClassification | null {
     title_normalized: normalizeTitle(title),
     is_channel: isChannelTitle(title),
   };
+}
+
+// "Jobs" that are really a resume drop. The title looks normal; the description gives it away.
+const TALENT_POOL =
+  /\b(added to our talent (pool|community|network)|join our talent (pool|community|network)|considered for (current and )?future (roles|opportunities|openings)|this (is not|isn.t) an? (active|current|open) (role|position|opening)|evergreen (role|requisition|posting)|we are not (currently|actively) hiring)\b/i;
+
+/** Is this posting a talent pool rather than an open job? */
+export function isTalentPool(description: string | null | undefined): boolean {
+  return !!description && TALENT_POOL.test(description);
 }
