@@ -28,6 +28,7 @@ describe("posting text that puts the job abroad", () => {
   it("now reads Canberra and Seoul in titles", () => {
     expect(titleOutOfMarket("Senior Named Account Executive (FedGov), Canberra", ["US"])).toBe(true);
     expect(titleOutOfMarket("Account Executive, Seoul", ["US"])).toBe(true);
+    expect(titleOutOfMarket("Senior Territory Account Executive - Shanghai", ["US"])).toBe(true);
   });
 });
 
