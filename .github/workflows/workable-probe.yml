@@ -13,4 +13,4 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx tsx scripts/tmp-workable-sample.ts
+      - run: npx tsx scripts/discover-workable.ts --dry-run

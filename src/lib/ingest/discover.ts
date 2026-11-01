@@ -7,6 +7,7 @@ import { classifyTitle, isTalentPool } from "./classify";
 import { titleOutOfMarket } from "./location";
 import { locate } from "./pipeline";
 import { slugify } from "../slug";
+import { normalizeDomain } from "./adapters/workable";
 
 /** A sales job in one of our markets, judged by the same rules the crawler uses. */
 export function inScopeSalesJob(job: RawJob): { markets: string[] } | null {
@@ -42,11 +43,7 @@ export interface FoundCompany {
   jobs: { title: string; description: string; markets: string[] }[];
 }
 
-export function normalizeDomain(url: string | null | undefined): string | null {
-  if (!url) return null;
-  const d = url.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/[/?#].*$/, "");
-  return /^[a-z0-9.-]+\.[a-z]{2,}$/.test(d) ? d : null;
-}
+export { normalizeDomain };
 
 /**
  * Save found companies to the queue. Skips anything already on Braun Board (same board, same

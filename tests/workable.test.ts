@@ -1,14 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { parseJobBlock, toRawJob, workableAccount } from "../src/lib/ingest/adapters/workable";
 import { candidateNote, normalizeDomain } from "../src/lib/ingest/discover";
-import { detectFromUrl } from "../src/lib/ingest/detect-ats";
 
 // Shape from Workable's "Utilizing the XML Job Feed" help article.
 const block = `<job>
   <title><![CDATA[Account Executive, Mid-Market]]></title>
   <date><![CDATA[Sun, 29 Dec 2019 11:02:25 UTC]]></date>
   <referencenumber><![CDATA[A1B2C3D4E5]]></referencenumber>
-  <url><![CDATA[https://apply.workable.com/acme-co/j/A1B2C3D4E5/]]></url>
+  <url><![CDATA[https://apply.workable.com/j/A1B2C3D4E5]]></url>
   <company><![CDATA[Acme Co]]></company>
   <city><![CDATA[Austin]]></city>
   <state><![CDATA[Texas]]></state>
@@ -24,9 +23,9 @@ describe("Workable feed", () => {
   it("parses a job and keeps the URL exactly as given", () => {
     const j = parseJobBlock(block)!;
     expect(j.title).toBe("Account Executive, Mid-Market");
-    expect(j.account).toBe("acme-co");
+    expect(j.account).toBe("acme.co");
     const raw = toRawJob(j, "Acme Co");
-    expect(raw.apply_url).toBe("https://apply.workable.com/acme-co/j/A1B2C3D4E5/");
+    expect(raw.apply_url).toBe("https://apply.workable.com/j/A1B2C3D4E5");
     expect(raw.source_job_id).toBe("A1B2C3D4E5");
     expect(raw.location).toBe("Austin, Texas, US");
     expect(raw.description).toContain("Base $90k, OTE $180k");
@@ -39,9 +38,9 @@ describe("Workable feed", () => {
     expect(toRawJob(j, "Acme").workplace_type).toBe("Remote");
   });
 
-  it("reads the account from apply URLs", () => {
-    expect(workableAccount("https://apply.workable.com/foo-bar/j/XYZ/")).toBe("foo-bar");
-    expect(detectFromUrl("https://apply.workable.com/foo-bar/")).toEqual({ provider: "workable", identifier: "foo-bar" });
+  it("keys a company by its website, or its name when there's none", () => {
+    expect(workableAccount("https://www.Foo-Bar.com/jobs", "Foo Bar")).toBe("foo-bar.com");
+    expect(workableAccount("", "Foo Bar, Inc.")).toBe("name:foo-bar-inc");
   });
 });
 

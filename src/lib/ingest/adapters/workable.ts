@@ -28,14 +28,26 @@ export interface WorkableFeedJob {
   description: string; // HTML
   jobtype: string;
   website: string;
-  /** Account slug from the apply URL: apply.workable.com/{slug}/j/{code}/ */
+  /** How we key the company: its website domain (see workableAccount). */
   account: string | null;
 }
 
-/** "apply.workable.com/acme/j/ABC123/" -> "acme" */
-export function workableAccount(url: string): string | null {
-  const m = url.match(/apply\.workable\.com\/([^/?#]+)\/j\//i) ?? url.match(/([a-z0-9-]+)\.workable\.com\/j\//i);
-  return m ? decodeURIComponent(m[1]!).toLowerCase() : null;
+/** "https://www.Acme.co/careers" -> "acme.co" */
+export function normalizeDomain(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const d = url.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/[/?#].*$/, "");
+  return /^[a-z0-9.-]+\.[a-z]{2,}$/.test(d) ? d : null;
+}
+
+/**
+ * Feed job URLs are apply.workable.com/j/{code}, with no account name in them, so a company is
+ * keyed by its website domain (every job in the feed has one), falling back to its name.
+ */
+export function workableAccount(website: string, company: string): string | null {
+  const d = normalizeDomain(website);
+  if (d) return d;
+  const n = company.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return n ? `name:${n}` : null;
 }
 
 function field(block: string, name: string): string {
@@ -48,20 +60,22 @@ export function parseJobBlock(block: string): WorkableFeedJob | null {
   const url = field(block, "url");
   const title = field(block, "title");
   if (!url || !title) return null;
+  const company = field(block, "company");
+  const website = field(block, "website");
   return {
     title,
     date: field(block, "date") || null,
     referencenumber: field(block, "referencenumber"),
     url,
-    company: field(block, "company"),
+    company,
     city: field(block, "city"),
     state: field(block, "state"),
     country: field(block, "country"),
     remote: /^true$/i.test(field(block, "remote")),
     description: field(block, "description"),
     jobtype: field(block, "jobtype"),
-    website: field(block, "website"),
-    account: workableAccount(url),
+    website,
+    account: workableAccount(website, company),
   };
 }
 

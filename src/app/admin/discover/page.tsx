@@ -28,13 +28,13 @@ interface Row {
   last_found_at: string;
 }
 
-const SOURCE: Record<string, string> = { "workable-feed": "Workable feed", search: "Search" };
+const SOURCE: Record<string, string> = { "workable-feed": "Workable feed", list: "From a list" };
 
 function boardUrl(p: string, id: string) {
   if (p === "greenhouse") return `https://job-boards.greenhouse.io/${id}`;
   if (p === "lever") return `https://jobs.lever.co/${id}`;
   if (p === "ashby") return `https://jobs.ashbyhq.com/${id}`;
-  if (p === "workable") return `https://apply.workable.com/${id}/`;
+  if (p === "workable") return id.startsWith("name:") ? null : `https://${id}`;
   return null;
 }
 

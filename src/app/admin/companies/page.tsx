@@ -50,7 +50,7 @@ function boardUrl(p: string | null, id: string | null) {
   if (p === "ashby") return `https://jobs.ashbyhq.com/${id}`;
   if (p === "workday") return `https://${id}`;
   if (p === "smartrecruiters") return `https://jobs.smartrecruiters.com/${id}`;
-  if (p === "workable") return `https://apply.workable.com/${id}/`;
+  if (p === "workable") return id.startsWith("name:") ? null : `https://${id}`;
   return null;
 }
 
