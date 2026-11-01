@@ -25,8 +25,10 @@ export function FlagChips({ flags, max = 3, inline = false }: { flags: Flag[]; m
   );
 }
 
-/** Traffic-light dot colors. The site's amber and red are tuned for text and look muddy as dots. */
-export const LIGHT = { green: "bg-[#22a35a]", yellow: "bg-[#f5b400]", red: "bg-[#e0352b]" } as const;
+import { LifeMeter } from "./LifeMeter";
+
+import { LIGHT } from "./lights";
+export { LIGHT };
 
 /** What the colors mean, shown once above a list of jobs. */
 export function LightsKey({ className = "" }: { className?: string }) {
@@ -39,6 +41,10 @@ export function LightsKey({ className = "" }: { className?: string }) {
           {text}
         </span>
       ))}
+      <span className="flex items-center gap-1.5">
+        <LifeMeter postedAt={new Date(Date.now() - 35 * 86_400_000).toISOString()} decorative />
+        life meter: drains the longer a job stays open
+      </span>
     </p>
   );
 }

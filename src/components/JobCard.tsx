@@ -6,6 +6,7 @@ import { CompanyLogo } from "./CompanyLogo";
 import { SaveJobButton, HideJobButton } from "./Actions";
 import { MatchBadge, matchShowsOnCard } from "./MatchBadge";
 import { LIGHT, VerdictPill } from "./BraunRead";
+import { LifeMeter } from "./LifeMeter";
 import { braunRead, flagsFromCodes, isHeadsUp, isRedFlag, type Flag } from "@/lib/flags";
 import type { MatchResult } from "@/lib/match";
 import { attainmentLabel } from "@/lib/attainment";
@@ -105,32 +106,6 @@ function Lights({ lights }: { lights: Light[] }) {
  * A job card answers one question: is this worth a click? Title, who and where, the pay, the
  * Braun Read, and what you'd sell in plain English. Tags and the long summary live on the job page.
  */
-/**
- * The life meter: a video-game health bar that drains as a job stays open. Five bars when it's
- * new, one lost about every two weeks. Long-open jobs are worth a question, not a pass.
- */
-const LIFE: { maxDays: number; bars: number; tone: Tone; line: string }[] = [
-  { maxDays: 14, bars: 5, tone: "green", line: "Full health. Just posted." },
-  { maxDays: 30, bars: 4, tone: "green", line: "Still going strong." },
-  { maxDays: 45, bars: 3, tone: "yellow", line: "Taking some hits. Ask how long they've been looking." },
-  { maxDays: 60, bars: 2, tone: "yellow", line: "Health running low. Ask why it's still open." },
-  { maxDays: 90, bars: 1, tone: "red", line: "Last life. Ask why it's been hard to fill." },
-  { maxDays: Infinity, bars: 0, tone: "red", line: "Game over? Still on their site, but open 3+ months." },
-];
-
-export function LifeMeter({ postedAt, now = Date.now() }: { postedAt: string; now?: number }) {
-  const days = Math.max(0, Math.floor((now - new Date(postedAt).getTime()) / 86_400_000));
-  const life = LIFE.find((l) => days <= l.maxDays)!;
-  const label = `${life.line} Open ${days === 1 ? "1 day" : `${days} days`}.`;
-  return (
-    <span className="inline-flex items-center gap-[2px] align-[1px]" title={label} aria-label={label} role="img">
-      {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={`h-2.5 w-[5px] rounded-[1px] ${i < life.bars ? DOT[life.tone] : "bg-line-strong"}`} />
-      ))}
-    </span>
-  );
-}
-
 /** Share of the paycheck that's base, from the middle of each range. Null unless both are listed. */
 function baseShare(job: JobView): number | null {
   if (job.salary_min == null || job.ote_min == null) return null;

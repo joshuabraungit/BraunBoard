@@ -47,7 +47,9 @@ export default async function CompanyPage({ params }: { params: Promise<{ slug: 
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-line bg-surface p-5">
+      {/* Phones: logo and name side by side, the Watch button full width underneath. */}
+      <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-4">
         <CompanyLogo name={company.name} logoUrl={company.logo_url} domain={company.domain} size={56} />
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold tracking-tight">{company.name}</h1>
@@ -62,13 +64,14 @@ export default async function CompanyPage({ params }: { params: Promise<{ slug: 
                 {company.website_url && " · "}
                 <span title={company.size_quote ? `From their posting: "${company.size_quote}"` : company.size_source === "estimate" ? "My best estimate. Not from the company." : undefined}>
                   {SIZE_LABELS[company.size_bucket].label}, {SIZE_LABELS[company.size_bucket].range}
-                  {company.size_source === "estimate" ? " (our estimate)" : ""}
+                  {company.size_source === "estimate" ? " (my estimate)" : ""}
                 </span>
               </>
             )}
           </p>
         </div>
-        <WatchCompanyButton companyId={company.id} on={state.watchedCompanyIds.has(company.id)} back={back} className="rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white aria-pressed:bg-surface aria-pressed:text-fresh aria-pressed:ring-1 aria-pressed:ring-fresh" />
+        </div>
+        <WatchCompanyButton companyId={company.id} on={state.watchedCompanyIds.has(company.id)} back={back} className="w-full shrink-0 rounded-lg bg-ink px-4 sm:w-auto py-2.5 text-sm font-semibold text-white aria-pressed:bg-surface aria-pressed:text-fresh aria-pressed:ring-1 aria-pressed:ring-fresh" />
       </div>
 
       {stats && (

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { getCompanyStats, getJob, getRoleSiblings } from "@/lib/data";
 import { braunRead } from "@/lib/flags";
 import { BraunReadPanel } from "@/components/BraunRead";
+import { LifeMeter, lifeFor } from "@/components/LifeMeter";
 import { checkedLabel, freshnessLabel } from "@/lib/freshness";
 import { questionsFor } from "@/lib/questions";
 import { ATTAINMENT_ROLES, attainmentLabel } from "@/lib/attainment";
@@ -100,6 +101,10 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
           <h1 className="text-2xl font-bold leading-tight tracking-tight">{job.title_raw}</h1>
           <p className="text-ink-2">
             <Link href={`/company/${job.company_slug}`} className="font-medium text-ink hover:underline">{job.company_name}</Link> · {formatLocation(job)}
+          </p>
+          {/* The life meter, with its line spelled out (on cards it's a hover, which phones don't have). */}
+          <p className="mt-1 flex items-center gap-2 text-sm text-ink-2">
+            <LifeMeter postedAt={job.first_seen_at} /> {lifeFor(job.first_seen_at).line}
           </p>
           {siblings.length > 0 && (
             <p className="mt-1 text-sm text-ink-3">
