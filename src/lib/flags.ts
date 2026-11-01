@@ -82,6 +82,15 @@ const RULES: Rule[] = [
     test: (t) => /\bclaw[- ]?backs?\b/.test(t),
   },
   {
+    code: "german_required",
+    tone: "red",
+    label: "German required",
+    why: "The posting asks for fluent German. Worth knowing before you apply if you only sell in English.",
+    scored: false,
+    test: (t) =>
+      /\b(fluent|fluency|native|business[- ]level|business[- ]fluent|proficien\w*|excellent)\b[^.]{0,40}\bgerman\b|\bgerman\b[^.]{0,25}\b(fluent|fluency|native|required|essential|mandatory|a must)\b|\bgerman[- ]speaking\b|\bdeutschsprachig/.test(t),
+  },
+  {
     code: "many_hats",
     tone: "red",
     label: "\"Wear many hats\"",

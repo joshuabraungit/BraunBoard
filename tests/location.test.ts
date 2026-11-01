@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cleanCity, parseLocation } from "../src/lib/ingest/location";
-import { titleNamesCanadaOnly, titleNamesForeignOnly } from "../src/lib/ingest/location";
+import { titleNamesCanadaOnly, titleNamesForeignOnly, titleNamesGermanyOnly, titleOutOfMarket } from "../src/lib/ingest/location";
 
 describe("parseLocation", () => {
   it.each([
@@ -91,8 +91,8 @@ describe("Canada", () => {
   });
   it("still drops the rest of the world", () => {
     expect(parseLocation("Remote - Colombia").markets).toEqual([]);
-    expect(parseLocation("Berlin, Germany").markets).toEqual([]);
     expect(parseLocation("Dublin, Ireland").markets).toEqual([]);
+    expect(parseLocation("Vienna, Austria").markets).toEqual([]);
   });
   it("spots Canada-only titles", () => {
     expect(titleNamesCanadaOnly("Senior Majors Account Executive, Toronto")).toBe(true);
@@ -121,5 +121,53 @@ describe("cities as people write them", () => {
     expect(cleanCity("1200 Some Rd Suite 4")).toBeNull();
     expect(cleanCity("St. Louis")).toBe("St. Louis");
     expect(cleanCity("Bay Area")).toBe("Bay Area");
+  });
+});
+
+describe("Germany", () => {
+  it.each([
+    ["Berlin, Germany", "Berlin"],
+    ["Munich", "Munich"],
+    ["München, Deutschland", "Munich"],
+    ["Köln", "Cologne"],
+    ["Hamburg based", "Hamburg"],
+    ["Munich, DE", "Munich"],
+  ])("%s -> Germany, %s", (raw, city) => {
+    const p = parseLocation(raw);
+    expect(p.markets).toEqual(["DE"]);
+    expect(p.city).toBe(city);
+    expect(p.country).toBe("DE");
+  });
+  it("reads DACH and remote Germany", () => {
+    expect(parseLocation("Remote - Germany").markets).toEqual(["DE"]);
+    expect(parseLocation("DACH").markets).toEqual(["DE"]);
+    expect(parseLocation("Remote", { country: "Germany" }).markets).toEqual(["DE"]);
+  });
+  it("keeps US towns with German names in the US", () => {
+    expect(parseLocation("Hamburg, NY").markets).toEqual(["US"]);
+    expect(parseLocation("Berlin, CT").markets).not.toContain("DE");
+    expect(parseLocation("Wilmington, DE").markets).toEqual(["US"]);
+    expect(parseLocation("Hanover, NH").markets).toEqual(["US"]);
+  });
+  it("handles multi-country listings", () => {
+    expect(parseLocation("London / Berlin").markets).toEqual(["UK", "DE"]);
+    expect(parseLocation("Berlin / Lisbon").markets).toEqual(["DE"]);
+    expect(parseLocation("New York; Munich").markets).toEqual(["US", "DE"]);
+  });
+  it("drops Germany-based roles that cover another continent", () => {
+    expect(titleOutOfMarket("Account Executive, APAC", ["DE"])).toBe(true);
+    expect(titleOutOfMarket("Enterprise Account Executive, DACH", ["DE"])).toBe(false);
+  });
+});
+
+describe("Germany-only titles", () => {
+  it.each([
+    ["Enterprise Account Executive, DACH", true],
+    ["Field Account Executive - München", true],
+    ["Account Executive, US", false],
+    ["Account Executive, UK & DACH", false],
+    ["Account Executive", false],
+  ])("%s -> %s", (t, want) => {
+    expect(titleNamesGermanyOnly(t)).toBe(want);
   });
 });

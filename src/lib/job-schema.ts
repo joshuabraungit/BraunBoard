@@ -8,6 +8,7 @@ const COUNTRY: Record<string, { code: string; name: string }> = {
   US: { code: "US", name: "United States" },
   CA: { code: "CA", name: "Canada" },
   UK: { code: "GB", name: "United Kingdom" },
+  DE: { code: "DE", name: "Germany" },
 };
 
 /** Google's employment types, from whatever the careers site wrote ("FullTime", "Regular - Full Time"...). */
@@ -45,7 +46,7 @@ export function postingHtml(text: string): string {
 
 export function jobPostingSchema(job: JobView & { employment_type?: string | null }, siteUrl: string): Record<string, unknown> {
   const markets = job.markets?.length ? job.markets : ["US"];
-  const primary = COUNTRY[markets.includes("US") ? "US" : markets.includes("CA") ? "CA" : "UK"] ?? COUNTRY.US;
+  const primary = COUNTRY[markets.includes("US") ? "US" : markets.includes("CA") ? "CA" : markets.includes("UK") ? "UK" : "DE"] ?? COUNTRY.US;
   const text = job.description_raw?.trim() || job.summary?.trim() || `${job.title_raw} at ${job.company_name}.`;
 
   const schema: Record<string, unknown> = {

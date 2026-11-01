@@ -18,7 +18,7 @@ export interface WatchPrefs {
   min_ote: number | null;
   dealbreakers: Dealbreaker[];
   /** Where the person can work. Missing = US (every watch made before Canada and UK support). */
-  countries?: ("US" | "CA" | "UK")[];
+  countries?: ("US" | "CA" | "UK" | "DE")[];
   /** Company sizes they want ("startup", "growth", "large", "enterprise"). Empty or missing = any size. */
   company_sizes?: SizeBucket[];
   /** Words for who they've sold to, like ["restaurant", "logistic"]. Only ever boosts a match. */

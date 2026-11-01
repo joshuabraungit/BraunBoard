@@ -3,7 +3,7 @@
 // until they sign in.
 
 import { z } from "zod";
-import { GBP_TO_USD } from "./ingest/compensation";
+import { EUR_TO_USD, GBP_TO_USD } from "./ingest/compensation";
 import { DEALBREAKERS, experienceTerms, type WatchPrefs } from "./match";
 import { SIZE_BUCKETS, SIZE_LABELS } from "./ingest/size";
 import { REMOTE_TYPES, ROLE_FAMILIES, SALES_MOTIONS, SALES_SEGMENTS, type RoleFamily, type SalesSegment } from "./ingest/types";
@@ -23,7 +23,7 @@ export const ROLE_CHOICES = {
 export type RoleChoice = keyof typeof ROLE_CHOICES;
 
 export const WORK_CHOICES = { remote: "Remote", hybrid: "Hybrid", office: "Office", any: "Any" } as const;
-export const COUNTRY_CHOICES = { US: "United States", CA: "Canada", both: "US or Canada", UK: "United Kingdom" } as const;
+export const COUNTRY_CHOICES = { US: "United States", CA: "Canada", both: "US or Canada", UK: "United Kingdom", DE: "Germany" } as const;
 export const MOTION_CHOICES = { new: "New business", expansion: "Expansion", either: "Either" } as const;
 
 export const OnboardingAnswers = z.object({
@@ -32,7 +32,7 @@ export const OnboardingAnswers = z.object({
   min_ote: z.number().int().positive().nullable(),
   work: z.enum(["remote", "hybrid", "office", "any"]),
   location: z.string().max(80).default(""),
-  country: z.enum(["US", "CA", "both", "UK"]).default("US"),
+  country: z.enum(["US", "CA", "both", "UK", "DE"]).default("US"),
   motion: z.enum(["new", "expansion", "either"]),
   dealbreakers: z.array(z.enum(DEALBREAKERS)).default([]),
   sizes: z.array(z.enum(SIZE_BUCKETS)).default([]),
@@ -55,16 +55,17 @@ export const StoredWatch = z.object({
     min_base: z.number().nullable(),
     min_ote: z.number().nullable(),
     dealbreakers: z.array(z.enum(DEALBREAKERS)),
-    countries: z.array(z.enum(["US", "CA", "UK"])).optional(),
+    countries: z.array(z.enum(["US", "CA", "UK", "DE"])).optional(),
     company_sizes: z.array(z.enum(SIZE_BUCKETS)).optional(),
     experience: z.array(z.string()).optional(),
   }),
 });
 export type StoredWatch = z.infer<typeof StoredWatch>;
 
-/** Pay answers are in pounds for UK watches, dollars otherwise. */
-export const payRate = (a: Pick<OnboardingAnswers, "country">) => (a.country === "UK" ? GBP_TO_USD : 1);
-export const paySymbol = (a: Pick<OnboardingAnswers, "country">) => (a.country === "UK" ? "£" : "$");
+/** Pay answers are in pounds for UK watches, euros for Germany, dollars otherwise. */
+export const payCurrencyFor = (country: OnboardingAnswers["country"]) => (country === "UK" ? "gbp" : country === "DE" ? "eur" : "usd");
+export const payRate = (a: Pick<OnboardingAnswers, "country">) => (a.country === "UK" ? GBP_TO_USD : a.country === "DE" ? EUR_TO_USD : 1);
+export const paySymbol = (a: Pick<OnboardingAnswers, "country">) => (a.country === "UK" ? "£" : a.country === "DE" ? "€" : "$");
 
 export function answersToPrefs(a: OnboardingAnswers): WatchPrefs {
   const choices = a.roles.map((r) => ROLE_CHOICES[r]);
@@ -85,7 +86,7 @@ export function answersToPrefs(a: OnboardingAnswers): WatchPrefs {
       .map((s) => s.trim())
       .filter(Boolean),
     keywords: [],
-    // UK answers are in pounds; matching compares in USD.
+    // UK and Germany answers are in pounds and euros; matching compares in USD.
     min_base: a.min_base == null ? null : Math.round(a.min_base * payRate(a)),
     min_ote: a.min_ote == null ? null : Math.round(a.min_ote * payRate(a)),
     dealbreakers: a.dealbreakers,
@@ -101,6 +102,7 @@ export function defaultWatchName(a: OnboardingAnswers): string {
   const parts = [roles.slice(0, 2).join(" / ") + (roles.length > 2 ? " +" : "")];
   if (a.work !== "any") parts.push(WORK_CHOICES[a.work]);
   if (a.country === "UK") parts.push("UK");
+  if (a.country === "DE") parts.push("Germany");
   if (a.sizes?.length && a.sizes.length < 4) parts.push(a.sizes.map((b) => SIZE_LABELS[b].label).join(" / "));
   if (a.min_ote) parts.push(`${paySymbol(a)}${Math.round(a.min_ote / 1000)}K+ OTE`);
   else if (a.min_base) parts.push(`${paySymbol(a)}${Math.round(a.min_base / 1000)}K+ base`);

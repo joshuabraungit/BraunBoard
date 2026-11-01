@@ -13,9 +13,21 @@ export interface Compensation {
 const EMPTY: Compensation = { salary_min: null, salary_max: null, ote_min: null, ote_max: null, currency: null };
 
 // $150,000 - $175,000 | $150K–$175K | $150k to $175k | USD 150,000 - 175,000
-// The currency symbol is a parameter: "$" for US / Canada jobs, "£" for UK jobs.
+// The currency symbol is a parameter: "$" for US / Canada jobs, "£" for UK jobs, "€" for Germany.
+export type PaySymbol = "$" | "£" | "€";
 const FIG = String.raw`(\d{2,3}(?:,\d{3})+|\d{2,3}(?:\.\d+)?\s?[kK])`;
-function payRegexes(sym: "$" | "£") {
+// Euro postings write thousands either way: "€196.000" (German) or "€196,000".
+const FIG_EUR = String.raw`(\d{2,3}(?:[.,]\d{3})+|\d{2,3}(?:[.,]\d+)?\s?[kK])`;
+function payRegexes(sym: PaySymbol) {
+  if (sym === "€") {
+    const s = String.raw`(?:EUR\s*)?€?`;
+    // The euro sign often comes after the number: "196.000 € - 270.000 €".
+    const after = String.raw`(?:\s?(?:€|EUR\b))?`;
+    return {
+      range: new RegExp(String.raw`${s}\s?${FIG_EUR}${after}\s*(?:-|–|—|to|bis)\s*${s}\s?${FIG_EUR}`, "g"),
+      single: new RegExp(String.raw`(?:(?:€|EUR\s?)\s?${FIG_EUR}|${FIG_EUR}\s?(?:€|EUR\b))`, "g"),
+    };
+  }
   const s = sym === "$" ? String.raw`(?:USD\s*)?\$?` : String.raw`(?:GBP\s*)?£?`;
   const strict = sym === "$" ? String.raw`\$` : String.raw`(?:£|GBP\s?)`;
   return {
@@ -24,13 +36,18 @@ function payRegexes(sym: "$" | "£") {
     single: new RegExp(String.raw`${strict}\s?${FIG}`, "g"),
   };
 }
-const PAY = { $: payRegexes("$"), "£": payRegexes("£") };
+const PAY = { $: payRegexes("$"), "£": payRegexes("£"), "€": payRegexes("€") };
 
 const OTE_WORDS = /\b(ote|on[- ]target[- ]earnings?|on[- ]target compensation|target(ed)? total (cash|compensation)|total target(ed)? (cash|compensation))\b/i;
 const BASE_WORDS = /\b(base|base salary|base pay|salary range|annual salary)\b/i;
 
 function toNumber(s: string): number {
-  const t = s.replace(/[\s,$£]/g, "").toLowerCase();
+  let t = s.replace(/\s/g, "").toLowerCase();
+  // "196.000" is a German thousands separator, not a decimal.
+  if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, "");
+  // "196,5k" is a German decimal comma.
+  if (/^\d{1,3},\d{1,2}k$/.test(t)) t = t.replace(",", ".");
+  t = t.replace(/[,$£€]/g, "");
   return t.endsWith("k") ? Math.round(parseFloat(t) * 1000) : parseInt(t, 10);
 }
 
@@ -63,7 +80,7 @@ interface Found {
 }
 
 /** Finds explicitly labeled pay figures in description text. */
-export function findPayInText(raw: string, sym: "$" | "£" = "$"): Found[] {
+export function findPayInText(raw: string, sym: PaySymbol = "$"): Found[] {
   // Line breaks sit between labels and figures ("Pay Range\n$151,351"): read it as one line.
   const text = raw.replace(/\s+/g, " ");
   const { range: RANGE, single: SINGLE } = PAY[sym];
@@ -78,9 +95,9 @@ export function findPayInText(raw: string, sym: "$" | "£" = "$"): Found[] {
     // "Base salary: $71K - $77K On-target earnings (OTE): $102K - $111K".
     // A heading-style label: "... range", "OTE", "on-target earnings", or anything ending in a colon.
     const labelsNext =
-      /^[\s,.;|(]*[a-z -]{0,40}\b(range|ote|on[- ]target earnings?)\b\s*(\([^()$£]{0,30}\))?\s*:?\s*(USD\s*)?[$£]?\d/i.test(after) ||
-      /^[\s,.;|]*[a-z -]{1,45}(\([a-z]+\))?\s*:\s*(USD\s*)?[$£]?\d/i.test(after);
-    const nearAfter = labelsNext ? "" : after.match(/^[\s(]*(?:(?:usd|cad|gbp)\s+)?([a-z -]{0,50})/i)?.[1] ?? "";
+      /^[\s,.;|(]*[a-z -]{0,40}\b(range|ote|on[- ]target earnings?)\b\s*(\([^()$£€]{0,30}\))?\s*:?\s*(USD\s*|EUR\s*)?[$£€]?\d/i.test(after) ||
+      /^[\s,.;|]*[a-z -]{1,45}(\([a-z]+\))?\s*:\s*(USD\s*|EUR\s*)?[$£€]?\d/i.test(after);
+    const nearAfter = labelsNext ? "" : after.match(/^[\s(]*(?:(?:usd|cad|gbp|eur)\s+)?([a-z -]{0,50})/i)?.[1] ?? "";
     if (new RegExp("^" + OTE_WORDS.source, "i").test(nearAfter)) return "ote";
     // "$74K - $112K total target cash", "$240K-$300K potential total on target earnings"
     if (new RegExp("^(potential |estimated |annual )?(total )?" + OTE_WORDS.source, "i").test(nearAfter)) return "ote";
@@ -113,7 +130,7 @@ export function findPayInText(raw: string, sym: "$" | "£" = "$"): Found[] {
   }
   for (const m of text.matchAll(SINGLE)) {
     if (seen.has(m.index!)) continue;
-    const n = toNumber(m[1]);
+    const n = toNumber(m[1] ?? m[2]);
     if (!plausible(n)) continue;
     const l = label(m.index!, m[0].length);
     // Single figures are only trusted when explicitly labeled: OTE anywhere before, or base right before
@@ -121,7 +138,7 @@ export function findPayInText(raw: string, sym: "$" | "£" = "$"): Found[] {
     if (l === "ote") out.push({ at: m.index!, min: n, max: n, label: "ote" });
     else if (
       l === "base" &&
-      (/\b(salary|base pay|base)( for this (role|position))?\s*(of|is|:)?\s*(USD\s*)?$/i.test(text.slice(Math.max(0, m.index! - 45), m.index!)) ||
+      (/\b(salary|base pay|base)( for this (role|position))?\s*(of|is|:)?\s*(USD\s*|EUR\s*)?$/i.test(text.slice(Math.max(0, m.index! - 45), m.index!)) ||
         /^\s*base\b/i.test(text.slice(m.index! + m[0].length, m.index! + m[0].length + 12)))
     )
       out.push({ at: m.index!, min: n, max: n, label: "base" });
@@ -142,7 +159,7 @@ export function plausibleRange(min: number, max: number): boolean {
 export function resolveCompensation(
   structured: { min: number | null; max: number | null; currency: string | null; isOte?: boolean },
   description: string,
-  sym: "$" | "£" = "$",
+  sym: PaySymbol = "$",
 ): Compensation {
   description = description.replace(/\s+/g, " ");
   const found = findPayInText(description, sym);
@@ -161,7 +178,7 @@ export function resolveCompensation(
     // ("Salary range $185K-$280K" under a paragraph explaining it's the OTE range stays OTE.)
     const separateOte = !!ote && !near(ote);
     const textSaysBase = found.some(
-      (f) => f.label === "base" && near(f) && (separateOte || /\bbase\b[^$£]{0,40}$/i.test(description.slice(Math.max(0, f.at - 60), f.at))),
+      (f) => f.label === "base" && near(f) && (separateOte || /\bbase\b[^$£€]{0,40}$/i.test(description.slice(Math.max(0, f.at - 60), f.at))),
     );
     // The text has its own, different OTE range and calls this one anything but OTE: this one is the base.
     const otherIsOte = separateOte && found.some((f) => f.label !== "ote" && near(f));
@@ -197,7 +214,7 @@ export function resolveCompensation(
     result.salary_min = null;
     result.salary_max = null;
   }
-  if ((result.salary_min ?? result.ote_min) != null && !result.currency) result.currency = sym === "£" ? "GBP" : "USD";
+  if ((result.salary_min ?? result.ote_min) != null && !result.currency) result.currency = sym === "£" ? "GBP" : sym === "€" ? "EUR" : "USD";
   return result;
 }
 
@@ -205,11 +222,12 @@ export function resolveCompensation(
  * Which currency a job's pay is in. The ATS's own currency wins; then an explicit
  * currency in the posting; then the job's market (Canada-only = CAD, UK-only = GBP). Else USD.
  */
-export function payCurrency(structured: string | null | undefined, description: string, markets: readonly string[]): "USD" | "CAD" | "GBP" {
+export function payCurrency(structured: string | null | undefined, description: string, markets: readonly string[]): "USD" | "CAD" | "GBP" | "EUR" {
   const s = structured?.trim().toUpperCase();
-  if (s === "CAD" || s === "USD" || s === "GBP") return s;
+  if (s === "CAD" || s === "USD" || s === "GBP" || s === "EUR") return s;
   const only = markets.length === 1 ? markets[0] : null;
   if (only === "UK") return "GBP";
+  if (only === "DE") return "EUR";
   if (/\b(CAD|CDN)\b|\bC\$|\bCA\$/.test(description)) return markets.includes("US") && /\bUSD\b/.test(description) ? "USD" : "CAD";
   return only === "CA" ? "CAD" : "USD";
 }
@@ -217,6 +235,8 @@ export function payCurrency(structured: string | null | undefined, description: 
 /** Rough USD value for comparing against USD filters. Kept conservative on purpose. */
 export const CAD_TO_USD = 0.72;
 export const GBP_TO_USD = 1.25;
+export const EUR_TO_USD = 1.05;
 
 /** Multiply by this to get a rough USD value. */
-export const toUsdRate = (currency: string | null | undefined) => (currency === "CAD" ? CAD_TO_USD : currency === "GBP" ? GBP_TO_USD : 1);
+export const toUsdRate = (currency: string | null | undefined) =>
+  currency === "CAD" ? CAD_TO_USD : currency === "GBP" ? GBP_TO_USD : currency === "EUR" ? EUR_TO_USD : 1;

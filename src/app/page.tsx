@@ -27,8 +27,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   const market = await visitorMarket();
   const markets = marketsFor(market);
   const uk = market === "UK";
-  // High OTE: $250K+ in USD terms, which is £200K+ for UK jobs.
-  const highOteMin = 250_000;
+  // High OTE: $250K+ in USD terms, which is £200K+ for UK jobs. German pay runs lower, so €165K+ there.
+  const highOteMin = market === "DE" ? 175_000 : 250_000;
   const [newToday, highOte, remoteEnt, state, watch, companies, sponsors] = await Promise.all([
     listJobs({ postedWithinDays: 1, markets }, 6),
     listJobs({ minOte: highOteMin, postedWithinDays: 90, markets }, 6),
