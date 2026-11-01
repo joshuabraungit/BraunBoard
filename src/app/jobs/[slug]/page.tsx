@@ -14,7 +14,6 @@ import { getUser } from "@/lib/session";
 import { loadProductData } from "@/lib/products";
 import { formatComp, formatLocation, money } from "@/lib/format";
 import { CompanyLogo } from "@/components/CompanyLogo";
-import { tagsFor } from "@/components/JobCard";
 import { SaveJobButton, WatchCompanyButton } from "@/components/Actions";
 import { MatchBadge } from "@/components/MatchBadge";
 import { getActiveWatch, getUserState } from "@/lib/session";
@@ -48,13 +47,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-const DISCLOSURE_LABELS: Record<string, string> = {
-  quota_size: "Quota size",
-  quota_attainment: "Quota attainment",
-  average_deal_size: "Average deal size",
-  territory: "Territory",
-  sales_cycle: "Sales cycle length",
-};
 
 function Fact({ label, value, tone }: { label: string; value: string | null; tone?: "good" }) {
   return (
@@ -67,17 +59,10 @@ function Fact({ label, value, tone }: { label: string; value: string | null; ton
 
 const ASK_ATTAINMENT = "What percentage of fully ramped reps hit quota last year?";
 
-function Block({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="border-t border-line py-5">
-      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-2">{title}</h2>
-      <div className="text-[15px] leading-relaxed">{children}</div>
-    </section>
-  );
-}
 
 const range = (a: number | null, b: number | null, cur?: string | null) => (a == null ? null : a === b || b == null ? money(a, cur) : `${money(a, cur)}–${money(b, cur)}`);
 const known = (v: string) => (v === "Unknown" ? null : v);
+const SIZE_WORDS: Record<string, string> = { SMB: "small businesses", "Mid-Market": "medium-size companies", Enterprise: "big companies", Strategic: "a short list of very big companies" };
 
 export default async function JobPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -102,11 +87,6 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
   const saved = state.savedJobIds.has(job.id);
   const btn = "rounded-lg border border-line-strong bg-surface px-4 py-2.5 text-sm font-semibold aria-pressed:border-fresh aria-pressed:text-fresh";
 
-  const notDisclosed = [
-    job.salary_min == null && "Base salary",
-    job.ote_min == null && "OTE",
-    ...Object.entries(DISCLOSURE_LABELS).filter(([k]) => !job.disclosures?.[k as keyof typeof job.disclosures]).map(([, l]) => l),
-  ].filter(Boolean) as string[];
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -188,24 +168,70 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
         <SaveJobButton jobId={job.id} saved={saved} back={back} className={btn} />
       </div>
 
-      {product?.story && (
-        <section className="mt-6 rounded-xl border border-line bg-surface p-4">
-          <h2 className="text-xs font-bold uppercase tracking-wide text-ink-3">What {job.company_name} sells</h2>
-          {product.short && <p className="mt-1.5 font-semibold">{product.short}</p>}
-          <p className="mt-1 text-[15px] leading-relaxed text-ink-2">{product.story}</p>
-          <p className="mt-2 text-xs text-ink-3">
-            In plain English, from their own job posts.{" "}
-            <Link href={`/ask?about=${encodeURIComponent(job.company_name)}`} className="underline underline-offset-2 hover:text-ink">
-              Something wrong? Tell us
-            </Link>
-          </p>
-          {product.category && (
-            <Link href={`/products?cat=${encodeURIComponent(product.category)}`} className="mt-3 inline-block text-sm font-semibold text-accent hover:underline">
-              More {product.category} companies →
-            </Link>
+      {/* The job first: what you'd do, what you'd sell, who you'd sell to, where deals come from. */}
+      <section className="mt-6 rounded-xl border border-line bg-surface p-4 sm:p-5">
+        <h2 className="text-lg font-bold tracking-tight">The job</h2>
+        <dl className="mt-3 space-y-4">
+          {(job.role_plain || job.summary) && (
+            <div>
+              <dt className="text-xs font-bold uppercase tracking-wide text-ink-3">What you&apos;d do</dt>
+              <dd className="mt-1 text-[15px] leading-relaxed">{job.role_plain ?? job.summary}</dd>
+            </div>
           )}
-        </section>
-      )}
+          {product?.story && (
+            <div>
+              <dt className="text-xs font-bold uppercase tracking-wide text-ink-3">What you&apos;d sell</dt>
+              <dd className="mt-1">
+                {product.short && <p className="font-semibold">{product.short}</p>}
+                <p className="mt-1 text-[15px] leading-relaxed text-ink-2">{product.story}</p>
+                <p className="mt-2 text-xs text-ink-3">
+                  In plain English, from their own job posts.{" "}
+                  <Link href={`/ask?about=${encodeURIComponent(job.company_name)}`} className="underline underline-offset-2 hover:text-ink">
+                    Something wrong? Tell me
+                  </Link>
+                  {product.category && (
+                    <>
+                      {" · "}
+                      <Link href={`/products?cat=${encodeURIComponent(product.category)}`} className="font-semibold text-accent hover:underline">
+                        More {product.category} companies →
+                      </Link>
+                    </>
+                  )}
+                </p>
+              </dd>
+            </div>
+          )}
+          <div>
+            <dt className="text-xs font-bold uppercase tracking-wide text-ink-3">Who you&apos;d sell to</dt>
+            <dd className="mt-1 text-[15px]">
+              {job.buyer ? (
+                <>
+                  {job.buyer}
+                  {job.industry && <span className="text-ink-2"> · {job.industry}</span>}
+                  {(known(job.customer_segment) ?? known(job.sales_segment)) && <span className="text-ink-2"> · {SIZE_WORDS[(known(job.customer_segment) ?? known(job.sales_segment))!] ?? known(job.customer_segment) ?? known(job.sales_segment)}</span>}
+                  <span className="mt-0.5 block text-sm text-ink-3">In their words: &ldquo;{job.buyer_quote}&rdquo;</span>
+                </>
+              ) : job.buyer_checked_at ? (
+                <>
+                  <span className="text-ink-3">Not stated in the posting.</span>
+                  <span className="mt-0.5 block text-sm text-ink-2">Ask: &ldquo;Who&apos;s the economic buyer, and who else is in the deal?&rdquo;</span>
+                </>
+              ) : (
+                <span className="text-ink-3">Still reading the posting. Check back within the hour.</span>
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-bold uppercase tracking-wide text-ink-3">Where deals come from</dt>
+            <dd className="mt-1 text-[15px]">
+              {job.self_sourcing_level === "High" && "Mostly you. Expect a lot of outbound: cold calls, emails and LinkedIn."}
+              {job.self_sourcing_level === "Medium" && "A mix. Some leads come to you, some you find yourself."}
+              {job.self_sourcing_level === "Low" && "Mostly handed to you: inbound leads or a set list of customers."}
+              {job.self_sourcing_level === "Unknown" && <span className="text-ink-3">Not stated in the posting.</span>}
+            </dd>
+          </div>
+        </dl>
+      </section>
 
       <BraunReadPanel read={read} />
 
@@ -236,70 +262,6 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
       )}
 
       <div className="mt-6">
-        <Block title="The role">
-          <p>{job.summary ?? `${job.role_family}${known(job.sales_segment) ? `, ${job.sales_segment}` : ""}.`}</p>
-          {tagsFor(job).length > 0 && <p className="mt-2 text-sm text-ink-2">{tagsFor(job).join(" · ")}</p>}
-        </Block>
-        <Block title="Selling motion">{known(job.sales_motion) ?? <span className="text-ink-3">Not stated in the posting.</span>}</Block>
-        <Block title="Who you're selling to">
-          <dl className="space-y-2.5">
-            <div>
-              <dt className="inline font-semibold">Buyer: </dt>
-              <dd className="inline">
-                {job.buyer ? (
-                  <>
-                    {job.buyer}
-                    <span className="mt-0.5 block text-sm text-ink-3">In their words: &ldquo;{job.buyer_quote}&rdquo;</span>
-                  </>
-                ) : job.buyer_checked_at ? (
-                  <>
-                    <span className="text-ink-3">Not stated in the posting.</span>
-                    <span className="mt-0.5 block text-sm text-ink-2">Ask: &ldquo;Who&apos;s the economic buyer, and who else is in the deal?&rdquo;</span>
-                  </>
-                ) : (
-                  <span className="text-ink-3">Still reading the posting. Check back within the hour.</span>
-                )}
-              </dd>
-            </div>
-            {job.industry && (
-              <div>
-                <dt className="inline font-semibold">Industry: </dt>
-                <dd className="inline">
-                  {job.industry}
-                  <span className="mt-0.5 block text-sm text-ink-3">In their words: &ldquo;{job.industry_quote}&rdquo;</span>
-                </dd>
-              </div>
-            )}
-            {(known(job.customer_segment) ?? known(job.sales_segment)) && (
-              <div>
-                <dt className="inline font-semibold">Company size: </dt>
-                <dd className="inline">{known(job.customer_segment) ?? known(job.sales_segment)}</dd>
-              </div>
-            )}
-          </dl>
-        </Block>
-        <Block title="Pipeline expectations">
-          {job.self_sourcing_level === "High" && "Mostly self-sourced. Expect a lot of outbound."}
-          {job.self_sourcing_level === "Medium" && "A mix of self-sourced pipeline and inbound / SDR support."}
-          {job.self_sourcing_level === "Low" && "Mostly inbound or an assigned book of business."}
-          {job.self_sourcing_level === "Unknown" && <span className="text-ink-3">Not stated in the posting.</span>}
-        </Block>
-        <Block title="Compensation">{formatComp(job) || <span className="text-ink-3">The posting doesn&apos;t list pay.</span>}</Block>
-        <Block title="What is not disclosed">
-          {notDisclosed.length ? (
-            <>
-              <p className="text-ink-2">This posting doesn&apos;t tell you:</p>
-              <ul className="mt-2 flex flex-wrap gap-1.5">
-                {notDisclosed.map((d) => (
-                  <li key={d} className="rounded border border-line bg-surface px-2 py-0.5 text-sm">{d}</li>
-                ))}
-              </ul>
-              <p className="mt-3 text-sm text-ink-3">The questions above cover the big ones.</p>
-            </>
-          ) : (
-            "This posting is unusually transparent. Nice."
-          )}
-        </Block>
         {job.description_raw && (
           <details className="border-t border-line py-5">
             <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-ink-2">Full posting</summary>

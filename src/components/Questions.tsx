@@ -21,11 +21,13 @@ export function QuestionsPanel({ questions, title, company, roleFamily }: { ques
       <p className="mt-1 text-sm text-ink-3">Built from what this posting leaves out. How they answer tells you as much as what they say.</p>
       <QuestionList questions={questions} />
 
-      <div className="mt-5 border-t border-line pt-4">
-        <h3 className="font-bold">When the offer comes</h3>
+      <details className="group mt-5 border-t border-line pt-4">
+        <summary className="flex cursor-pointer list-none items-center gap-1.5 font-bold [&::-webkit-details-marker]:hidden">
+          <span className="text-ink-3 transition group-open:rotate-90">›</span> When the offer comes
+        </summary>
         <p className="mt-1 text-sm text-ink-3">Save these for later. They land better once they&apos;ve said yes to you.</p>
         <QuestionList questions={OFFER_QUESTIONS} />
-      </div>
+      </details>
       <p className="mt-5 text-sm">
         <Link href="/kit?from=job-page#top-five" className="font-semibold text-accent hover:underline">
           Josh&apos;s top five questions for any sales interview →

@@ -1,0 +1,29 @@
+name: What you'd do (plain English)
+
+# Writes the plain-English "what you'd do" line for jobs that don't have one.
+# New jobs get it when crawled; the hourly run also catches up a batch.
+on:
+  workflow_dispatch:
+    inputs:
+      max:
+        description: "Max jobs"
+        default: "500"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - env:
+          MAX: ${{ inputs.max }}
+        run: npx tsx scripts/role-plain-backfill.ts "$MAX"

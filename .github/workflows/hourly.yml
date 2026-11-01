@@ -48,6 +48,9 @@ jobs:
       - name: Who you're selling to (new jobs)
         if: always()
         run: npx tsx scripts/buyer-backfill.ts 300
+      - name: What you'd do (jobs missing it)
+        if: always()
+        run: npx tsx scripts/role-plain-backfill.ts 150
       - name: What they sell (new and stale companies)
         if: always()
         run: npx tsx scripts/product-backfill.ts 40

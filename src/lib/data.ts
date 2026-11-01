@@ -63,6 +63,8 @@ export interface JobView {
   role_group?: string | null;
   /** The company's plain-English "what they sell" headline, when one's been written. */
   company_sells?: string | null;
+  /** The job itself in plain English ("what you'd do"), job page only. */
+  role_plain?: string | null;
 }
 
 export interface CompanyView {
@@ -211,11 +213,11 @@ export async function getJob(slug: string): Promise<JobView | null> {
   return cachedJob(slug);
 }
 
-const cachedJob = unstable_cache(fetchJob, ["job-v1"], { revalidate: JOB_CACHE_SECONDS, tags: ["jobs"] });
+const cachedJob = unstable_cache(fetchJob, ["job-v2"], { revalidate: JOB_CACHE_SECONDS, tags: ["jobs"] });
 
 async function fetchJob(slug: string): Promise<JobView | null> {
   const db = publicClient();
-  const { data } = await db.from("visible_jobs").select(`${CARD_COLUMNS}, description_raw, employment_type, last_seen_at, buyer, buyer_quote, industry, industry_quote, buyer_checked_at`).eq("slug", slug).maybeSingle();
+  const { data } = await db.from("visible_jobs").select(`${CARD_COLUMNS}, description_raw, employment_type, last_seen_at, buyer, buyer_quote, industry, industry_quote, buyer_checked_at, role_plain`).eq("slug", slug).maybeSingle();
   return (data as unknown as JobView) ?? null;
 }
 

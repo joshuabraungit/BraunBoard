@@ -10,6 +10,7 @@ import { classifyTitle, isTalentPool, stripGenderTag, writtenInGerman } from "./
 import { canadaPlaceFromTitle, germanyPlaceFrom, parseLocation, titleNamesGermanyOnly, titleNamesCanadaOnly, namesForeignPlace, titleNamesUkOnly, titleOutOfMarket, descriptionPlacesRoleAbroad, ukPlaceFromTitle, type Market, type ParsedLocation } from "./location";
 import { payCurrency, resolveCompensation } from "./compensation";
 import { extractAttributes } from "./extract";
+import { plainRole } from "./role-plain";
 import { dedupeKey, descriptionSimilarity, DUPLICATE_THRESHOLD, normalizeLocationKey, sameRole } from "./dedupe";
 import type { AtsProvider, CompanyRef, RawJob } from "./types";
 import { ENABLED_PROVIDERS } from "./providers";
@@ -248,6 +249,11 @@ async function insertNewJob(
 ): Promise<string | null> {
   const comp = await payFor(company, job, loc);
   const attrs = await extractAttributes(job.title, job.description, cls);
+  // The job in plain English for the job page. Optional: the catch-up script retries misses.
+  const rolePlain = await plainRole(job.title, job.description).then(
+    (v) => ({ role_plain: v, role_plain_checked_at: new Date().toISOString() }),
+    () => ({}),
+  );
   const locKey = normalizeLocationKey(loc.city, loc.state, loc.remote_type);
   const key = dedupeKey(company.id, cls.title_normalized, locKey);
 
@@ -331,6 +337,7 @@ async function insertNewJob(
       description_raw: job.description,
       source_posted_at: job.posted_at ?? null,
       summary: attrs.summary,
+      ...rolePlain,
       disclosures: attrs.disclosures,
       sales_motion: attrs.sales_motion,
       self_sourcing_level: attrs.self_sourcing_level,
