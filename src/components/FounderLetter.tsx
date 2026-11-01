@@ -52,6 +52,9 @@ export function FounderLetter() {
             <div>
               <p className="font-semibold leading-tight">Josh Braun</p>
               <p className="text-sm italic text-ink-2">Founder, Braun Board</p>
+              <p className="text-sm text-ink-2">
+                <a href="tel:+19546950844" className="underline decoration-line-strong underline-offset-2 hover:decoration-ink">954-695-0844</a>
+              </p>
             </div>
           </div>
         </div>
