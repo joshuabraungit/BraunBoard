@@ -1,6 +1,8 @@
 // "Who you're selling to": the buyer and industry, only as the posting states them.
 // Every answer must come with a quote that really appears in the posting, or it's dropped.
 
+import { plainBuyer } from "./buyer-plain";
+
 export interface BuyerInfo {
   buyer: string | null;
   buyer_quote: string | null;
@@ -16,7 +18,7 @@ Answer one question: who does this rep sell to?
 Return ONLY a JSON object:
 {
   "buyer": the specific job titles, departments or kinds of customer the rep sells to, in plain words.
-           Good: "CFOs and finance teams", "CISOs and security teams", "Support and CX leaders", "Developers and engineering leaders",
+           Good: "CFOs and finance teams", "Heads of security and security teams", "Customer support leaders", "Developers and engineering leaders",
            "Procurement, finance, IT and legal", "Restaurant owners", "Small business owners", "Lenders", "Ad agencies".
            Keep it under 10 words: who they are, not the company size. Null if the posting doesn't name one.
   "buyer_quote": the exact words from the posting that support "buyer", copied character for character (max 200 chars). Null if buyer is null.
@@ -106,5 +108,8 @@ export async function extractBuyer(title: string, description: string, key = pro
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const data = (await res.json()) as { content: { type: string; text?: string }[] };
   const text = data.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("");
-  return cleanBuyer(firstJsonObject(text) as Partial<BuyerInfo>, description);
+  const out = cleanBuyer(firstJsonObject(text) as Partial<BuyerInfo>, description);
+  // Shorthand like "CISOs" or "AI/ML teams" gets rewritten in plain words; the quote keeps the posting's own.
+  if (out.buyer) out.buyer = await plainBuyer(out.buyer, key).catch(() => out.buyer);
+  return out;
 }
