@@ -8,6 +8,7 @@ function Toggle({
   back,
   labels,
   className,
+  ariaLabel,
 }: {
   action: (fd: FormData) => Promise<void>;
   id: string;
@@ -15,27 +16,29 @@ function Toggle({
   back: string;
   labels: [string, string];
   className?: string;
+  ariaLabel?: string;
 }) {
   return (
     <form action={action} className="contents">
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="on" value={on ? "1" : "0"} />
       <input type="hidden" name="back" value={back} />
-      <button className={className} aria-pressed={on}>
+      <button className={className} aria-pressed={on} aria-label={ariaLabel} title={ariaLabel}>
         {on ? labels[1] : labels[0]}
       </button>
     </form>
   );
 }
 
-export function SaveJobButton(p: { jobId: string; saved: boolean; back: string; className?: string; compact?: boolean }) {
+export function SaveJobButton(p: { jobId: string; saved: boolean; back: string; className?: string; compact?: boolean; icon?: boolean }) {
   return (
     <Toggle
       action={toggleSaveJob}
       id={p.jobId}
       on={p.saved}
       back={p.back}
-      labels={p.compact ? ["♡ Save", "♥ Saved"] : ["Save Job", "♥ Saved"]}
+      labels={p.icon ? ["♡", "♥"] : p.compact ? ["♡ Save", "♥ Saved"] : ["Save Job", "♥ Saved"]}
+      ariaLabel={p.icon ? (p.saved ? "Saved. Tap to unsave" : "Save this job") : undefined}
       className={p.className}
     />
   );

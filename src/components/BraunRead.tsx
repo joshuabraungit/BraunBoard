@@ -8,12 +8,12 @@ const CHIP = {
 const chipFor = (f: Flag) => (isRedFlag(f) ? CHIP.red : isHeadsUp(f) ? CHIP.headsUp : CHIP.green);
 
 /** Compact chips for job cards. Red first, capped so cards stay calm. */
-export function FlagChips({ flags, max = 3 }: { flags: Flag[]; max?: number }) {
+export function FlagChips({ flags, max = 3, inline = false }: { flags: Flag[]; max?: number; inline?: boolean }) {
   if (!flags.length) return null;
   const shown = flags.slice(0, max);
-  const more = flags.length - shown.length;
+  const more = inline ? 0 : flags.length - shown.length;
   return (
-    <div className="mt-3 flex flex-wrap gap-1.5">
+    <div className={inline ? "contents" : "mt-3 flex flex-wrap gap-1.5"}>
       {shown.map((f) => (
         <span key={f.code} title={f.why} className={`rounded border px-1.5 py-0.5 text-xs font-medium ${chipFor(f).cls}`}>
           {chipFor(f).icon}

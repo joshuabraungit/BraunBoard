@@ -29,6 +29,16 @@ export function tagsFor(j: Pick<JobView, "sales_segment" | "sales_motion" | "sel
   return t;
 }
 
+/** The one light worth showing on a card: real attainment numbers first, then the most telling flag. */
+function topLight(job: JobView) {
+  if (job.attainment?.kind === "hit") return <span title={`In their words: "${job.attainment.quote}"`} className="rounded border border-accent/25 bg-accent-soft px-1.5 py-0.5 text-xs font-semibold text-accent">✓ {attainmentLabel(job.attainment)}</span>;
+  return <FlagChips flags={cardFlags(flagsFromCodes(job.flags))} max={1} inline />;
+}
+
+/**
+ * A job card answers one question: is this worth a click? Title, who and where, the pay, the
+ * Braun Read, and what you'd sell in plain English. Tags and the long summary live on the job page.
+ */
 export function JobCard({ job, ctx, openings = 1, locations = 1 }: { job: JobView; ctx: CardContext; openings?: number; locations?: number }) {
   const more = openingsLabel({ openings, locations });
   const comp = formatComp(job);
@@ -43,55 +53,41 @@ export function JobCard({ job, ctx, openings = 1, locations = 1 }: { job: JobVie
             {job.title_raw}
           </Link>
         </h3>
-        <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${fresh ? "bg-fresh-soft text-fresh" : "text-ink-3"}`}
-        >
-          {freshnessLabel(job.first_seen_at)}
-        </span>
-      </div>
-      <p className="mt-0.5 text-sm text-ink-2">
-        {formatLocation(job)}
-        {more && <span className="font-medium text-ink"> · {more}</span>}
-      </p>
-
-      <p className={`mt-3 text-[15px] font-semibold ${comp ? "text-accent" : "text-ink-3 font-normal text-sm"}`}>
-        {comp || "Compensation not listed"}
-      </p>
-
-      <div className="mt-3 flex items-center gap-2">
-        <CompanyLogo name={job.company_name} logoUrl={job.company_logo_url} domain={job.company_domain} size={24} />
-        <span className="text-sm font-medium">{job.company_name}</span>
-      </div>
-
-      <div className="mt-3">
-        <span className="mr-1.5 text-xs text-ink-3">Braun Read:</span>
-        <VerdictPill verdict={read.verdict} />
-      </div>
-
-      {tagsFor(job).length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {tagsFor(job).map((t) => (
-            <span key={t} className="rounded border border-line px-1.5 py-0.5 text-xs text-ink-2">
-              {t}
-            </span>
-          ))}
+        <div className="relative z-10 -mr-1 -mt-1 flex shrink-0 items-center">
+          <SaveJobButton
+            jobId={job.id}
+            saved={!!ctx.savedJobIds?.has(job.id)}
+            back={ctx.back}
+            icon
+            className="rounded-full px-2 py-0.5 text-lg leading-none text-ink-3 hover:text-ink aria-pressed:text-fresh"
+          />
         </div>
-      )}
+      </div>
 
-      {job.attainment && (
-        <p className="mt-3">
-          <span
-            title={`In their words: "${job.attainment.quote}"`}
-            className={`rounded border px-1.5 py-0.5 text-xs font-semibold ${job.attainment.kind === "hit" ? "border-accent/25 bg-accent-soft text-accent" : "border-line-strong bg-surface text-ink-2"}`}
-          >
-            {job.attainment.kind === "hit" ? "✓ " : ""}
-            {attainmentLabel(job.attainment)}
-          </span>
+      <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-2">
+        <CompanyLogo name={job.company_name} logoUrl={job.company_logo_url} domain={job.company_domain} size={18} />
+        <span className="min-w-0">
+          <span className="font-medium text-ink">{job.company_name}</span> · {formatLocation(job)} ·{" "}
+          <span className={fresh ? "font-medium text-fresh" : ""}>{freshnessLabel(job.first_seen_at)}</span>
+          {more && <span className="font-medium text-ink"> · {more}</span>}
+        </span>
+      </p>
+
+      <p className={`mt-2 text-[15px] font-semibold ${comp ? "text-accent" : "text-sm font-normal text-ink-3"}`}>
+        {comp || "Pay not listed"}
+      </p>
+
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <VerdictPill verdict={read.verdict} />
+        {topLight(job)}
+      </div>
+
+      {job.company_sells && (
+        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink-2">
+          <span className="text-ink-3">Sells: </span>
+          {job.company_sells}
         </p>
       )}
-      <FlagChips flags={cardFlags(flagsFromCodes(job.flags))} max={2} />
-
-      {job.summary && <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-ink-2">{job.summary}</p>}
 
       {match && (
         <div className="mt-3 border-t border-line pt-3">
@@ -99,15 +95,11 @@ export function JobCard({ job, ctx, openings = 1, locations = 1 }: { job: JobVie
         </div>
       )}
 
-      <div className="relative z-10 mt-auto flex items-center justify-between gap-3 pt-4 text-sm">
-        <div className="flex items-center gap-3">
-          <SaveJobButton jobId={job.id} saved={!!ctx.savedJobIds?.has(job.id)} back={ctx.back} compact className="text-ink-2 hover:text-ink aria-pressed:font-semibold aria-pressed:text-fresh" />
-          {ctx.allowHide && <HideJobButton jobId={job.id} back={ctx.back} />}
+      {ctx.allowHide && (
+        <div className="relative z-10 mt-auto pt-3 text-sm">
+          <HideJobButton jobId={job.id} back={ctx.back} />
         </div>
-        <Link href={`/jobs/${job.slug}`} className="font-semibold hover:underline">
-          View Job →
-        </Link>
-      </div>
+      )}
     </article>
   );
 }

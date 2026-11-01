@@ -61,6 +61,8 @@ export interface JobView {
   company_size?: string | null;
   /** Set on a copy of a role posted in several cities: the id of the role's first posting. */
   role_group?: string | null;
+  /** The company's plain-English "what they sell" headline, when one's been written. */
+  company_sells?: string | null;
 }
 
 export interface CompanyView {
@@ -96,7 +98,7 @@ export interface JobFilters {
 const JOB_CACHE_SECONDS = 300;
 
 const CARD_COLUMNS =
-  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags, currency, markets, attainment, company_size, buyer, industry, role_group";
+  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags, currency, markets, attainment, company_size, buyer, industry, role_group, company_sells";
 
 function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
   const since = f.postedWithinDays ? Date.now() - f.postedWithinDays * 86_400_000 : 0;
