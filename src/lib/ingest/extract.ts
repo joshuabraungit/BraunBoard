@@ -64,7 +64,7 @@ export async function extractAttributes(
   if (!key) return { ...base, ...heuristics(description, cls), summary: null };
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await withRetry(() => fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "x-api-key": key,
@@ -82,7 +82,7 @@ export async function extractAttributes(
           },
         ],
       }),
-    });
+    }));
     if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
     const data = (await res.json()) as { content: { type: string; text?: string }[]; stop_reason?: string; model?: string };
     const text = data.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("");
@@ -111,6 +111,15 @@ export async function extractAttributes(
     lastExtractionError = (err as Error).message;
     console.warn(`[extract] falling back to heuristics for "${title}":`, (err as Error).message);
     return { ...base, ...heuristics(description, cls), summary: null };
+  }
+}
+
+/** Busy minutes hit the AI rate limit. Wait and try again a few times instead of falling back to guesses. */
+async function withRetry(call: () => Promise<Response>): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    const res = await call();
+    if (![429, 529].includes(res.status) || attempt >= 4) return res;
+    await new Promise((r) => setTimeout(r, 5_000 * 2 ** attempt));
   }
 }
 
