@@ -124,6 +124,17 @@ function baseShare(job: JobView): number | null {
   return Math.round((base / ote) * 10) * 10; // nearest 10%, so it reads "60/40"
 }
 
+const SIZE_WORDS: Record<string, string> = { SMB: "small businesses", "Mid-Market": "medium-size companies", Enterprise: "big companies", Strategic: "a short list of very big companies" };
+
+/** "restaurant owners", from the posting; or the size of company, when that's all it says. */
+function sellsTo(job: JobView): string | null {
+  const b = job.buyer?.trim().replace(/\.\s*$/, "");
+  // Lowercase the first letter so it reads as part of the line, but leave "UK rail" and "CISOs" alone.
+  if (b) return /^[A-Z][a-z]/.test(b) ? b[0]!.toLowerCase() + b.slice(1) : b;
+  const seg = job.customer_segment !== "Unknown" ? job.customer_segment : job.sales_segment !== "Unknown" ? job.sales_segment : null;
+  return seg ? SIZE_WORDS[seg] ?? null : null;
+}
+
 /** The money row under the pay: base vs. commission, how the pay ranks, and deal size. */
 function MoneyRow({ job, extras }: { job: JobView; extras?: CardExtras }) {
   const share = baseShare(job);
@@ -201,6 +212,12 @@ export function JobCard({ job, ctx, openings = 1, locations = 1, extras }: { job
         <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink-2">
           <span className="text-ink-3">Sells: </span>
           {job.company_sells.replace(/\.\s*$/, "")}
+        </p>
+      )}
+      {sellsTo(job) && (
+        <p className="mt-0.5 line-clamp-1 text-sm leading-relaxed text-ink-2">
+          <span className="text-ink-3">Sells to: </span>
+          {sellsTo(job)}
         </p>
       )}
 
