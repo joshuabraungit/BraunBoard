@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCompanyStats, getJob } from "@/lib/data";
+import { getCompanyStats, getJob, getRoleSiblings } from "@/lib/data";
 import { braunRead } from "@/lib/flags";
 import { BraunReadPanel } from "@/components/BraunRead";
 import { checkedLabel, freshnessLabel } from "@/lib/freshness";
@@ -83,12 +83,13 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
   const { slug } = await params;
   const job = await loadJob(slug);
   if (!job) notFound();
-  const [state, watch, stats, user, products] = await Promise.all([
+  const [state, watch, stats, user, products, siblings] = await Promise.all([
     getUserState(),
     getActiveWatch(),
     getCompanyStats(job.company_id),
     getUser().catch(() => null),
     loadProductData().catch(() => null),
+    getRoleSiblings(job).catch(() => []),
   ]);
   const product = products?.companies.find((c) => c.id === job.company_id && c.story) ?? null;
   const read = braunRead({ ...job, company: stats });
@@ -118,6 +119,17 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
           <p className="text-ink-2">
             <Link href={`/company/${job.company_slug}`} className="font-medium text-ink hover:underline">{job.company_name}</Link> · {formatLocation(job)}
           </p>
+          {siblings.length > 0 && (
+            <p className="mt-1 text-sm text-ink-3">
+              Same role, also open in{" "}
+              {siblings.map((s, i) => (
+                <span key={s.slug}>
+                  {i > 0 && ", "}
+                  <Link href={`/jobs/${s.slug}`} className="hover:underline">{formatLocation(s as never)}</Link>
+                </span>
+              ))}
+            </p>
+          )}
         </div>
       </div>
       <div className="mt-6 rounded-xl border border-line bg-surface">

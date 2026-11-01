@@ -16,6 +16,7 @@ const URL_PATTERNS: { provider: AtsProvider; re: RegExp }[] = [
   { provider: "greenhouse", re: /boards-api\.greenhouse\.io\/v1\/boards\/([a-z0-9_-]+)/i },
   { provider: "lever", re: /jobs\.(?:eu\.)?lever\.co\/([a-z0-9_.-]+)/i },
   { provider: "ashby", re: /jobs\.ashbyhq\.com\/([a-z0-9_.%-]+)/i },
+  { provider: "workable", re: /apply\.workable\.com\/([a-z0-9_-]+)/i },
   { provider: "smartrecruiters", re: /(?:jobs|careers)\.smartrecruiters\.com\/([A-Za-z0-9_.-]+)/i },
   { provider: "smartrecruiters", re: /api\.smartrecruiters\.com\/v1\/companies\/([A-Za-z0-9_.-]+)/i },
 ];

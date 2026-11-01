@@ -1,0 +1,18 @@
+name: Workable probe
+on:
+  push:
+    branches: [workable-probe]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: curl -sS https://apply.workable.com/robots.txt | head -40; echo; curl -sS https://www.workable.com/robots.txt | head -60
+      - run: curl -sSI https://www.workable.com/boards/workable.xml | head -20
+      - run: npx tsx scripts/discover-workable.ts --dry-run
