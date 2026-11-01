@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageTabs, SAVED_TABS } from "@/components/PageTabs";
 import { getJobsByIds, listCompanies } from "@/lib/data";
 import { getUser, getUserState, listWatches } from "@/lib/session";
 import { deleteWatch, renameWatch } from "@/app/actions";
@@ -18,7 +19,8 @@ export default async function Watchlist({ searchParams }: { searchParams: Promis
   if (!user) {
     return (
       <div className="mx-auto max-w-xl py-10">
-        <h1 className="text-2xl font-bold tracking-tight">Watchlist</h1>
+        <PageTabs tabs={SAVED_TABS} active="/watchlist" />
+        <h1 className="text-2xl font-bold tracking-tight">Saved</h1>
         <p className="mt-2 text-ink-2">Your saved searches, watched companies and saved jobs live here.</p>
         <Link href="/login?next=/watchlist" className="mt-6 inline-block rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white">Sign in →</Link>
       </div>
@@ -31,7 +33,8 @@ export default async function Watchlist({ searchParams }: { searchParams: Promis
 
   return (
     <>
-      <h1 className="text-2xl font-bold tracking-tight">Watchlist</h1>
+      <PageTabs tabs={SAVED_TABS} active="/watchlist" />
+      <h1 className="text-2xl font-bold tracking-tight">Saved</h1>
       {sp.created && <p className="mt-3 rounded-md bg-accent-soft px-3 py-2 text-sm text-accent">Search saved. You&apos;ll get alerts when new jobs match.</p>}
 
       <h2 className="mb-3 mt-8 text-lg font-bold">Searches</h2>

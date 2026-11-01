@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { listJobs } from "@/lib/data";
+import { JOB_TABS, PageTabs } from "@/components/PageTabs";
 import { JobGrid } from "@/components/JobCard";
 import { getUserState } from "@/lib/session";
 import { MARKET_CHOICES, marketsFor, visitorMarket } from "@/lib/market";
@@ -16,6 +17,7 @@ export default async function NewToday() {
   const [jobs, state] = await Promise.all([listJobs({ postedWithinDays: 1, markets: marketsFor(market) }, 120), getUserState()]);
   return (
     <>
+      <PageTabs tabs={JOB_TABS} active="/new" />
       <h1 className="text-2xl font-bold tracking-tight">New Today</h1>
       <p className="mb-6 mt-1 text-sm text-ink-2">
         Sales jobs posted in the last 24 hours{market !== "all" && ` in ${MARKET_CHOICES[market].label}`}.{" "}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { JOB_TABS, PageTabs } from "@/components/PageTabs";
 import Link from "next/link";
 import { listJobsForWatch } from "@/lib/data";
 import { getActiveWatch, getUserState, listWatches } from "@/lib/session";
@@ -16,6 +17,7 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<R
   if (!watch || sp.edit !== undefined) {
     return (
       <div className="py-4">
+        <PageTabs tabs={JOB_TABS} active="/for-you" />
         <h1 className="mx-auto mb-8 max-w-2xl text-3xl font-bold tracking-tight">What sales job would you actually take?</h1>
         <OnboardingForm initial={watch?.answers} />
       </div>
@@ -27,6 +29,7 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<R
 
   return (
     <>
+      <PageTabs tabs={JOB_TABS} active="/for-you" />
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-sm text-ink-3">For You</p>

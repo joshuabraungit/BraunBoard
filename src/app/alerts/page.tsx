@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageTabs, SAVED_TABS } from "@/components/PageTabs";
 import { getUser, listWatches } from "@/lib/session";
 import { setAlertFrequency } from "@/app/actions";
 
@@ -15,7 +16,8 @@ export default async function Alerts() {
   if (!user) {
     return (
       <div className="mx-auto max-w-xl py-10">
-        <h1 className="text-2xl font-bold tracking-tight">Alerts</h1>
+        <PageTabs tabs={SAVED_TABS} active="/alerts" />
+        <h1 className="text-2xl font-bold tracking-tight">Alert emails</h1>
         <p className="mt-2 text-ink-2">Get an email when a job matching your watch shows up. Instant, daily, or off.</p>
         <Link href="/login?next=/alerts" className="mt-6 inline-block rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white">Sign in →</Link>
       </div>
@@ -24,7 +26,8 @@ export default async function Alerts() {
   const watches = await listWatches();
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-bold tracking-tight">Alerts</h1>
+      <PageTabs tabs={SAVED_TABS} active="/alerts" />
+      <h1 className="text-2xl font-bold tracking-tight">Alert emails</h1>
       <p className="mt-1 text-sm text-ink-2">Emails go to {user.email}. Watched companies are included in your daily digest.</p>
       {watches.length === 0 && (
         <p className="mt-8 rounded-xl border border-dashed border-line p-6 text-center text-sm text-ink-3">

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { listJobsWithTotal, type JobFilters } from "@/lib/data";
 import { isMarketChoice, MARKET_CHOICES, marketsFor, payPresets, visitorMarket, type MarketChoice } from "@/lib/market";
+import { JOB_TABS, PageTabs } from "@/components/PageTabs";
 import { JobGrid } from "@/components/JobCard";
 import { AutoSubmitForm } from "@/components/AutoSubmitForm";
 import { MoreFilters } from "@/components/MoreFilters";
@@ -141,6 +142,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
     .join(" · ");
   return (
     <>
+      <PageTabs tabs={JOB_TABS} active="/jobs" />
       <h1 className="text-2xl font-bold tracking-tight">All Jobs</h1>
       <p className="mt-1 text-sm text-ink-2">
         Not sure what you want to sell?{" "}
