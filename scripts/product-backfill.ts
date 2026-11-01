@@ -8,6 +8,7 @@ import { extractProduct, needsPlainRewrite } from "../src/lib/ingest/product";
 import { fail, notice, requireEnv, warn } from "./report";
 
 const DAY = 86_400_000;
+const HOUR = 3_600_000;
 // The current story template ("When... usually... The problem is... so..."). Older stories get rewritten in it.
 const inTemplate = (story: string | null) => !!story && /^When\b/.test(story.trim()) && /\bThe problem is\b/.test(story);
 // When the current template went live. A story last checked before this hasn't been tried in it yet.
@@ -59,7 +60,7 @@ async function main() {
       // right away the first time, then at most once a day if a rewrite doesn't stick.
       const oldFormat = !noStory && !inTemplate(checked.get(id)?.story ?? null) && (at! < TEMPLATE_LIVE || now - at! > DAY);
       const k = checked.get(id);
-      const notPlain = !noStory && needsPlainRewrite(k?.short ?? null, k?.story ?? null) && (at! < PLAIN_LIVE || now - at! > DAY);
+      const notPlain = !noStory && needsPlainRewrite(k?.short ?? null, k?.story ?? null) && (at! < PLAIN_LIVE || now - at! > 3 * HOUR);
       const why = at == null ? 0 : noStory && now - at > 2 * DAY ? 0.5 : now - at > 30 * DAY ? 2 : c.newest > at && now - at > 7 * DAY ? 1 : notPlain ? 1.4 : oldFormat ? 1.5 : null;
       return { id, c, why };
     })

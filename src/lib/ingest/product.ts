@@ -168,6 +168,18 @@ ${CATEGORY_RULES}
 Return ONLY JSON: {"unsupported": ["each unsupported factual claim, quoted from the story"], "category": "..."}`;
 
 async function ask(system: string, user: string, key: string): Promise<unknown> {
+  // Busy minutes hit the rate limit; wait and try again a few times before giving up.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await askOnce(system, user, key);
+    } catch (e) {
+      if (attempt >= 4 || !/\b(429|529|overloaded)\b/.test((e as Error).message)) throw e;
+      await new Promise((r) => setTimeout(r, 5_000 * 2 ** attempt));
+    }
+  }
+}
+
+async function askOnce(system: string, user: string, key: string): Promise<unknown> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
