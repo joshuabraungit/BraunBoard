@@ -161,7 +161,7 @@ export function JobCard({ job, ctx, openings = 1, locations = 1 }: { job: JobVie
       {job.company_sells && (
         <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink-2">
           <span className="text-ink-3">Sells: </span>
-          {job.company_sells}
+          {job.company_sells.replace(/\.\s*$/, "")}
         </p>
       )}
 
