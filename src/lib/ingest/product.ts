@@ -117,7 +117,7 @@ export function jargonIn(text: string): string[] {
 }
 
 /** What's wrong with a draft, in words the model can act on. Empty means it's fine. */
-export function problemsWith(raw: Partial<ProductInfo> | null | undefined, posting: string): string[] {
+export function problemsWith(raw: Partial<ProductInfo> | null | undefined, posting: string, opts: { quoteOptional?: boolean } = {}): string[] {
   if (!raw?.story) return [];
   const out: string[] = [];
   const banned = [...new Set([...(raw.story + " " + (raw.short ?? "")).matchAll(BANNED_RE)].map((m) => m[0].toLowerCase()))];
@@ -129,20 +129,20 @@ export function problemsWith(raw: Partial<ProductInfo> | null | undefined, posti
     out.push('Follow the 3-sentence template: start with "When [a customer] has to...", then "The problem is, ...", then what the company does and what changes.');
   if (raw.short && raw.short.split(/\s+/).length > 12) out.push("The short line is too long. Use 4 to 10 words.");
   if (raw.short && VAGUE_SHORT.test(raw.short.trim())) out.push('The short line starts with what kind of thing it is ("Software...", "Tools..."). Start with what it does for the customer, like "Helps restaurants take orders and payments in one place".');
-  if (!quoteInPosting(raw.quote, posting)) out.push("The quote isn't copied exactly from the posting. Copy one real sentence character for character.");
+  if (!(opts.quoteOptional && !raw.quote) && !quoteInPosting(raw.quote, posting)) out.push("The quote isn't copied exactly from the posting. Copy one real sentence character for character.");
   if (raw.category && !PRODUCT_CATEGORIES.includes(raw.category as ProductCategory)) out.push(`The category must be one of: ${PRODUCT_CATEGORIES.join(", ")}.`);
   return out;
 }
 
 /** Keep only answers that are plain, short and backed by a real quote. */
-export function cleanProduct(raw: Partial<ProductInfo> | null | undefined, posting: string): ProductInfo {
-  if (!raw?.story || problemsWith(raw, posting).length) return { ...EMPTY_PRODUCT };
+export function cleanProduct(raw: Partial<ProductInfo> | null | undefined, posting: string, opts: { quoteOptional?: boolean } = {}): ProductInfo {
+  if (!raw?.story || problemsWith(raw, posting, opts).length) return { ...EMPTY_PRODUCT };
   const story = raw.story.trim().replace(/\s*[—–]\s*/g, ", ");
   const short = raw.short?.trim().replace(/[.]$/, "") || null;
   return {
     story,
     short,
-    quote: raw.quote!.trim(),
+    quote: raw.quote?.trim() || null,
     category: PRODUCT_CATEGORIES.includes(raw.category as ProductCategory) ? (raw.category as ProductCategory) : null,
   };
 }
@@ -254,4 +254,65 @@ export async function classifyCategory(company: string, story: string, quote: st
     key,
   )) as { category?: string };
   return PRODUCT_CATEGORIES.includes(r?.category as ProductCategory) ? (r.category as ProductCategory) : null;
+}
+
+// ---------------------------------------------------------------------------
+// Big companies that sell many things. Built from postings, the story describes whatever product
+// the longest posting happened to be about (Stripe came out as "sends money to contractors").
+// For these, describe the main thing the company is known for and most of its reps sell.
+// ---------------------------------------------------------------------------
+
+/** Big, well-known, hiring a lot: describe the company's main product, not one posting's. */
+export function isCoreCompany(size: string | null | undefined, openSalesRoles: number): boolean {
+  return (size === "large" || size === "enterprise") && openSalesRoles >= 10;
+}
+
+const CORE_SYSTEM = SYSTEM.replace(
+  "Use ONLY the postings. Never use anything you know about the company from outside them.\nIf the postings are only about the role and never describe the product, return all nulls.",
+  `This is a big company that sells several products. Describe its MAIN product line: what it's best known for
+and what most of its salespeople sell. Not a side product that one posting happens to be about.
+You may use widely known facts about the company. Keep to what's common knowledge; no numbers, customer names
+or recent news. If you aren't sure what its main product is, return all nulls.
+"quote" may be null here; if a posting sentence supports the story, copy it exactly.`,
+);
+
+// If the base prompt's wording changes, this replace would silently do nothing. Fail loudly instead.
+if (CORE_SYSTEM === SYSTEM) throw new Error("product.ts: CORE_SYSTEM didn't replace the postings-only rule");
+
+const CORE_CHECK = `You check a short plain-English story about what a well-known company sells.
+Answer two things:
+1. Is this the company's main product line, the thing it's best known for and most of its salespeople sell?
+   (A side product or one team's product is a "no".)
+2. Is every claim widely known and accurate? Flag anything doubtful, made up, or too specific to be common knowledge.
+Also pick the category.
+${CATEGORY_RULES}
+
+Return ONLY JSON: {"main_product": true|false, "problems": ["each problem"], "category": "..."}`;
+
+/** Write the main-product story for a big company, with one rewrite if the check finds problems. */
+export async function extractCoreProduct(company: string, postings: string[], key = process.env.ANTHROPIC_API_KEY): Promise<ProductInfo & { raw: unknown }> {
+  const text = joinPostings(postings);
+  if (!key) return { ...EMPTY_PRODUCT, raw: null };
+  const base = `Company: ${company}\n\nSome of its current sales postings, for context:\n${text || "(none)"}`;
+  const log: Record<string, unknown> = {};
+  let draft = (await ask(CORE_SYSTEM, base, key)) as Partial<ProductInfo>;
+  log.first = draft;
+  for (let round = 0; draft?.story && round < 3; round++) {
+    const problems = problemsWith(draft, text, { quoteOptional: true });
+    if (!problems.length) {
+      const check = (await ask(CORE_CHECK, `Company: ${company}\nStory: ${draft.story}\nShort line: ${draft.short ?? ""}`, key)) as { main_product?: boolean; problems?: string[]; category?: string };
+      log[`check${round}`] = check;
+      if (PRODUCT_CATEGORIES.includes(check.category as ProductCategory)) draft.category = check.category as ProductCategory;
+      if (check.main_product !== false && !check.problems?.length) break;
+      if (round >= 1) {
+        draft = { story: null };
+        break;
+      }
+      if (check.main_product === false) problems.push("That's a side product. Describe the company's main product line instead.");
+      if (check.problems?.length) problems.push(`Fix or remove: ${check.problems.join(" | ")}`);
+    }
+    draft = (await ask(CORE_SYSTEM, `${base}\n\nYour last draft:\n${JSON.stringify(draft)}\n\nFix these problems and rewrite, keeping every rule:\n- ${problems.join("\n- ")}`, key)) as Partial<ProductInfo>;
+    log[`rewrite${round + 1}`] = draft;
+  }
+  return { ...cleanProduct(draft, text, { quoteOptional: true }), raw: log };
 }

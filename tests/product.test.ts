@@ -64,3 +64,14 @@ describe("which existing stories get rewritten", () => {
     expect(needsPlainRewrite("Helps restaurants take orders", null)).toBe(false);
   });
 });
+
+describe("big companies get a main-product story", () => {
+  it("only large, busy hirers qualify", async () => {
+    const { isCoreCompany } = await import("../src/lib/ingest/product");
+    expect(isCoreCompany("enterprise", 40)).toBe(true);
+    expect(isCoreCompany("large", 10)).toBe(true);
+    expect(isCoreCompany("large", 9)).toBe(false);
+    expect(isCoreCompany("growth", 80)).toBe(false);
+    expect(isCoreCompany(null, 80)).toBe(false);
+  });
+});

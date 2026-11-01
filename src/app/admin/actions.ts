@@ -58,7 +58,7 @@ export async function setCompanyProduct(formData: FormData) {
   const unlock = !short && !story;
   const patch = unlock
     ? { product_locked: false, product_checked_at: null }
-    : { product_short: short || null, product_story: story || null, product_locked: true, product_changed_at: new Date().toISOString() };
+    : { product_short: short || null, product_story: story || null, product_locked: true, product_source: "admin", product_changed_at: new Date().toISOString() };
   const { data, error } = await db.from("companies").update(patch).eq("id", id).select("name").single();
   if (error) back(returnTo, error.message, false);
   revalidateTag("products");
