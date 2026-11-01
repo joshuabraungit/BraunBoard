@@ -75,7 +75,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
   const page = Math.max(1, Math.floor(Number(sp.page)) || 1);
   // No country picked: use the visitor's default (UK visitors see UK jobs, North America sees US + Canada).
   const market: MarketChoice = isMarketChoice(sp.country) ? sp.country : await visitorMarket();
-  const [{ jobs, total }, state] = await Promise.all([
+  const [{ jobs, total, roles }, state] = await Promise.all([
     listJobsWithTotal(toFilters(sp, market), PAGE_SIZE, { offset: (page - 1) * PAGE_SIZE }),
     getUserState(),
   ]);
@@ -98,7 +98,6 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
     const s = p.toString();
     return `/jobs${s ? `?${s}` : ""}`;
   };
-  const first = (page - 1) * PAGE_SIZE + 1;
   const hasFilters = qs.length > 0;
   // A watch should cover the countries the person was looking at, even if they never touched the picker.
   const watchQs = (() => {
@@ -163,9 +162,9 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
       </form>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-ink-3">
-          {total.toLocaleString()} {total === 1 ? "job" : "jobs"}
+          {roles.toLocaleString()} {roles === 1 ? "job" : "jobs"}
           {!sp.posted && " posted in the last 90 days"}
-          {pages > 1 && jobs.length > 0 && ` · showing ${first.toLocaleString()}–${(first + jobs.length - 1).toLocaleString()}`}
+          {pages > 1 && jobs.length > 0 && ` · page ${page} of ${pages}`}
         </p>
         {hasFilters && (
           <form action={watchSearch} className="flex w-full items-center gap-2 sm:w-auto">

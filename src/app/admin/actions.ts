@@ -59,7 +59,7 @@ export async function addCompany(formData: FormData) {
 
   // Find the board: a careers URL pins it, otherwise guess and verify.
   let found = careersUrl ? detectFromUrl(careersUrl) : null;
-  if (careersUrl && !found) back(path, "That careers URL isn't a Greenhouse, Lever or Ashby job board.", false);
+  if (careersUrl && !found) back(path, "That careers URL isn't a Greenhouse, Lever, Ashby or Workable job board.", false);
   if (found && !ENABLED_PROVIDERS.includes(found.provider)) back(path, `${found.provider} boards are switched off for now.`, false);
   if (!found) {
     const probed = await detectByProbing(name, domain);
@@ -69,9 +69,10 @@ export async function addCompany(formData: FormData) {
     found = probed;
   }
 
-  // Make sure the board really has jobs before saving it.
+  // Make sure the board really has jobs before saving it. Workable is one big shared feed,
+  // too slow to download here, so a pasted Workable link is trusted and checked on the next crawl.
   let count = 0;
-  try {
+  if (found!.provider !== "workable") try {
     const jobs = await adapters[found!.provider].fetchJobs({ id: "", name, ats_provider: found!.provider, ats_identifier: found!.identifier });
     count = jobs.length;
   } catch (e) {
@@ -98,7 +99,7 @@ export async function addCompany(formData: FormData) {
   }
   revalidatePath("/admin/companies");
   revalidateTag("jobs");
-  back(path, `Added ${name} (${found!.provider}, ${count} open jobs on their board). Its sales jobs show up after the next crawl, within 4 hours.`);
+  back(path, `Added ${name} (${found!.provider}${found!.provider === "workable" ? "" : `, ${count} open jobs on their board`}). Its sales jobs show up after the next crawl, within 4 hours.`);
 }
 
 export async function deleteUser(formData: FormData) {
@@ -197,4 +198,36 @@ export async function deleteAskMessage(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/ask");
   back("/admin/ask", "Message deleted.");
+}
+
+/** Discover queue: approve adds the company (crawled within 4 hours), skip hides it for good. */
+export async function decideCandidate(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  const approve = formData.get("decision") === "approve";
+  const path = String(formData.get("returnTo") ?? "/admin/discover");
+  const db = adminClient();
+  const { data: c, error } = await db.from("company_candidates").select("*").eq("id", id).maybeSingle();
+  if (error || !c) back(path, "Couldn't find that company.", false);
+
+  if (approve) {
+    if (!ENABLED_PROVIDERS.includes(c!.ats_provider)) back(path, `${c!.ats_provider} boards are switched off for now.`, false);
+    let slug = slugify(c!.name);
+    const { data: clash } = await db.from("companies").select("id").eq("slug", slug).maybeSingle();
+    if (clash) slug = slugify(`${c!.name} ${c!.ats_identifier}`);
+    const { error: e } = await db.from("companies").insert({
+      slug,
+      name: c!.name,
+      domain: c!.domain,
+      website_url: c!.domain ? `https://${c!.domain}` : null,
+      ats_provider: c!.ats_provider,
+      ats_identifier: c!.ats_identifier,
+      is_disabled: false,
+      last_crawled_at: null,
+    });
+    if (e) back(path, /ats_provider_ats_identifier/.test(e.message) ? "That job board is already on Braun Board." : e.message, false);
+  }
+  await db.from("company_candidates").update({ status: approve ? "approved" : "rejected", decided_at: new Date().toISOString() }).eq("id", id);
+  revalidatePath("/admin/discover");
+  back(path, approve ? `Added ${c!.name}. Its sales jobs show up after the next crawl, within 4 hours.` : `Skipped ${c!.name}. It won't come back.`);
 }
