@@ -75,7 +75,8 @@ async function load(): Promise<{ companies: ProductCompany[]; jobs: ProductJob[]
   const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
   const jobs: ProductJob[] = [];
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await db.from("visible_jobs").select(JOB_COLUMNS).order("id").range(from, from + 999);
+    // Jobs open 90+ days don't count toward what a company is hiring for here.
+    const { data, error } = await db.from("visible_jobs").select(JOB_COLUMNS).gte("posted_at", new Date(Date.now() - 90 * 86_400_000).toISOString()).order("id").range(from, from + 999);
     if (error) throw new Error(`products jobs: ${error.message}`);
     for (const j of (data ?? []) as unknown as ProductJob[]) {
       // location_raw is only shown when there's no city and the role isn't remote.

@@ -46,7 +46,7 @@ const NOT_STANDOUT = new Set(["publishes_ote", "shares_attainment", "attainment_
  * The Braun Read on a card: three lights a rep can scan. Pay, quota, and the one thing that
  * stands out most about this job. The full verdict and the reasons live on the job page.
  */
-export function cardLights(job: JobView, read: ReturnType<typeof braunRead>, now = Date.now()): Light[] {
+export function cardLights(job: JobView, read: ReturnType<typeof braunRead>): Light[] {
   // Pay
   const pay: Light =
     job.ote_min != null && job.salary_min != null
@@ -72,22 +72,12 @@ export function cardLights(job: JobView, read: ReturnType<typeof braunRead>, now
 
   // The standout: a red flag first, then a stale posting, then a heads-up, then the best green flag, then freshness.
   const flags = flagsFromCodes(job.flags).filter((f) => !NOT_STANDOUT.has(f.code));
-  const days = Math.floor((now - new Date(job.first_seen_at).getTime()) / 86_400_000);
   const asLight = (f: Flag, tone: Tone): Light => ({ tone, text: f.label, why: f.why });
   const red = flags.find(isRedFlag);
   const headsUp = flags.find(isHeadsUp);
   const green = flags.find((f) => f.tone === "green");
-  const standout: Light | null = red
-    ? asLight(red, "red")
-    : days > 45
-      ? { tone: "red", text: `Open ${days} days`, why: "Ask why it's been hard to fill." }
-      : headsUp
-        ? asLight(headsUp, "yellow")
-        : green
-          ? asLight(green, "green")
-          : days > 21
-            ? { tone: "yellow", text: `Open ${days} days` }
-            : null;
+  // How long it's been open is the life meter's job, so it's not a light.
+  const standout: Light | null = red ? asLight(red, "red") : headsUp ? asLight(headsUp, "yellow") : green ? asLight(green, "green") : null;
   // Nothing stands out: say where deals come from, which matters to AEs (SDRs prospect by definition).
   const sdr = job.role_family === "SDR/BDR";
   const pipeline: Record<string, string> = { High: "You find your own leads", Medium: "Some leads come to you", Low: "Leads come to you" };
@@ -115,6 +105,32 @@ function Lights({ lights }: { lights: Light[] }) {
  * A job card answers one question: is this worth a click? Title, who and where, the pay, the
  * Braun Read, and what you'd sell in plain English. Tags and the long summary live on the job page.
  */
+/**
+ * The life meter: a video-game health bar that drains as a job stays open. Five bars when it's
+ * new, one lost about every two weeks. Long-open jobs are worth a question, not a pass.
+ */
+const LIFE: { maxDays: number; bars: number; tone: Tone; line: string }[] = [
+  { maxDays: 14, bars: 5, tone: "green", line: "Full health. Just posted." },
+  { maxDays: 30, bars: 4, tone: "green", line: "Still going strong." },
+  { maxDays: 45, bars: 3, tone: "yellow", line: "Taking some hits. Ask how long they've been looking." },
+  { maxDays: 60, bars: 2, tone: "yellow", line: "Health running low. Ask why it's still open." },
+  { maxDays: 90, bars: 1, tone: "red", line: "Last life. Ask why it's been hard to fill." },
+  { maxDays: Infinity, bars: 0, tone: "red", line: "Game over? Still on their site, but open 3+ months." },
+];
+
+export function LifeMeter({ postedAt, now = Date.now() }: { postedAt: string; now?: number }) {
+  const days = Math.max(0, Math.floor((now - new Date(postedAt).getTime()) / 86_400_000));
+  const life = LIFE.find((l) => days <= l.maxDays)!;
+  const label = `${life.line} Open ${days === 1 ? "1 day" : `${days} days`}.`;
+  return (
+    <span className="inline-flex items-center gap-[2px] align-[1px]" title={label} aria-label={label} role="img">
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} className={`h-2.5 w-[5px] rounded-[1px] ${i < life.bars ? DOT[life.tone] : "bg-line-strong"}`} />
+      ))}
+    </span>
+  );
+}
+
 /** Share of the paycheck that's base, from the middle of each range. Null unless both are listed. */
 function baseShare(job: JobView): number | null {
   if (job.salary_min == null || job.ote_min == null) return null;
@@ -188,7 +204,9 @@ export function JobCard({ job, ctx, openings = 1, locations = 1, extras }: { job
         <CompanyLogo name={job.company_name} logoUrl={job.company_logo_url} domain={job.company_domain} size={18} />
         <span className="min-w-0">
           <span className="font-medium text-ink">{job.company_name}</span> · {job.remote_type === "Onsite" && "In office · "}{formatLocation(job)} ·{" "}
-          <span className={fresh ? "font-medium text-fresh" : ""}>{freshnessLabel(job.first_seen_at)}</span>
+          <span className="whitespace-nowrap">
+            <LifeMeter postedAt={job.first_seen_at} /> <span className={fresh ? "font-medium text-fresh" : ""}>{freshnessLabel(job.first_seen_at)}</span>
+          </span>
           {more && <span className="font-medium text-ink"> · {more}</span>}
         </span>
       </p>

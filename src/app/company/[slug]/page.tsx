@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { cache } from "react";
 import { notFound } from "next/navigation";
-import { getCompany, getCompanyStats } from "@/lib/data";
+import { getCompany, getCompanyStats, STALE_DAYS } from "@/lib/data";
 import { TrendBadge, hiringSentence } from "@/components/Hiring";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { JobGrid } from "@/components/JobCard";
@@ -39,6 +39,11 @@ export default async function CompanyPage({ params }: { params: Promise<{ slug: 
   const { company, jobs, added7, added30 } = data;
   const [state, stats] = await Promise.all([getUserState(), getCompanyStats(company.id)]);
   const back = `/company/${company.slug}`;
+
+  // Jobs open 90+ days go in their own section at the bottom.
+  const staleCutoff = Date.now() - STALE_DAYS * 86_400_000;
+  const fresh = jobs.filter((j) => new Date(j.first_seen_at).getTime() >= staleCutoff);
+  const old = jobs.filter((j) => new Date(j.first_seen_at).getTime() < staleCutoff);
 
   return (
     <>
@@ -102,7 +107,17 @@ export default async function CompanyPage({ params }: { params: Promise<{ slug: 
       )}
 
       <h2 className="mb-3 mt-8 text-lg font-bold tracking-tight">Current openings</h2>
-      <JobGrid jobs={jobs} ctx={{ savedJobIds: state.savedJobIds, back }} empty={`${company.name} has no open sales roles right now. Watch them to hear when that changes.`} />
+      <JobGrid jobs={fresh} ctx={{ savedJobIds: state.savedJobIds, back }} empty={`${company.name} has no ${old.length ? "recent " : ""}sales roles open right now. Watch them to hear when that changes.`} />
+
+      {old.length > 0 && (
+        <>
+          <h2 className="mb-1 mt-10 text-lg font-bold tracking-tight">Game over? Open 3+ months</h2>
+          <p className="mb-3 text-sm text-ink-2">
+            Still on {company.name}&apos;s site, but open more than 90 days. Some are roles they always hire for. Others are hard to fill. Ask which.
+          </p>
+          <JobGrid jobs={old} ctx={{ savedJobIds: state.savedJobIds, back }} />
+        </>
+      )}
     </>
   );
 }

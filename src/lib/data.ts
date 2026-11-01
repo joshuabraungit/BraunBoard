@@ -197,14 +197,17 @@ async function fetchJobs(
  * descriptions (those were ~6 MB per page load). The three checks that read the description
  * (commission only, greenfield, keywords) run in the database and come back as text_hits.
  */
+/** Jobs open longer than this are kept off lists. They still show on the company's own page, marked as old. */
+export const STALE_DAYS = 90;
+
 export async function listJobsForWatch(markets: string[], keywords: string[] = []): Promise<(JobView & { text_hits?: TextHits })[]> {
   if (!isSupabaseConfigured()) return listJobs({ markets }, 1000, { withDescription: true });
-  const jobs = await listJobs({ markets }, 1000);
+  const jobs = await listJobs({ markets, postedWithinDays: STALE_DAYS }, 1000);
   if (!jobs.length) return jobs;
   const db = publicClient();
   const { data, error } = await db.rpc("job_text_hits", { p_ids: jobs.map((j) => j.id), p_keywords: keywords });
   // If the check fails, fall back to the old way rather than show wrong matches.
-  if (error) return listJobs({ markets }, 1000, { withDescription: true });
+  if (error) return listJobs({ markets, postedWithinDays: STALE_DAYS }, 1000, { withDescription: true });
   const hits = new Map(((data ?? []) as ({ id: string } & TextHits)[]).map(({ id, ...h }) => [id, h]));
   const none: TextHits = { commission_only: false, greenfield: false, keyword: false };
   return jobs.map((j) => ({ ...j, text_hits: hits.get(j.id) ?? none }));
