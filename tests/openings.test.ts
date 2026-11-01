@@ -40,6 +40,7 @@ describe("one role in several cities", () => {
 
 describe("sameRole", () => {
   const base = {
+    title: "Account Executive, Enterprise",
     title_normalized: "account executive enterprise",
     markets: ["US"],
     remote_type: "Hybrid",
@@ -51,6 +52,9 @@ describe("sameRole", () => {
 
   it("matches the same posting with only the city swapped", () => {
     expect(sameRole(base, other)).toBe(true);
+  });
+  it("keeps territory seats separate when the title names the place", () => {
+    expect(sameRole({ ...base, title: "Territory Manager - Chicago" }, { ...other, title: "Territory Manager - Austin" })).toBe(false);
   });
   it("keeps roles posted weeks apart separate", () => {
     expect(sameRole(base, { ...other, posted_at: "2026-10-20T00:00:00Z" })).toBe(false);

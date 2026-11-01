@@ -30,14 +30,15 @@ export function descriptionSimilarity(a: string, b: string): number {
 export const DUPLICATE_THRESHOLD = 0.85;
 
 /**
- * Same role, different city: one company posting one job once per location. Same title,
+ * Same role, different city: one company posting one job once per location. Same exact title,
  * same countries, same remote setup, posted within a week of each other, and the
- * descriptions match once place names are taken out. Different headcount usually comes
- * with a different date or different text, so those stay separate.
+ * descriptions match once place names are taken out. A title that names its own city or
+ * territory ("Territory Manager - Memphis") is a separate seat, so different titles never match.
  */
 export const SAME_ROLE_DAYS = 7;
 
 export interface RoleCandidate {
+  title: string;
   title_normalized: string;
   markets: string[];
   remote_type: string;
@@ -57,6 +58,8 @@ function stripPlaces(text: string, places: string[]): string {
 
 export function sameRole(a: RoleCandidate, b: RoleCandidate): boolean {
   if (a.title_normalized !== b.title_normalized) return false;
+  const t = (x: string) => x.trim().toLowerCase().replace(/\s+/g, " ");
+  if (t(a.title) !== t(b.title)) return false;
   if (a.remote_type !== b.remote_type) return false;
   if ([...a.markets].sort().join() !== [...b.markets].sort().join()) return false;
   if (a.posted_at && b.posted_at) {

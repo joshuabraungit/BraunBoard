@@ -56,6 +56,7 @@ async function main() {
     const roots: Row[] = [];
     for (const r of list) {
       const cand = (x: Row) => ({
+        title: x.title_raw,
         title_normalized: x.title_normalized,
         markets: x.markets ?? [],
         remote_type: x.remote_type,

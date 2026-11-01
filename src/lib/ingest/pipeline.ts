@@ -257,7 +257,7 @@ async function insertNewJob(
   if (!duplicateOf) {
     const { data: siblings } = await db
       .from("jobs")
-      .select("id, description_raw, markets, remote_type, posted_at, city, state")
+      .select("id, title_raw, description_raw, markets, remote_type, posted_at, city, state")
       .eq("company_id", company.id)
       .eq("title_normalized", cls.title_normalized)
       .eq("is_active", true)
@@ -266,6 +266,7 @@ async function insertNewJob(
       .neq("dedupe_key", key)
       .limit(25);
     const me = {
+      title: job.title,
       title_normalized: cls.title_normalized,
       markets: loc.markets,
       remote_type: loc.remote_type,
@@ -275,6 +276,7 @@ async function insertNewJob(
     };
     for (const s of siblings ?? []) {
       const them = {
+        title: s.title_raw as string,
         title_normalized: cls.title_normalized,
         markets: (s.markets as string[]) ?? [],
         remote_type: s.remote_type as string,
