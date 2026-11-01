@@ -23,4 +23,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx tsx scripts/product-sample.ts ${{ inputs.count }}
+      - env:
+          COUNT: ${{ inputs.count }}
+        run: npx tsx scripts/product-sample.ts "$COUNT"
