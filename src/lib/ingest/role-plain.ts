@@ -31,12 +31,25 @@ No buzzwords (platform, solution, leverage, drive, own, seamless). No em dashes.
 Return ONLY JSON: {"plain": "..."} or {"plain": null} if the posting doesn't describe the work.`;
 
 async function ask(user: string, key: string): Promise<{ plain?: string | null }> {
+  // Busy minutes hit the rate limit; wait and try again a few times before giving up.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await askOnce(user, key);
+    } catch (e) {
+      if (attempt >= 4 || !/\b(429|529|overloaded)\b/.test((e as Error).message)) throw e;
+      await new Promise((r) => setTimeout(r, 5_000 * 2 ** attempt));
+    }
+  }
+}
+
+async function askOnce(user: string, key: string): Promise<{ plain?: string | null }> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify({
       model: process.env.EXTRACTION_MODEL ?? "claude-haiku-5-5",
-      max_tokens: 800,
+      // Room to think plus the answer, so replies are not cut off mid-JSON.
+      max_tokens: 2000,
       system: SYSTEM,
       messages: [{ role: "user", content: user }],
     }),

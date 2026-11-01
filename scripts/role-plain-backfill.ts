@@ -53,7 +53,8 @@ async function main() {
       }
     }
   };
-  await Promise.all(Array.from({ length: 8 }, worker));
+  // Four at a time stays under the AI rate limit alongside the other hourly jobs.
+  await Promise.all(Array.from({ length: 4 }, worker));
   notice(`What you'd do: wrote ${written}, nothing clean for ${empty}${errors ? `, ${errors} errors (will retry)` : ""}. ${Math.max(0, ids.length - due.length)} waiting for tomorrow's retry.`);
   if (errors) warn(`Last error: ${lastError}`);
 }
