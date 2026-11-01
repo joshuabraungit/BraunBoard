@@ -12,7 +12,7 @@ import { isSizeBucket, SIZE_BUCKETS, SIZE_LABELS } from "@/lib/ingest/size";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "B2B sales jobs: AE, SDR, SE and sales leadership · Braun Board",
-  description: "Every open B2B sales job in one list, with the pay, what the company sells in plain English, and the questions to ask before you say yes.",
+  description: "Fresh B2B sales jobs from employer career pages, with the pay, what the company sells in plain English, and the questions to ask before you say yes.",
   alternates: { canonical: "/jobs" },
 };
 
