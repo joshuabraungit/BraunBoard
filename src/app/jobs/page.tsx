@@ -5,6 +5,7 @@ import { listJobsWithTotal, type JobFilters } from "@/lib/data";
 import { isMarketChoice, MARKET_CHOICES, marketsFor, payPresets, visitorMarket, type MarketChoice } from "@/lib/market";
 import { JobGrid } from "@/components/JobCard";
 import { AutoSubmitForm } from "@/components/AutoSubmitForm";
+import { MoreFilters } from "@/components/MoreFilters";
 import { getUserState } from "@/lib/session";
 import { watchSearch } from "@/app/actions";
 import { REMOTE_TYPES, ROLE_FAMILIES, SALES_MOTIONS, SALES_SEGMENTS } from "@/lib/ingest/types";
@@ -135,7 +136,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
   ]
     .filter((c): c is { key: string; label: string } => !!c)
     .map((c) => ({ ...c, href: without(c.key) }));
-  // How many of the tucked-away filters are on, so "More filters" can say so (and stay open).
+  // How many of the tucked-away filters are on, so "More filters" can say so.
   const moreActive = ["minOte", "minBase", "segment", "motion", "size", "posted"].filter((k) => chips.some((c) => c.key === k)).length;
   // A watch should cover the countries the person was looking at, even if they never touched the picker.
   const watchQs = (() => {
@@ -175,12 +176,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
           </select>
           <Select name="remote" label="Any workplace" options={REMOTE_TYPES} value={sp.remote} />
         </div>
-        <details className="group" open={moreActive > 0}>
-          <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-1 text-sm font-semibold text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
-            <span className="transition group-open:rotate-90">›</span> More filters
-            {moreActive > 0 && <span className="rounded-full bg-ink px-1.5 text-xs text-white">{moreActive}</span>}
-          </summary>
-          <div className="mt-2 flex flex-wrap gap-2">
+        <MoreFilters active={moreActive}>
             <select name="minOte" defaultValue={sp.minOte ?? ""} className={SELECT} aria-label="Minimum OTE">
               <option value="">Any OTE</option>
               {payOptions(market, "ote", sp.minOte).map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
@@ -202,8 +198,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
             <select name="posted" defaultValue={sp.posted ?? ""} className={SELECT} aria-label="Posted">
               {POSTED_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
-          </div>
-        </details>
+        </MoreFilters>
       </AutoSubmitForm>
       {chips.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
