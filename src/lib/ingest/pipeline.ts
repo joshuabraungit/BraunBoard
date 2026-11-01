@@ -7,7 +7,7 @@ import { adapters } from "./adapters";
 import { fetchGreenhousePayRange } from "./adapters/greenhouse";
 import { primeWorkable } from "./adapters/workable";
 import { classifyTitle, isTalentPool, stripGenderTag, writtenInGerman } from "./classify";
-import { canadaPlaceFromTitle, germanyPlaceFrom, parseLocation, titleNamesGermanyOnly, titleNamesCanadaOnly, namesForeignPlace, titleNamesUkOnly, titleOutOfMarket, ukPlaceFromTitle, type Market, type ParsedLocation } from "./location";
+import { canadaPlaceFromTitle, germanyPlaceFrom, parseLocation, titleNamesGermanyOnly, titleNamesCanadaOnly, namesForeignPlace, titleNamesUkOnly, titleOutOfMarket, descriptionPlacesRoleAbroad, ukPlaceFromTitle, type Market, type ParsedLocation } from "./location";
 import { payCurrency, resolveCompensation } from "./compensation";
 import { extractAttributes } from "./extract";
 import { dedupeKey, descriptionSimilarity, DUPLICATE_THRESHOLD, normalizeLocationKey, sameRole } from "./dedupe";
@@ -83,7 +83,7 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
       const cls = classifyTitle(job.title);
       const loc = locate(job);
 
-      if (!cls || !loc.markets.length || titleOutOfMarket(job.title, loc.markets) || isTalentPool(job.description) || writtenInGerman(job.description)) {
+      if (!cls || !loc.markets.length || titleOutOfMarket(job.title, loc.markets) || (loc.city == null && descriptionPlacesRoleAbroad(job.description, loc.markets)) || isTalentPool(job.description) || writtenInGerman(job.description)) {
         // No longer in scope under current rules: hide it now when reprocessing,
         // otherwise it ages out after missed checks like any vanished job.
         if (prior && opts.reprocess && prior.is_active) {

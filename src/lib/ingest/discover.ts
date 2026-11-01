@@ -4,7 +4,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AtsProvider, RawJob } from "./types";
 import { classifyTitle, isTalentPool } from "./classify";
-import { titleOutOfMarket } from "./location";
+import { descriptionPlacesRoleAbroad, titleOutOfMarket } from "./location";
 import { locate } from "./pipeline";
 import { slugify } from "../slug";
 import { normalizeDomain } from "./adapters/workable";
@@ -14,6 +14,7 @@ export function inScopeSalesJob(job: RawJob): { markets: string[] } | null {
   if (!classifyTitle(job.title)) return null;
   const loc = locate(job);
   if (!loc.markets.length || titleOutOfMarket(job.title, loc.markets)) return null;
+  if (loc.city == null && descriptionPlacesRoleAbroad(job.description, loc.markets)) return null;
   if (isTalentPool(job.description)) return null;
   return { markets: loc.markets };
 }

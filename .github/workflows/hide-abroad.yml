@@ -1,0 +1,27 @@
+name: Hide jobs placed abroad
+
+# Catch-up: hides stored jobs whose posting text puts them outside our countries
+# even though the location field says otherwise. New jobs are checked by the crawler.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only report, don't hide"
+        type: boolean
+        default: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/hide-abroad.ts ${{ inputs.dry_run && '--dry-run' || '' }}

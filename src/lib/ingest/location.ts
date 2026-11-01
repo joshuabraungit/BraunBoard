@@ -343,13 +343,13 @@ function parsePart(part: string): Omit<ParsedLocation, "remote_type" | "is_us" |
 
 const CANADA_IN_TITLE = /\b(canada|canadian|toronto|montr[eé]al|vancouver|ontario|qu[eé]bec|calgary|ottawa|edmonton|waterloo|gta)\b/i;
 const FOREIGN_IN_TITLE =
-  /\b(emea|apac|apj|latam|saarc|mea|sea|uk&i|united kingdom|uk|london|dublin|ireland|germany|dach|france|paris|berlin|munich|amsterdam|benelux|nordics?|australia|anz|sydney|melbourne|singapore|japan|tokyo|india|bangalore|mexico|brazil|s[aã]o paulo|israel|spain|madrid|italy|milan)\b/i;
+  /\b(emea|apac|apj|latam|saarc|mea|sea|uk&i|united kingdom|uk|london|dublin|ireland|germany|dach|france|paris|berlin|munich|amsterdam|benelux|nordics?|australia|anz|sydney|melbourne|canberra|brisbane|perth|auckland|singapore|japan|tokyo|korea|seoul|india|bangalore|mexico|brazil|s[aã]o paulo|israel|spain|madrid|italy|milan)\b/i;
 const US_IN_TITLE = /\b(us|u\.s\.?|usa|united states|north america|americas|new england|east coast|west coast)\b/i;
 
 const UK_IN_TITLE = /\b(uk|u\.k\.|united kingdom|uk&i|uki|britain|london|england|scotland|edinburgh|manchester)\b/i;
 // Territories a UK-based seller wouldn't cover. Europe-wide titles (DACH, Nordics, EMEA) are often
 // sold from London, so those stay in for UK jobs.
-const OUTSIDE_EUROPE_IN_TITLE = /\b(apac|apj|latam|saarc|sea|asia|australia|anz|sydney|melbourne|singapore|japan|tokyo|india|bangalore|mexico|brazil|s[aã]o paulo|middle east|mena|africa)\b/i;
+const OUTSIDE_EUROPE_IN_TITLE = /\b(apac|apj|latam|saarc|sea|asia|australia|anz|sydney|melbourne|canberra|brisbane|perth|auckland|singapore|japan|tokyo|korea|seoul|india|bangalore|mexico|brazil|s[aã]o paulo|middle east|mena|africa)\b/i;
 
 const GERMANY_IN_TITLE = /\b(germany|deutschland|dach|berlin|munich|m[üu]nchen|hamburg|frankfurt|cologne|k[öo]ln|d[üu]sseldorf|stuttgart)\b/i;
 
@@ -407,4 +407,52 @@ export function titleNamesCanadaOnly(title: string): boolean {
 export function canadaPlaceFromTitle(title: string): { city: string | null; state: string | null } {
   const p = parseCaPart(title);
   return { city: p?.city ?? null, state: p?.state ?? null };
+}
+
+// ---------------------------------------------------------------------------
+// The posting body says the job is somewhere else. Some employers put a bare "United States" or
+// "Remote" in the location field for a job that's really in Seoul or Canberra. Only used when the
+// location has no city, so a real "Austin, TX" is never second-guessed.
+// ---------------------------------------------------------------------------
+
+const EUROPE = ["France", "Spain", "Italy", "Netherlands", "Belgium", "Poland", "Sweden", "Switzerland", "Austria", "Denmark", "Norway", "Finland", "Portugal", "Ireland"];
+const BEYOND_EUROPE = [
+  "Korea", "Japan", "China", "India", "Singapore", "Australia", "New Zealand", "Brazil", "Mexico", "Israel", "Saudi Arabia",
+  "United Arab Emirates", "UAE", "Indonesia", "Philippines", "Vietnam", "Thailand", "Malaysia", "Hong Kong", "Taiwan",
+  "Argentina", "Colombia", "Chile", "South Africa", "Nigeria", "Kenya", "Egypt", "Turkey",
+];
+const OUR_PLACES = /\b(United States|U\.S\.A?|USA|US|North America|Americas|Canada|United Kingdom|UK|Britain|Germany|DACH)\b/g;
+// Same, plus the parts of our countries a posting might name on its location line.
+const OUR_PLACES_ONE = /\b(United States|U\.S\.A?|USA|US|North America|Americas|Canada|United Kingdom|UK|Britain|England|Scotland|Wales|Northern Ireland|London|Germany|DACH|Berlin|Munich|Remote US|[A-Z][a-z]+, [A-Z]{2})\b/;
+const OTHER_REGIONS = /\b(Europe|EMEA|APAC|APJ|Asia|LATAM|Latin America|Middle East|Africa|global(ly)?|worldwide)\b/i;
+const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * The foreign country a posting's own text puts the job in, or null. Two ways it qualifies:
+ * - it says so outright: "Available location: Canberra, Australia", "based in Seoul, Korea"
+ * - one foreign country carries the posting: named 3+ times, at least twice as often as anywhere
+ *   we cover, with no other region in play ("customers in Europe, Australia and APAC" doesn't count)
+ * UK and Germany jobs are often sold across Europe, so for those only countries beyond Europe count.
+ */
+export function descriptionPlacesRoleAbroad(description: string, markets: readonly Market[]): string | null {
+  if (!description) return null;
+  const europeOk = markets.length > 0 && markets.every((m) => m === "UK" || m === "DE");
+  const countries = europeOk ? BEYOND_EUROPE : [...EUROPE, ...BEYOND_EUROPE];
+  // "Location: Canberra, Australia" or "based in Seoul". Only when that line names nowhere we cover:
+  // "Location: UK or Singapore" or "based in the UK or Ireland" is still one of ours.
+  for (const m of description.matchAll(/(?:\b(?:available )?locations?\s*:|\b(?:based|located) in\b)([^.\n]{0,80})/gi)) {
+    const line = m[1]!;
+    if (OUR_PLACES_ONE.test(line)) continue;
+    const c = countries.find((x) => new RegExp(`\\b${esc(x)}\\b`).test(line));
+    if (c) return c;
+  }
+  const ours = description.match(OUR_PLACES)?.length ?? 0;
+  const counts = countries
+    .map((c) => ({ c, n: description.match(new RegExp(`\\b${esc(c)}(?:n|'s)?\\b`, "g"))?.length ?? 0 }))
+    .filter((x) => x.n >= 2)
+    .sort((a, b) => b.n - a.n);
+  if (counts.length !== 1) return null;
+  const top = counts[0]!;
+  if (top.n >= 3 && top.n >= 2 * ours && !OTHER_REGIONS.test(description)) return top.c;
+  return null;
 }
