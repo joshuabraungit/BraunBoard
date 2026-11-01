@@ -77,7 +77,7 @@ export function cardLights(job: JobView, read: ReturnType<typeof braunRead>, now
   const red = flags.find(isRedFlag);
   const headsUp = flags.find(isHeadsUp);
   const green = flags.find((f) => f.tone === "green");
-  const standout: Light = red
+  const standout: Light | null = red
     ? asLight(red, "red")
     : days > 45
       ? { tone: "red", text: `Open ${days} days`, why: "Ask why it's been hard to fill." }
@@ -85,21 +85,23 @@ export function cardLights(job: JobView, read: ReturnType<typeof braunRead>, now
         ? asLight(headsUp, "yellow")
         : green
           ? asLight(green, "green")
-          : days <= 7
-            ? { tone: "green", text: "New this week" }
-            : days <= 21
-              ? { tone: "green", text: `Open ${days} days` }
-              : { tone: "yellow", text: `Open ${days} days` };
+          : days > 21
+            ? { tone: "yellow", text: `Open ${days} days` }
+            : null;
+  // Nothing stands out: say where deals come from, which matters to AEs (SDRs prospect by definition).
+  const sdr = job.role_family === "SDR/BDR";
+  const pipeline: Record<string, string> = { High: "Mostly outbound", Medium: "Inbound + outbound", Low: "Mostly inbound" };
+  const fallback: Light | null = !sdr && pipeline[job.self_sourcing_level] ? { tone: "green", text: pipeline[job.self_sourcing_level]! } : null;
 
-  return [pay, quota, standout];
+  return [pay, quota, standout ?? fallback].filter((l): l is Light => !!l);
 }
 
 function Lights({ lights }: { lights: Light[] }) {
   return (
-    <ul className="flex flex-wrap gap-x-3 gap-y-1">
+    <ul className="flex flex-wrap gap-x-3.5 gap-y-1">
       {lights.map((l) => (
-        <li key={l.text} title={l.why} className="flex items-center gap-1.5 text-xs font-medium text-ink-2">
-          <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[l.tone]}`} aria-label={l.tone} />
+        <li key={l.text} title={l.why} className="flex items-center gap-1.5 text-[13px] font-medium text-ink-2">
+          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${DOT[l.tone]}`} aria-label={l.tone} />
           {l.text}
         </li>
       ))}
