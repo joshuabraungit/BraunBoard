@@ -18,10 +18,11 @@ export function inScopeSalesJob(job: RawJob): { markets: string[] } | null {
   return { markets: loc.markets };
 }
 
-// Recruiters and staffing firms post sales jobs for other companies. Braun Board wants the employer.
-const STAFFING = /\b(staffing|recruit(ing|ment|ers?)|talent (partners|solutions|acquisition)|search (partners|group)|headhunt|placement|personnel|workforce solutions|executive search|employment agency)\b/i;
+// Recruiters, staffing firms and hiring marketplaces post sales jobs for other companies. Braun Board wants the employer.
+const STAFFING = /(staffing|recruit(ing|ment|ers?)\b|talent|search (partners|group)|headhunt|placement|personnel|workforce|executive search|employment agency|hiring|careers?\b)/i;
 // Door-to-door, insurance agents, real estate, retail floor: sales, but not the B2B jobs we list.
-const CONSUMER = /\b(insurance agency|realty|real estate|solar|roofing|home improvement|auto(motive)? (group|dealer)|dealership|retail)\b/i;
+const CONSUMER = /\b(insurance agenc(y|ies)|life insurance|realty|real estate|solar|roofing|remodel(ing)?|home improvement|auto(motive)? (group|dealer)|dealership|retail|jewel(l)?ers?|funeral)\b/i;
+const CONSUMER_TITLE = /\b(door[- ]to[- ]door|in[- ]home|field sales|retail|store|jewel(le)?ry|funeral|insurance (agent|sales)|life insurance|realtor|solar|roofing|per hour|\/hr\b|costco|at&t|directv)\b/i;
 
 /** Why a candidate needs a closer look before approving, or null if it looks like a normal employer. */
 export function candidateNote(name: string, titles: string[], descriptions: string[]): string | null {
@@ -30,7 +31,9 @@ export function candidateNote(name: string, titles: string[], descriptions: stri
   const text = descriptions.join("\n").slice(0, 20_000);
   if (/\b(on behalf of (our|a) client|our client is (a|an|looking)|confidential client)\b/i.test(text)) return "Postings say they're for a client (recruiter?)";
   if (/\b(commission[- ]only|100% commission|1099 (contractor|position))\b/i.test(text)) return "Commission-only or 1099 roles";
-  if (titles.every((t) => /\b(retail|store|insurance agent|realtor)\b/i.test(t))) return "Titles look like retail or consumer sales";
+  const consumer = titles.filter((t) => CONSUMER_TITLE.test(t)).length;
+  if (consumer && consumer >= titles.length / 2) return "Titles look like field, retail or consumer sales";
+  if (/\b(hourly pay|per hour|\$\d+(\.\d+)?\s*(\/|per)\s*h(ou)?r)\b/i.test(text) && !/\b(SaaS|software|platform|B2B)\b/i.test(text)) return "Hourly pay, no sign of B2B selling";
   return null;
 }
 

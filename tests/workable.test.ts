@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseJobBlock, toRawJob, workableAccount } from "../src/lib/ingest/adapters/workable";
 import { candidateNote, normalizeDomain } from "../src/lib/ingest/discover";
+import { locate } from "../src/lib/ingest/pipeline";
 
 // Shape from Workable's "Utilizing the XML Job Feed" help article.
 const block = `<job>
@@ -27,10 +28,15 @@ describe("Workable feed", () => {
     const raw = toRawJob(j, "Acme Co");
     expect(raw.apply_url).toBe("https://apply.workable.com/j/A1B2C3D4E5");
     expect(raw.source_job_id).toBe("A1B2C3D4E5");
-    expect(raw.location).toBe("Austin, Texas, US");
+    expect(raw.location).toBe("Austin, Texas, United States");
     expect(raw.description).toContain("Base $90k, OTE $180k");
     expect(raw.description).not.toContain("<");
     expect(raw.posted_at).toBe("2019-12-29T11:02:25.000Z");
+  });
+
+  it("doesn't read India's IN as Indiana", () => {
+    const j = parseJobBlock(block.replace("<![CDATA[Austin]]>", "<![CDATA[Sriperumbudur]]>").replace("<![CDATA[Texas]]>", "<![CDATA[Tamil Nadu]]>").replace("<![CDATA[US]]>", "<![CDATA[IN]]>"))!;
+    expect(locate(toRawJob(j, "Acme")).markets).toEqual([]);
   });
 
   it("marks remote jobs", () => {

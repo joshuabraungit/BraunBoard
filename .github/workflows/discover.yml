@@ -1,0 +1,35 @@
+name: Discover companies
+
+# Finds companies hiring salespeople that aren't on Braun Board yet and puts them in
+# Admin > Discover for a yes or no. Nothing goes on the site without approval.
+# - Weekly: every Workable company with sales jobs in the US, Canada or UK (Workable's public job-board feed).
+# - By hand with a CSV (name,domain[,careers_url]): finds each company's Greenhouse, Lever or Ashby board.
+on:
+  schedule:
+    - cron: "17 11 * * 1" # Mondays, 7:17am ET
+  workflow_dispatch:
+    inputs:
+      file:
+        description: "Optional company CSV to check (leave blank for the Workable scan)"
+        default: ""
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - if: ${{ !inputs.file }}
+        run: npx tsx scripts/discover-workable.ts
+      - if: ${{ inputs.file }}
+        env:
+          FILE: ${{ inputs.file }}
+        run: npx tsx scripts/discover-boards.ts "$FILE"

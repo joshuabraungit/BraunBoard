@@ -122,9 +122,26 @@ export async function streamWorkableFeed(
   }
 }
 
+/**
+ * The feed gives two-letter country codes. Spell them out: "IN" next to a city reads as Indiana,
+ * and "CA" as California, to our location parser.
+ */
+const COUNTRY_NAMES = new Intl.DisplayNames(["en"], { type: "region" });
+export function countryName(code: string): string {
+  const c = code.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(c)) return code.trim();
+  if (c === "GB" || c === "UK") return "United Kingdom";
+  try {
+    return COUNTRY_NAMES.of(c) ?? c;
+  } catch {
+    return c;
+  }
+}
+
 export function toRawJob(j: WorkableFeedJob, companyName: string): RawJob {
   const code = j.url.match(/\/j\/([^/?#]+)/i)?.[1] ?? j.referencenumber;
-  const place = [j.city, j.state, j.country].filter(Boolean).join(", ");
+  const country = j.country ? countryName(j.country) : "";
+  const place = [j.city, j.state, country].filter(Boolean).join(", ");
   const workplace: RemoteType | undefined = j.remote ? "Remote" : undefined;
   return {
     source_provider: "workable",
@@ -140,7 +157,7 @@ export function toRawJob(j: WorkableFeedJob, companyName: string): RawJob {
     source_url: j.url,
     workplace_type: workplace,
     employment_type: j.jobtype || null,
-    country_hint: j.country || null,
+    country_hint: country || null,
     region_hint: j.state || null,
     city_hint: j.city || null,
     posted_at: validDate(j.date),
