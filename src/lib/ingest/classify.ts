@@ -19,6 +19,7 @@ const EXCLUDE = [
   /\b(rev(enue)?\s*ops|revenue operations|sales operations|sales ops|gtm operations|deal desk)\b/i,
   /\b(enablement|sales training|onboarding specialist)\b/i,
   /\b(recruit(er|ing)|talent acquisition|sourcer)\b/i,
+  /\b(people|hr|human resources)( business)? partner\b/i, // HR, even when the title says "Field Sales"
   /\b(marketing|demand gen|growth marketing|content|brand|communications|pr manager)\b/i,
   /\b(retail|store|cashier|associate,? (store|retail)|showroom)\b/i,
   /\b(insurance|real estate|realtor|mortgage|loan officer|licensed agent)\b/i,
@@ -57,6 +58,17 @@ const SEGMENTS: { segment: SalesSegment; re: RegExp }[] = [
   { segment: "Mid-Market", re: /\b(mid[- ]?market|mm|midmarket|corporate)\b/i },
   { segment: "SMB", re: /\b(smb|small business|small and medium|small & medium|velocity|emerging|startups?)\b/i },
 ];
+
+// Partnerships / channel roles. Titles only: the model's read of the description tagged regional
+// sales directors as "Channel", which is noise for someone hunting partner roles.
+const CHANNEL = /\b(channel|partners?|partnerships?|alliances?|resellers?|ecosystems?)\b/i;
+// "Client Partner" and "Account Partner" are account management, not partnerships.
+const NOT_CHANNEL = /\b(client|account) partners?\b/i;
+
+/** Is this a partnerships or channel role, judged by the title? */
+export function isChannelTitle(title: string): boolean {
+  return CHANNEL.test(title) && !NOT_CHANNEL.test(title);
+}
 
 function seniorityFor(family: RoleFamily): Seniority {
   switch (family) {
@@ -105,6 +117,6 @@ export function classifyTitle(rawTitle: string): TitleClassification | null {
     seniority: seniorityFor(hit.family),
     sales_segment: seg?.segment ?? "Unknown",
     title_normalized: normalizeTitle(title),
-    is_channel: /\b(channel|partner|alliances?|reseller)\b/i.test(title),
+    is_channel: isChannelTitle(title),
   };
 }

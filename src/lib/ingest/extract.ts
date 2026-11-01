@@ -100,7 +100,8 @@ export async function extractAttributes(
       ...base,
       // A segment in the title beats the model's read of the description.
       sales_segment: cls.sales_segment !== "Unknown" ? cls.sales_segment : parsed.sales_segment,
-      sales_motion: parsed.sales_motion,
+      // Channel is decided by the title alone, so the "Partnerships & Channel" filter stays clean.
+      sales_motion: cls.is_channel ? "Channel" : parsed.sales_motion === "Channel" ? "Unknown" : parsed.sales_motion,
       self_sourcing_level: parsed.self_sourcing_level,
       customer_segment: parsed.customer_segment,
       summary: parsed.summary.trim() || null,

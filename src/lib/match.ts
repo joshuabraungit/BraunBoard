@@ -214,11 +214,13 @@ export function scoreMatch(job: MatchableJob, prefs: WatchPrefs): MatchResult {
   }
 
   if (prefs.motions.length) {
-    const ok = prefs.motions.includes(job.sales_motion) || (job.sales_motion === "Mixed" && prefs.motions.length > 0);
+    // Channel comes from the title, so it's a yes/no: a partnerships watch never gets Mixed or Unknown roles.
+    const onlyChannel = prefs.motions.every((m) => m === "Channel");
+    const ok = prefs.motions.includes(job.sales_motion) || (job.sales_motion === "Mixed" && !onlyChannel);
     checks.push({
       key: "motion",
-      label: "Motion",
-      result: job.sales_motion === "Unknown" ? "unknown" : ok ? "pass" : "fail",
+      label: onlyChannel ? "Partnerships" : "Motion",
+      result: job.sales_motion === "Unknown" && !onlyChannel ? "unknown" : ok ? "pass" : "fail",
     });
   }
 

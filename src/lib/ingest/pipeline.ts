@@ -45,7 +45,7 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
   try {
     const { data: existingRows, error: exErr } = await db
       .from("jobs")
-      .select("id, source_job_id, is_active, missed_checks, classification_overridden, title_raw, salary_min, salary_max, ote_min, ote_max")
+      .select("id, source_job_id, is_active, missed_checks, classification_overridden, sales_motion, title_raw, salary_min, salary_max, ote_min, ote_max")
       .eq("company_id", company.id);
     if (exErr) throw exErr;
     const existing = new Map((existingRows ?? []).map((r) => [r.source_job_id as string, r]));
@@ -109,6 +109,7 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
             role_family: cls.role_family,
             seniority: cls.seniority,
             title_normalized: cls.title_normalized,
+            ...(cls.is_channel ? { sales_motion: "Channel" } : prior.sales_motion === "Channel" ? { sales_motion: "Unknown" } : {}),
             ...(cls.sales_segment !== "Unknown" ? { sales_segment: cls.sales_segment } : {}),
             city: loc.city,
             state: loc.state,
