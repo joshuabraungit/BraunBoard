@@ -1,5 +1,5 @@
 // Company discovery: shared rules for deciding whether a company found on a job board is worth
-// a look, and saving it to the approval queue (Admin > Discover).
+// adding, and adding it.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AtsProvider, RawJob } from "./types";
@@ -54,39 +54,34 @@ export interface FoundCompany {
 export { normalizeDomain };
 
 /**
- * Save found companies to the queue. Skips anything already on Braun Board (same board, same
- * name, or same domain). Never touches a decision already made: approved or rejected rows only
- * get their counts refreshed.
+ * Add found companies to Braun Board. No review step: a company that passes the checks is added
+ * and crawled within the hour; one that's flagged (recruiter, consumer or field sales, no sign of
+ * B2B selling) is left out. Anything already on Braun Board, including a company you've turned
+ * off, is never touched. Every company seen is logged in company_candidates with what happened
+ * and why, so a bad call can be traced.
  */
-export async function saveCandidates(db: SupabaseClient, found: FoundCompany[]): Promise<{ added: number; refreshed: number; skipped: number }> {
+export async function addDiscovered(db: SupabaseClient, found: FoundCompany[]): Promise<{ added: string[]; left_out: number; already: number }> {
   const { data: cos, error } = await db.from("companies").select("slug, domain, ats_provider, ats_identifier");
   if (error) throw error;
   const boards = new Set((cos ?? []).map((c) => `${c.ats_provider}|${String(c.ats_identifier ?? "").toLowerCase()}`));
   const slugs = new Set((cos ?? []).map((c) => c.slug as string));
   const domains = new Set((cos ?? []).map((c) => normalizeDomain(c.domain as string | null)).filter(Boolean));
 
-  const { data: existing } = await db.from("company_candidates").select("ats_provider, ats_identifier, status");
-  const known = new Map((existing ?? []).map((c) => [`${c.ats_provider}|${String(c.ats_identifier).toLowerCase()}`, c.status as string]));
-
-  let added = 0;
-  let refreshed = 0;
-  let skipped = 0;
   const now = new Date().toISOString();
-  // New and refreshed rows go in separate batches: a batch upsert fills columns one row leaves out
-  // with null, which would wipe the first-found date on refreshed rows.
-  const fresh: Record<string, unknown>[] = [];
-  const again: Record<string, unknown>[] = [];
+  const added: string[] = [];
+  let leftOut = 0;
+  let already = 0;
+  const log: Record<string, unknown>[] = [];
+  const toAdd: Record<string, unknown>[] = [];
   for (const f of found) {
     const key = `${f.provider}|${f.identifier.toLowerCase()}`;
     if (boards.has(key) || slugs.has(slugify(f.name)) || (f.domain && domains.has(f.domain))) {
-      skipped++;
+      already++;
       continue;
     }
-    const markets = [...new Set(f.jobs.flatMap((j) => j.markets))].sort();
     const titles = [...new Set(f.jobs.map((j) => j.title))];
-    // The note is a hint, not a decision, so it's recomputed on every scan as the rules improve.
-    const base = {
-      note: candidateNote(f.name, titles, f.jobs.map((j) => j.description), f.domain),
+    const note = candidateNote(f.name, titles, f.jobs.map((j) => j.description), f.domain);
+    log.push({
       name: f.name,
       domain: f.domain,
       ats_provider: f.provider,
@@ -94,22 +89,38 @@ export async function saveCandidates(db: SupabaseClient, found: FoundCompany[]):
       source: f.source,
       sales_jobs: f.jobs.length,
       sample_titles: titles.slice(0, 5),
-      markets,
+      markets: [...new Set(f.jobs.flatMap((j) => j.markets))].sort(),
+      status: note ? "rejected" : "approved",
+      note,
       last_found_at: now,
-    };
-    if (known.has(key)) {
-      refreshed++;
-      again.push(base);
-    } else {
-      added++;
-      fresh.push({ ...base, first_found_at: now });
+      decided_at: now,
+    });
+    if (note) {
+      leftOut++;
+      continue;
     }
+    let slug = slugify(f.name);
+    if (slugs.has(slug)) slug = slugify(`${f.name} ${f.identifier}`);
+    slugs.add(slug);
+    toAdd.push({
+      slug,
+      name: f.name,
+      domain: f.domain,
+      website_url: f.domain ? `https://${f.domain}` : null,
+      ats_provider: f.provider,
+      ats_identifier: f.identifier,
+      is_disabled: false,
+      last_crawled_at: null,
+    });
+    added.push(f.name);
   }
-  for (const rows of [fresh, again]) {
-    for (let i = 0; i < rows.length; i += 200) {
-      const { error: e } = await db.from("company_candidates").upsert(rows.slice(i, i + 200), { onConflict: "ats_provider,ats_identifier" });
-      if (e) throw e;
-    }
+  for (let i = 0; i < log.length; i += 200) {
+    const { error: e } = await db.from("company_candidates").upsert(log.slice(i, i + 200), { onConflict: "ats_provider,ats_identifier" });
+    if (e) throw e;
   }
-  return { added, refreshed, skipped };
+  for (let i = 0; i < toAdd.length; i += 200) {
+    const { error: e } = await db.from("companies").upsert(toAdd.slice(i, i + 200), { onConflict: "ats_provider,ats_identifier", ignoreDuplicates: true });
+    if (e) throw e;
+  }
+  return { added, left_out: leftOut, already };
 }

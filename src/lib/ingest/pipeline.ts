@@ -19,6 +19,9 @@ import { matchNewJobs } from "../alerts/match-new-jobs";
 /** A job has to be missing from this many consecutive crawls before we call it removed. */
 export const MISSES_BEFORE_REMOVAL = 2;
 
+/** New jobs only go out in alerts if the employer posted them within this many days. */
+export const ALERT_MAX_AGE_DAYS = 7;
+
 export interface CompanyRow extends CompanyRef {
   slug: string;
 }
@@ -126,7 +129,9 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
       const inserted = await insertNewJob(db, company, job, cls, loc);
       if (inserted) {
         stats.new++;
-        newJobIds.push(inserted);
+        // Alerts are for jobs that are actually new. A months-old posting we only just found
+        // (say, from a company we just added) isn't news to anyone watching.
+        if (!job.posted_at || Date.now() - new Date(job.posted_at).getTime() <= ALERT_MAX_AGE_DAYS * 86_400_000) newJobIds.push(inserted);
       }
     }
 

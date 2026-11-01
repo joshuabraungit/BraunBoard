@@ -1,10 +1,10 @@
 // Company discovery from Workable's public XML job feed: every company hiring salespeople in the
-// US, Canada or the UK on Workable goes to the approval queue (Admin > Discover).
+// US, Canada or the UK on Workable is added to Braun Board, unless it's flagged (see discover.ts).
 // Usage: npx tsx scripts/discover-workable.ts [--dry-run]
 
 import { adminClient } from "../src/lib/supabase/admin";
 import { streamWorkableFeed, toRawJob, type WorkableFeedJob } from "../src/lib/ingest/adapters/workable";
-import { candidateNote, inScopeSalesJob, normalizeDomain, saveCandidates, type FoundCompany } from "../src/lib/ingest/discover";
+import { addDiscovered, candidateNote, inScopeSalesJob, normalizeDomain, type FoundCompany } from "../src/lib/ingest/discover";
 import { classifyTitle } from "../src/lib/ingest/classify";
 import { notice, requireEnv } from "./report";
 
@@ -52,8 +52,9 @@ async function main() {
 
   if (dry) return;
   const db = adminClient();
-  const r = await saveCandidates(db, found);
-  notice(`Workable discovery: ${r.added} new companies to review, ${r.refreshed} refreshed, ${r.skipped} already on Braun Board.`);
+  const r = await addDiscovered(db, found);
+  notice(`Workable discovery: added ${r.added.length} companies, left out ${r.left_out} flagged ones, ${r.already} already on Braun Board.`);
+  if (r.added.length) console.log(`Added: ${r.added.join(", ")}`);
 }
 
 main().catch((e) => {

@@ -1,6 +1,6 @@
--- Company discovery. Companies found hiring salespeople on an employer job board we support,
--- waiting for a yes or no in Admin > Discover. Nothing here is crawled or shown on the site
--- until it's approved and becomes a real company.
+-- Company discovery log. Every company found hiring salespeople on an employer job board we
+-- support, and whether it was added (approved) or left out (rejected, with the reason in note).
+-- Added companies go straight into companies; there's no review step.
 create table if not exists public.company_candidates (
   id              uuid primary key default gen_random_uuid(),
   name            text not null,

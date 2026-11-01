@@ -1,7 +1,7 @@
 name: Discover companies
 
-# Finds companies hiring salespeople that aren't on Braun Board yet and puts them in
-# Admin > Discover for a yes or no. Nothing goes on the site without approval.
+# Finds companies hiring salespeople that aren't on Braun Board yet and adds them.
+# Recruiters, consumer or field sales, and companies with no sign of B2B selling are left out.
 # - Weekly: every Workable company with sales jobs in the US, Canada or UK (Workable's public job-board feed).
 # - By hand with a CSV (name,domain[,careers_url]): finds each company's Greenhouse, Lever or Ashby board.
 on:
