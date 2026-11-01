@@ -5,7 +5,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { adapters } from "./adapters";
 import { fetchGreenhousePayRange } from "./adapters/greenhouse";
-import { classifyTitle } from "./classify";
+import { classifyTitle, isTalentPool } from "./classify";
 import { canadaPlaceFromTitle, parseLocation, titleNamesCanadaOnly, namesForeignPlace, titleNamesUkOnly, titleOutOfMarket, ukPlaceFromTitle, type ParsedLocation } from "./location";
 import { payCurrency, resolveCompensation } from "./compensation";
 import { extractAttributes } from "./extract";
@@ -78,7 +78,7 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
       const cls = classifyTitle(job.title);
       const loc = locate(job);
 
-      if (!cls || !loc.markets.length || titleOutOfMarket(job.title, loc.markets)) {
+      if (!cls || !loc.markets.length || titleOutOfMarket(job.title, loc.markets) || isTalentPool(job.description)) {
         // No longer in scope under current rules: hide it now when reprocessing,
         // otherwise it ages out after missed checks like any vanished job.
         if (prior && opts.reprocess && prior.is_active) {
