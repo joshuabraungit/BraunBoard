@@ -39,6 +39,8 @@ describe("classifyTitle: included roles (spec section 3)", () => {
     ["VP of Sales", "VP Sales"],
     ["Vice President, Enterprise Sales", "VP Sales"],
     ["Chief Revenue Officer", "CRO"],
+    ["CRO", "CRO"],
+    ["Fractional CRO - North America", "CRO"],
   ])("%s -> %s", (title, family) => {
     expect(classifyTitle(title)?.role_family).toBe(family);
   });
@@ -231,5 +233,25 @@ describe("isTalentPool", () => {
   });
   it("drops Open Application titles", () => {
     expect(classifyTitle("Account Executive - Open Application")).toBeNull();
+  });
+});
+
+describe("CRO that isn't a Chief Revenue Officer", () => {
+  it("drops conversion rate optimization jobs", () => {
+    for (const t of ["CRO Specialist - Funnels & Upsells", "Head of CRO", "CRO Lead (Hands-On)", "Conversion Rate Optimization Manager"]) expect(classifyTitle(t), t).toBeNull();
+  });
+  it("treats a contract research org as the industry, not the role", () => {
+    expect(classifyTitle("Business Development Director - CRO")?.role_family).toBe("Sales Director");
+    expect(classifyTitle("Account Executive, CRO Services")?.role_family).toBe("Account Executive");
+  });
+});
+
+describe("jobs near a CRO that aren't sales jobs", () => {
+  it("drops assistants, office-of roles and other C-level acronyms", () => {
+    for (const t of ["Executive Assistant to CRO & Head of Strategic Sales", "Senior Manager, Office of the CSO", "AI Transformation Owner, CRO", "Head of Solution Consulting R&D / Field CSO"]) {
+      expect(classifyTitle(t)?.role_family, t).not.toBe("CRO");
+    }
+    expect(classifyTitle("Executive Assistant to CRO & Head of Strategic Sales")).toBeNull();
+    expect(classifyTitle("Senior Manager, Office of the CSO")).toBeNull();
   });
 });

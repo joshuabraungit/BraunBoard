@@ -21,19 +21,24 @@ export function inScopeSalesJob(job: RawJob): { markets: string[] } | null {
 // Recruiters, staffing firms and hiring marketplaces post sales jobs for other companies. Braun Board wants the employer.
 const STAFFING = /(staffing|recruit(ing|ment|ers?)\b|talent|search (partners|group)|headhunt|placement|personnel|workforce|executive search|employment agency|hiring|careers?\b)/i;
 // Door-to-door, insurance agents, real estate, retail floor: sales, but not the B2B jobs we list.
-const CONSUMER = /\b(insurance agenc(y|ies)|life insurance|realty|real estate|solar|roof(ing)?|remodel(ing)?|home improvement|auto(motive)? (group|dealer)|dealership|retail|jewel(l)?ers?|funeral)\b/i;
+const CONSUMER = /(\binsurance|income life|\brealty|real estate|solar|roof|remodel|home improvement|\bauto(motive)? (group|dealer)|dealership|\bretail|jewel(l)?er|funeral|\bwax\b|\bsalon|\bmed ?spa|\bfitness|\bgym\b|mental health|\bdental|\bpest\b|\bagencies\b)/i;
+// Words a B2B posting almost always uses somewhere. A company whose postings use none of them
+// is probably selling to consumers.
+const B2B_TEXT = /\b(b2b|saas|software|enterprise|decision[- ]makers?|c-suite|procurement|arr|business(es)? (owners?|customers?|clients?)|companies|organi[sz]ations|distributors?|wholesale|manufactur\w*|it (teams?|leaders?)|cfos?|ctos?|cios?|vps?\b|hospitals?|health systems?|government agencies)\b/i;
 const CONSUMER_TITLE = /\b(door[- ]to[- ]door|in[- ]home|field sales|retail|store|jewel(le)?ry|funeral|insurance (agent|sales)|life insurance|realtor|solar|roofing|per hour|\/hr\b|costco|at&t|directv)\b/i;
 
 /** Why a candidate needs a closer look before approving, or null if it looks like a normal employer. */
-export function candidateNote(name: string, titles: string[], descriptions: string[]): string | null {
-  if (STAFFING.test(name)) return "Name looks like a recruiter or staffing firm";
-  if (CONSUMER.test(name)) return "Name looks like consumer or field sales";
+export function candidateNote(name: string, titles: string[], descriptions: string[], domain: string | null = null): string | null {
+  const who = `${name} ${domain ?? ""}`;
+  if (STAFFING.test(who)) return "Name looks like a recruiter or staffing firm";
+  if (CONSUMER.test(who)) return "Name looks like consumer or field sales";
   const text = descriptions.join("\n").slice(0, 20_000);
   if (/\b(on behalf of (our|a) client|our client is (a|an|looking)|confidential client)\b/i.test(text)) return "Postings say they're for a client (recruiter?)";
   if (/\b(commission[- ]only|100% commission|1099 (contractor|position))\b/i.test(text)) return "Commission-only or 1099 roles";
   const consumer = titles.filter((t) => CONSUMER_TITLE.test(t)).length;
   if (consumer && consumer >= titles.length / 2) return "Titles look like field, retail or consumer sales";
   if (/\b(hourly pay|per hour|\$\d+(\.\d+)?\s*(\/|per)\s*h(ou)?r)\b/i.test(text) && !/\b(SaaS|software|platform|B2B)\b/i.test(text)) return "Hourly pay, no sign of B2B selling";
+  if (text.trim() && !B2B_TEXT.test(text)) return "No sign of B2B selling in the postings";
   return null;
 }
 
@@ -68,7 +73,7 @@ export async function saveCandidates(db: SupabaseClient, found: FoundCompany[]):
   let skipped = 0;
   const now = new Date().toISOString();
   // New and refreshed rows go in separate batches: a batch upsert fills columns one row leaves out
-  // with null, which would wipe the note and first-found date on refreshed rows.
+  // with null, which would wipe the first-found date on refreshed rows.
   const fresh: Record<string, unknown>[] = [];
   const again: Record<string, unknown>[] = [];
   for (const f of found) {
@@ -79,7 +84,9 @@ export async function saveCandidates(db: SupabaseClient, found: FoundCompany[]):
     }
     const markets = [...new Set(f.jobs.flatMap((j) => j.markets))].sort();
     const titles = [...new Set(f.jobs.map((j) => j.title))];
+    // The note is a hint, not a decision, so it's recomputed on every scan as the rules improve.
     const base = {
+      note: candidateNote(f.name, titles, f.jobs.map((j) => j.description), f.domain),
       name: f.name,
       domain: f.domain,
       ats_provider: f.provider,
@@ -95,7 +102,7 @@ export async function saveCandidates(db: SupabaseClient, found: FoundCompany[]):
       again.push(base);
     } else {
       added++;
-      fresh.push({ ...base, note: candidateNote(f.name, titles, f.jobs.map((j) => j.description)), first_found_at: now });
+      fresh.push({ ...base, first_found_at: now });
     }
   }
   for (const rows of [fresh, again]) {

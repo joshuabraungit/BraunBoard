@@ -45,7 +45,7 @@ async function main() {
   console.log(`Sales jobs in US/CA/UK posted in the last ${RECENT_DAYS} days: ${sales.toLocaleString()} across ${found.length.toLocaleString()} companies.`);
   const byMarket = (m: string) => found.filter((f) => f.jobs.some((j) => j.markets.includes(m))).length;
   console.log(`Companies by market: US ${byMarket("US")}, CA ${byMarket("CA")}, UK ${byMarket("UK")}.`);
-  const flagged = found.filter((f) => candidateNote(f.name, f.jobs.map((j) => j.title), f.jobs.map((j) => j.description)));
+  const flagged = found.filter((f) => candidateNote(f.name, f.jobs.map((j) => j.title), f.jobs.map((j) => j.description), f.domain));
   console.log(`Flagged for a closer look (recruiter, consumer or field sales...): ${flagged.length}. Clean: ${found.length - flagged.length}.`);
   console.log("Most sales jobs, clean:");
   for (const f of found.filter((x) => !flagged.includes(x)).slice(0, 40)) console.log(`  ${String(f.jobs.length).padStart(3)}  ${f.name} (${f.identifier}) · ${[...new Set(f.jobs.map((j) => j.title))].slice(0, 3).join(" | ")}`);

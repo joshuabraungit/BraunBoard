@@ -56,6 +56,10 @@ describe("discovery checks", () => {
     expect(candidateNote("Sunny Solar", ["Sales Rep"], [""])).toMatch(/consumer/);
     expect(candidateNote("Acme", ["SDR"], ["This is a 100% commission role"])).toMatch(/Commission/);
     expect(candidateNote("Acme", ["Account Executive"], ["Sell software to IT teams."])).toBeNull();
+    expect(candidateNote("American Income Life", ["Sales Manager"], ["Help families protect their future."], "fisheragencies.com")).toMatch(/consumer/);
+    expect(candidateNote("European Wax Center", ["Center Sales Director"], ["Lead the front desk team."], "ewcgrowth.com")).toMatch(/consumer/);
+    expect(candidateNote("SmartRoof", ["Entry Level Sales Representative"], ["Meet homeowners."], "smartroof.com")).toMatch(/consumer/);
+    expect(candidateNote("Glowly", ["Sales Representative"], ["Meet with families in their homes to explain our plans."])).toMatch(/B2B/);
   });
   it("cleans up domains", () => {
     expect(normalizeDomain("https://www.Acme.co/careers")).toBe("acme.co");

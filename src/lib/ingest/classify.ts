@@ -35,6 +35,12 @@ const EXCLUDE = [
   /\bopportunities\s*$/i,
   /\bopen application\b/i,
   /\b(sales tax|tax)\b/i,
+  // CRO also means conversion rate optimization, a marketing job.
+  /\b(conversion rate|funnels?|landing pages?|a\/b test)/i,
+  /\bcro (specialist|lead|manager|analyst|strategist|expert|consultant|designer|marketer|executive)\b/i,
+  /\b(head|director|manager|lead) of cro\b/i,
+  // Supporting a sales leader isn't selling.
+  /\b(executive|administrative) assistant\b|\bchief of staff\b|\boffice of the\b/i,
   /\b(compensation|commissions?) (analyst|manager|specialist|administrator)\b/i,
   /\b(sales|solutions) (strategy|planning|programs?)\b/i,
   // Partnerships that aren't selling: ops, and creator / media / school partnerships.
@@ -62,7 +68,10 @@ const PARTNER = "(partnerships?|channel|alliances?)";
 const FAMILIES: { family: RoleFamily; re: RegExp }[] = [
   // Veeva and Gusto call AEs "Account Partner". First, so "Account Partner - CRO" (a research org) isn't a CRO job.
   { family: "Account Executive", re: /\baccount partner\b/i },
-  { family: "CRO", re: /\b(chief revenue officer|cro|chief sales officer|cso)\b/i },
+  // A bare "CRO" only means Chief Revenue Officer when it leads the title ("CRO", "Fractional CRO, North America").
+  // Elsewhere it's usually a contract research org ("BD Director - CRO") and falls to the families below.
+  // CSO is just as slippery (Chief Scientific / Security Officer), so the same rule applies.
+  { family: "CRO", re: /\b(chief revenue officer|chief sales officer)\b|^\s*((fractional|interim|founding)\s+)?(cro|cso)\b/i },
   { family: "CRO", re: new RegExp(`\\bchief ${PARTNER} officer\\b`, "i") },
   { family: "VP Sales", re: new RegExp(`\\b(vp|rvp|avp|gvp|vice president|svp|evp|head)\\b.*\\b${PARTNER}`, "i") },
   { family: "Sales Director", re: new RegExp(`\\b(director\\b.*\\b${PARTNER}|${PARTNER}( sales)? director)\\b`, "i") },
