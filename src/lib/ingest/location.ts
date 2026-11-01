@@ -1,4 +1,4 @@
-// Location parsing + market filter. Braun Board covers the United States, Canada and the UK.
+// Location parsing + market filter. Braun Board covers the United States, Canada, the UK and Germany.
 
 import type { RemoteType } from "./types";
 
@@ -45,8 +45,22 @@ const CA_CITIES: Record<string, string> = {
 const CA_BARE_CITIES = Object.keys(CA_CITIES).filter((c) => c !== "london" && c !== "victoria" && c !== "hamilton");
 const CA_MARKERS = /\b(canada|canadian|can\b)/i;
 
-export type Market = "US" | "CA" | "UK";
-const MARKET_ORDER: Market[] = ["US", "CA", "UK"];
+export type Market = "US" | "CA" | "UK" | "DE";
+const MARKET_ORDER: Market[] = ["US", "CA", "UK", "DE"];
+
+// ---- Germany ------------------------------------------------------------
+// English and German spellings. Shown in English ("Munich", "Cologne").
+const DE_CITIES: Record<string, string> = {
+  berlin: "Berlin", munich: "Munich", "münchen": "Munich", muenchen: "Munich", hamburg: "Hamburg",
+  frankfurt: "Frankfurt", "frankfurt am main": "Frankfurt", cologne: "Cologne", "köln": "Cologne", koeln: "Cologne",
+  "düsseldorf": "Düsseldorf", dusseldorf: "Düsseldorf", duesseldorf: "Düsseldorf", stuttgart: "Stuttgart", leipzig: "Leipzig",
+  hannover: "Hanover", hanover: "Hanover", nuremberg: "Nuremberg", "nürnberg": "Nuremberg", nuernberg: "Nuremberg",
+  dortmund: "Dortmund", bremen: "Bremen", dresden: "Dresden", karlsruhe: "Karlsruhe", mannheim: "Mannheim", bonn: "Bonn",
+  heidelberg: "Heidelberg", aachen: "Aachen", walldorf: "Walldorf",
+};
+// "DE" alone is also Delaware, so it only counts next to a German city (handled by the city match).
+// DACH roles are almost always based in Germany.
+const DE_MARKERS = /\b(germany|deutschland|deu|dach)\b/i;
 
 // ---- United Kingdom -----------------------------------------------------
 const UK_NATIONS: Record<string, string> = { england: "England", scotland: "Scotland", wales: "Wales", "northern ireland": "Northern Ireland" };
@@ -66,7 +80,7 @@ const CITY_ALIASES: Record<string, string> = {
   la: "Los Angeles", "washington dc": "Washington", "washington d.c.": "Washington", "washington, d.c.": "Washington",
   gta: "Greater Toronto Area",
 };
-const KNOWN_CITIES = [...Object.keys(US_CITIES), ...Object.keys(CA_CITIES), ...UK_CITIES].sort((a, b) => b.length - a.length);
+const KNOWN_CITIES = [...Object.keys(US_CITIES), ...Object.keys(CA_CITIES), ...UK_CITIES, ...Object.keys(DE_CITIES)].sort((a, b) => b.length - a.length);
 
 /**
  * The city as people would write it, or null when it isn't a city at all:
@@ -76,7 +90,8 @@ export function cleanCity(city: string | null | undefined): string | null {
   const c = city?.trim().replace(/\s+/g, " ");
   if (!c) return null;
   const lower = c.toLowerCase();
-  if (/^(us|usa|u\.s\.a?\.?|united states( of america)?|canada|uk|united kingdom|remote|hybrid|anywhere|flexible|n\/a|tbd)$/i.test(c)) return null;
+  if (/^(us|usa|u\.s\.a?\.?|united states( of america)?|canada|uk|united kingdom|germany|deutschland|dach|remote|hybrid|anywhere|flexible|n\/a|tbd)$/i.test(c)) return null;
+  if (DE_CITIES[lower]) return DE_CITIES[lower]!;
   if (/^[A-Za-z]{2}$/.test(c) && (US_STATES[c.toUpperCase()] || CA_PROVINCES[c.toUpperCase()]) && !CITY_ALIASES[lower]) return null;
   if (CITY_ALIASES[lower]) return CITY_ALIASES[lower]!;
   // A street address: keep the city it ends with, if we know it.
@@ -103,6 +118,20 @@ function parseUkPart(part: string): { city: string | null; state: string | null;
     const nation = Object.keys(UK_NATIONS).find((n) => has(n));
     return { city: null, state: nation ? UK_NATIONS[nation]! : null, country: "UK" };
   }
+  return null;
+}
+
+/** Germany-only parsing of one location fragment. */
+function parseDePart(part: string): { city: string | null; state: string | null; country: "DE" } | null {
+  // "Berlin, CT" is Connecticut. ("Munich, DE" is fine: DE is Germany when the city is German.)
+  const st = part.match(/,\s*([A-Za-z .]+?)\s*(?:\(|$|-|,)/)?.[1]?.trim() ?? "";
+  if (st && st.toUpperCase() !== "DE" && (US_STATES[st.toUpperCase()] || STATE_NAMES[st.toLowerCase()])) return null;
+  const lower = part.toLowerCase();
+  const city = Object.keys(DE_CITIES)
+    .sort((a, b) => b.length - a.length)
+    .find((c) => new RegExp(`(^|[^a-zà-ÿ])${c}([^a-zà-ÿ]|$)`).test(lower));
+  if (city) return { city: DE_CITIES[city]!, state: null, country: "DE" };
+  if (DE_MARKERS.test(part)) return { city: null, state: null, country: "DE" };
   return null;
 }
 
@@ -192,6 +221,7 @@ export function parseLocation(
   let usPlace: Omit<ParsedLocation, "remote_type" | "is_us" | "markets"> | null = null;
   let caPlace: ReturnType<typeof parseCaPart> = null;
   let ukPlace: ReturnType<typeof parseUkPart> = null;
+  let dePlace: ReturnType<typeof parseDePart> = null;
   let foreignQualifier = false;
   for (const part of parts.length ? parts : [text]) {
     const q = remoteQualifier(part);
@@ -204,7 +234,13 @@ export function parseLocation(
       } else if (uk) {
         markets.add("UK");
         ukPlace ??= uk;
-      } else foreignQualifier = true;
+      } else {
+        const de = parseDePart(q);
+        if (de) {
+          markets.add("DE");
+          dePlace ??= de;
+        } else foreignQualifier = true;
+      }
       continue;
     }
     const p = parsePart(part);
@@ -223,6 +259,12 @@ export function parseLocation(
     if (uk) {
       markets.add("UK");
       ukPlace ??= uk;
+      continue;
+    }
+    const de = parseDePart(part);
+    if (de) {
+      markets.add("DE");
+      dePlace ??= de;
     }
   }
 
@@ -254,10 +296,22 @@ export function parseLocation(
     return out({ city: city ?? ukPlace?.city ?? null, state: ukPlace?.state ?? null, country: "UK" }, list);
   }
 
+  if (hintCountry && /^(de|deu|germany|deutschland)$/.test(hintCountry)) {
+    const hc = hints.city?.trim() ?? "";
+    const city = hc && !/^(remote|hybrid|anywhere|germany|deutschland|)$/i.test(hc) ? (DE_CITIES[hc.toLowerCase()] ?? hc) : null;
+    markets.add("DE");
+    const list = MARKET_ORDER.filter((m) => markets.has(m));
+    if (usPlace) return out(usPlace, list);
+    if (caPlace) return out(caPlace, list);
+    if (ukPlace) return out(ukPlace, list);
+    return out({ city: city ?? dePlace?.city ?? null, state: null, country: "DE" }, list);
+  }
+
   const list = MARKET_ORDER.filter((m) => markets.has(m));
   if (usPlace) return out(usPlace, list);
   if (caPlace) return out(caPlace, list);
   if (ukPlace) return out(ukPlace, list);
+  if (dePlace) return out(dePlace, list);
   if (foreignQualifier || NON_US.test(text) || hintCountry) return out({ city: null, state: null, country: hintCountry ? hints.country ?? null : null }, []);
 
   // "Remote" with no country at all: ambiguous. Keep it as US but flag via country=null.
@@ -297,6 +351,20 @@ const UK_IN_TITLE = /\b(uk|u\.k\.|united kingdom|uk&i|uki|britain|london|england
 // sold from London, so those stay in for UK jobs.
 const OUTSIDE_EUROPE_IN_TITLE = /\b(apac|apj|latam|saarc|sea|asia|australia|anz|sydney|melbourne|singapore|japan|tokyo|india|bangalore|mexico|brazil|s[aã]o paulo|middle east|mena|africa)\b/i;
 
+const GERMANY_IN_TITLE = /\b(germany|deutschland|dach|berlin|munich|m[üu]nchen|hamburg|frankfurt|cologne|k[öo]ln|d[üu]sseldorf|stuttgart)\b/i;
+
+/** A title like "Enterprise AE, DACH" is a Germany role even if the location field lists other offices. */
+export function titleNamesGermanyOnly(title: string): boolean {
+  return GERMANY_IN_TITLE.test(title) && !US_IN_TITLE.test(title) && !CANADA_IN_TITLE.test(title) && !UK_IN_TITLE.test(title) && !OUTSIDE_EUROPE_IN_TITLE.test(title);
+}
+
+/** The German place a title or location names. */
+export function germanyPlaceFrom(title: string, location = ""): { city: string | null } {
+  const t = parseDePart(title);
+  const p = (t?.city ? t : null) ?? location.split(/\s*(?:\/|;|\bor\b|\||•)\s*/i).map(parseDePart).find((x) => x?.city) ?? t;
+  return { city: p?.city ?? null };
+}
+
 /** A title like "Enterprise AE, UK&I" is a UK role even if the location field lists other offices. */
 export function titleNamesUkOnly(title: string): boolean {
   return UK_IN_TITLE.test(title) && !US_IN_TITLE.test(title) && !CANADA_IN_TITLE.test(title) && !OUTSIDE_EUROPE_IN_TITLE.test(title);
@@ -313,14 +381,15 @@ export function ukPlaceFromTitle(title: string, location = ""): { city: string |
  * Whether the title points at a territory this job's markets don't cover.
  * US / Canada jobs: any foreign territory ("AE, EMEA"). UK-only jobs: only territories outside Europe.
  */
-/** The location names a place outside the US, Canada and UK (e.g. "Bangalore, India"). */
+/** The location names a place outside the US, Canada, UK and Germany (e.g. "Bangalore, India"). */
 export function namesForeignPlace(location: string): boolean {
   const parts = location.split(/\s*(?:\/|;|\bor\b|\||•)\s*/i).filter(Boolean);
-  return parts.some((p) => NON_US.test(p) && !parseUkPart(p) && !parseCaPart(p));
+  return parts.some((p) => NON_US.test(p) && !parseUkPart(p) && !parseCaPart(p) && !parseDePart(p));
 }
 
 export function titleOutOfMarket(title: string, markets: readonly Market[]): boolean {
-  if (markets.length === 1 && markets[0] === "UK") return OUTSIDE_EUROPE_IN_TITLE.test(title);
+  // UK or Germany only: Europe-wide titles (DACH, EMEA) are fine, other continents aren't.
+  if (markets.every((m) => m === "UK" || m === "DE")) return OUTSIDE_EUROPE_IN_TITLE.test(title);
   return titleNamesForeignOnly(title);
 }
 

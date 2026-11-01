@@ -167,3 +167,23 @@ const TALENT_POOL =
 export function isTalentPool(description: string | null | undefined): boolean {
   return !!description && TALENT_POOL.test(description);
 }
+
+// Common German words that almost never appear in English postings.
+const GERMAN_WORDS = /\b(und|wir|sie|der|die|das|f[üu]r|mit|unsere?[nrs]?|bei|ist|auf|zu|du|dein[e]?|deine[nr]?|ihre?[nr]?|werden|oder)\b/gi;
+
+/** Is the posting written in German? We only list English postings. */
+export function writtenInGerman(description: string | null | undefined): boolean {
+  if (!description) return false;
+  const words = description.split(/\s+/).length;
+  const hits = description.match(GERMAN_WORDS)?.length ?? 0;
+  return hits >= 15 && hits / words > 0.06;
+}
+
+/** "Account Executive (m/w/d)" -> "Account Executive". German postings tag every title with the genders. */
+export function stripGenderTag(title: string): string {
+  return title
+    .replace(/\s*[([]\s*(?:all genders|[mwfdx]\s*\/\s*[mwfdx]\s*\/\s*[mwfdx])\s*[)\]]/gi, "")
+    .replace(/[\s,–-]+(?:[mwfdx]\s*\/\s*[mwfdx]\s*\/\s*[mwfdx])\s*$/i, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}

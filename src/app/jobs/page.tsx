@@ -45,7 +45,7 @@ function payOptions(market: MarketChoice, kind: "base" | "ote", current?: string
   const list = payPresets(market, kind);
   const n = Number(current);
   if (current && n > 0 && !list.some((p) => p.value === n)) {
-    const k = market === "UK" ? `£${Math.round(n / 1250)}K+` : `$${Math.round(n / 1000)}K+`;
+    const k = market === "UK" ? `£${Math.round(n / 1250)}K+` : market === "DE" ? `€${Math.round(n / 1050)}K+` : `$${Math.round(n / 1000)}K+`;
     list.unshift({ value: n, label: `${k} ${kind === "base" ? "base" : "OTE"}` });
   }
   return list;
@@ -105,7 +105,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
     if (!p.get("country")) p.set("country", market);
     return p.toString();
   })();
-  const suggestedName = [isSizeBucket(sp.size) ? SIZE_LABELS[sp.size].label : null, sp.segment, sp.role === "Account Executive" ? "AE" : sp.role, sp.role === PARTNERSHIPS_ROLE || sp.motion === "Channel" ? "Partnerships" : null, sp.remote, market === "CA" ? "Canada" : market === "UK" ? "UK" : null, sp.minOte && payOptions(market, "ote", sp.minOte).find((p) => String(p.value) === sp.minOte)?.label, sp.q]
+  const suggestedName = [isSizeBucket(sp.size) ? SIZE_LABELS[sp.size].label : null, sp.segment, sp.role === "Account Executive" ? "AE" : sp.role, sp.role === PARTNERSHIPS_ROLE || sp.motion === "Channel" ? "Partnerships" : null, sp.remote, market === "CA" ? "Canada" : market === "UK" ? "UK" : market === "DE" ? "Germany" : null, sp.minOte && payOptions(market, "ote", sp.minOte).find((p) => String(p.value) === sp.minOte)?.label, sp.q]
     .filter(Boolean)
     .join(" · ");
   return (
