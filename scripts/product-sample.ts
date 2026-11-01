@@ -12,16 +12,23 @@ async function main() {
   const arg = process.argv[2] ?? "50";
   const n = arg === "same" || arg.startsWith("names=") ? 0 : Number(arg);
   const db = adminClient();
-  const { data: jobs, error } = await db
-    .from("visible_jobs")
-    .select("company_id, company_name, title_raw, description_raw")
-    .not("description_raw", "is", null)
-    .limit(5000);
-  if (error) throw error;
+  // Paged: one select returns at most 1,000 rows.
+  const jobs: { company_id: string; company_name: string; title_raw: string; description_raw: string }[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await db
+      .from("visible_jobs")
+      .select("company_id, company_name, title_raw, description_raw")
+      .not("description_raw", "is", null)
+      .order("id")
+      .range(from, from + 999);
+    if (error) throw error;
+    jobs.push(...((data ?? []) as typeof jobs));
+    if ((data ?? []).length < 1000) break;
+  }
 
   // All postings per company; the AI reads the three longest.
   const best = new Map<string, { company_name: string; title_raw: string; postings: string[] }>();
-  for (const j of jobs ?? []) {
+  for (const j of jobs) {
     const cur = best.get(j.company_id) ?? { company_name: j.company_name as string, title_raw: j.title_raw as string, postings: [] };
     cur.postings.push(j.description_raw as string);
     best.set(j.company_id, cur);
