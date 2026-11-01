@@ -21,8 +21,8 @@ const EXCLUDE = [
   /\b(recruit(er|ing)|talent acquisition|sourcer)\b/i,
   /\b(people|hr|human resources)( business)? partner\b/i, // HR, even when the title says "Field Sales"
   /\b(marketing|demand gen|growth marketing|content|brand|communications|pr manager)\b/i,
-  /\b(retail|store|cashier|associate,? (store|retail)|showroom)\b/i,
-  /\b(insurance|real estate|realtor|mortgage|loan officer|licensed agent)\b/i,
+  /\b(store|cashier|associate,? (store|retail)|showroom)\b/i,
+  /\b(realtor|loan officer|licensed agent)\b/i,
   /\b(customer (service|support|care)|support (specialist|engineer|agent)|call center)\b/i,
   /\bcommission[- ]only\b/i,
   /\b(analyst|data scientist|software engineer|developer|designer|product manager|counsel|attorney|paralegal)\b/i,
@@ -40,6 +40,17 @@ const EXCLUDE = [
   /\bpartner(ship)?s? (operations|ops)\b/i,
   /\b(creator|influencer|affiliate|content|media|university|academic|school|nonprofit|community) partner(ship)?s?\b/i,
 ];
+
+// Industries that usually mean consumer sales ("Retail Sales Associate", "Insurance Agent"),
+// but are also verticals a B2B rep sells into ("Account Executive - Retail", "AE, Insurance").
+const CONSUMER_VERTICAL = /\b(retail|insurance|real estate|mortgage)\b/i;
+const B2B_ROLE = /\b(account (executive|manager|director)|ae|sales (engineer|director|development)|solutions? (engineer|consultant)|business development|sdr|bdr|enterprise|strategic|named|mid[- ]?market)\b/i;
+
+/** The vertical only rules a job out when it leads the title and nothing in that part says B2B. */
+function consumerSales(title: string): boolean {
+  const head = title.split(/\s[-–|:/]\s|,|\(/)[0];
+  return CONSUMER_VERTICAL.test(head) && !B2B_ROLE.test(head);
+}
 
 // Partnerships / channel leadership and ICs. Kept apart so the sales patterns below stay readable.
 const PARTNER = "(partnerships?|channel|alliances?)";
@@ -114,7 +125,7 @@ export function normalizeTitle(title: string): string {
 export function classifyTitle(rawTitle: string): TitleClassification | null {
   const title = rawTitle.trim();
   if (!title) return null;
-  if (EXCLUDE.some((re) => re.test(title))) return null;
+  if (EXCLUDE.some((re) => re.test(title)) || consumerSales(title)) return null;
 
   const hit = FAMILIES.find((f) => f.re.test(title));
   if (!hit) return null;
