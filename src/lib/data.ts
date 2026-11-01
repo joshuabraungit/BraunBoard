@@ -32,7 +32,7 @@ export interface JobView {
   disclosures: Partial<Disclosures>;
   /** Red / green flag codes, see lib/flags.ts */
   flags?: string[];
-  /** "USD", "CAD" or "GBP" when pay is published. */
+  /** "USD", "CAD", "GBP" or "EUR" when pay is published. */
   currency?: string | null;
   /** Quota attainment the posting states about its team, if any. */
   attainment?: Attainment | null;
@@ -43,7 +43,7 @@ export interface JobView {
   industry_quote?: string | null;
   /** Null until the AI has read the posting for the buyer. */
   buyer_checked_at?: string | null;
-  /** Where the job is open: any of "US", "CA", "UK". */
+  /** Where the job is open: any of "US", "CA", "UK", "DE". */
   markets?: string[];
   apply_url: string;
   /** As the careers site wrote it, e.g. "FullTime" (job page only). */
@@ -80,7 +80,7 @@ export interface JobFilters {
   segment?: SalesSegment;
   motion?: SalesMotion;
   remote?: RemoteType;
-  /** Only jobs open in at least one of these markets ("US", "CA", "UK"). */
+  /** Only jobs open in at least one of these markets ("US", "CA", "UK", "DE"). */
   markets?: string[];
   minBase?: number;
   minOte?: number;

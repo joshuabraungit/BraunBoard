@@ -72,9 +72,9 @@ export async function saveOnboarding(formData: FormData) {
 // Watches
 // ---------------------------------------------------------------------------
 
-function watchCountries(v: string | null): ("US" | "CA" | "UK")[] {
-  if (v === "US" || v === "CA" || v === "UK") return [v];
-  if (v === "all") return ["US", "CA", "UK"];
+function watchCountries(v: string | null): ("US" | "CA" | "UK" | "DE")[] {
+  if (v === "US" || v === "CA" || v === "UK" || v === "DE") return [v];
+  if (v === "all") return ["US", "CA", "UK", "DE"];
   return ["US", "CA"];
 }
 
@@ -95,7 +95,7 @@ export async function watchSearch(formData: FormData) {
     min_base: money(sp.get("minBase")),
     min_ote: money(sp.get("minOte")),
     dealbreakers: [],
-    // The jobs page always passes the country it was showing ("NA", "US", "CA", "UK" or "all").
+    // The jobs page always passes the country it was showing ("NA", "US", "CA", "UK", "DE" or "all").
     countries: watchCountries(sp.get("country")),
     company_sizes: ((v) => (isSizeBucket(v) ? [v] : []))(sp.get("size")),
   };

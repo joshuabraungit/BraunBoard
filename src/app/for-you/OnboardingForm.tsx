@@ -6,12 +6,14 @@ import { prefillFromResume } from "./resume-action";
 import type { ResumePrefill } from "@/lib/resume-read";
 import { DEALBREAKER_LABELS, DEALBREAKERS } from "@/lib/match";
 import { SIZE_BUCKETS, SIZE_LABELS, type SizeBucket } from "@/lib/ingest/size";
-import { COUNTRY_CHOICES, MOTION_CHOICES, ROLE_CHOICES, WORK_CHOICES, type OnboardingAnswers, type RoleChoice } from "@/lib/watch-prefs";
+import { COUNTRY_CHOICES, MOTION_CHOICES, payCurrencyFor, ROLE_CHOICES, WORK_CHOICES, type OnboardingAnswers, type RoleChoice } from "@/lib/watch-prefs";
 
 const PRESETS = {
   usd: { base: [100, 125, 150, 175, 200], ote: [150, 200, 250, 300, 400] },
   gbp: { base: [50, 60, 75, 90, 110], ote: [80, 100, 125, 150, 200] },
+  eur: { base: [60, 75, 90, 110, 130], ote: [100, 130, 160, 200, 250] },
 };
+const SYMBOL = { usd: "$", gbp: "£", eur: "€" } as const;
 
 function Chip({ name, value, type, checked, onChange, children }: { name: string; value: string; type: "checkbox" | "radio"; checked: boolean; onChange: (v: boolean) => void; children: React.ReactNode }) {
   return (
@@ -75,7 +77,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
       const a = r.prefill.answers;
       if (a.roles) setRoles(a.roles);
       if (a.country) {
-        if ((a.country === "UK") !== uk) {
+        if (payCurrencyFor(a.country) !== cur) {
           setBase("");
           setOte("");
         }
@@ -97,7 +99,8 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
       setReading(false);
     }
   }
-  const uk = country === "UK";
+  const cur = payCurrencyFor(country);
+  const sym = SYMBOL[cur];
 
   const steps = [
     {
@@ -117,7 +120,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
     },
     {
       q: "Where do you want to work?",
-      hint: "Location is optional. Try a state, province or city, like NY, Austin, Toronto or London.",
+      hint: "Location is optional. Try a state, province or city, like NY, Austin, Toronto, London or Berlin.",
       body: (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
@@ -129,8 +132,8 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
                 type="radio"
                 checked={country === c}
                 onChange={() => {
-                  // Pay answers are in the country's currency, so switching between $ and £ clears them.
-                  if ((c === "UK") !== uk) {
+                  // Pay answers are in the country's currency, so switching between $, £ and € clears them.
+                  if (payCurrencyFor(c) !== cur) {
                     setBase("");
                     setOte("");
                   }
@@ -159,12 +162,12 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
       hint: "Only counts jobs that publish pay. Jobs that don't say aren't held against them.",
       body: (
         <div className="space-y-5">
-          <Money name="min_base" label="Minimum base" presets={PRESETS[uk ? "gbp" : "usd"].base} value={base} setValue={setBase} sym={uk ? "£" : "$"} />
-          <Money name="min_ote" label="Minimum OTE" presets={PRESETS[uk ? "gbp" : "usd"].ote} value={ote} setValue={setOte} sym={uk ? "£" : "$"} />
+          <Money name="min_base" label="Minimum base" presets={PRESETS[cur].base} value={base} setValue={setBase} sym={sym} />
+          <Money name="min_ote" label="Minimum OTE" presets={PRESETS[cur].ote} value={ote} setValue={setOte} sym={sym} />
         </div>
       ),
       ok: true,
-      summary: [base && `${uk ? "£" : "$"}${base}K+ base`, ote && `${uk ? "£" : "$"}${ote}K+ OTE`].filter(Boolean).join(" · "),
+      summary: [base && `${sym}${base}K+ base`, ote && `${sym}${ote}K+ OTE`].filter(Boolean).join(" · "),
     },
     {
       q: "New business or expansion?",

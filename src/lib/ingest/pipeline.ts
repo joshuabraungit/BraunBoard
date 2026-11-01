@@ -5,8 +5,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { adapters } from "./adapters";
 import { fetchGreenhousePayRange } from "./adapters/greenhouse";
-import { classifyTitle, isTalentPool } from "./classify";
-import { canadaPlaceFromTitle, parseLocation, titleNamesCanadaOnly, namesForeignPlace, titleNamesUkOnly, titleOutOfMarket, ukPlaceFromTitle, type ParsedLocation } from "./location";
+import { classifyTitle, isTalentPool, stripGenderTag, writtenInGerman } from "./classify";
+import { canadaPlaceFromTitle, germanyPlaceFrom, parseLocation, titleNamesGermanyOnly, titleNamesCanadaOnly, namesForeignPlace, titleNamesUkOnly, titleOutOfMarket, ukPlaceFromTitle, type Market, type ParsedLocation } from "./location";
 import { payCurrency, resolveCompensation } from "./compensation";
 import { extractAttributes } from "./extract";
 import { dedupeKey, descriptionSimilarity, DUPLICATE_THRESHOLD, normalizeLocationKey } from "./dedupe";
@@ -61,7 +61,8 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
     const newJobIds: string[] = [];
     const now = new Date().toISOString();
 
-    for (const job of raw) {
+    for (const raw_job of raw) {
+      const job = { ...raw_job, title: stripGenderTag(raw_job.title) };
       const prior = existing.get(job.source_job_id);
 
       // Active, seen again, not reprocessing: it passed our rules when stored, so just confirm it's still up.
@@ -78,7 +79,7 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
       const cls = classifyTitle(job.title);
       const loc = locate(job);
 
-      if (!cls || !loc.markets.length || titleOutOfMarket(job.title, loc.markets) || isTalentPool(job.description)) {
+      if (!cls || !loc.markets.length || titleOutOfMarket(job.title, loc.markets) || isTalentPool(job.description) || writtenInGerman(job.description)) {
         // No longer in scope under current rules: hide it now when reprocessing,
         // otherwise it ages out after missed checks like any vanished job.
         if (prior && opts.reprocess && prior.is_active) {
@@ -186,11 +187,18 @@ export function locate(job: RawJob): ParsedLocation {
     const place = ukPlaceFromTitle(job.title, job.location);
     return { ...loc, city: place.city, state: place.state, country: "UK", markets: ["UK"], is_us: false };
   }
+  // And Germany: "Enterprise AE, DACH" listed under "New York; Munich" is a Germany role.
+  if (titleNamesGermanyOnly(job.title) && loc.markets.includes("DE") && !(loc.markets.length === 1 && loc.markets[0] === "DE")) {
+    return { ...loc, city: germanyPlaceFrom(job.title, job.location).city, state: null, country: "DE", markets: ["DE"], is_us: false };
+  }
   return loc;
 }
 
-/** The market whose pay we show: US first, then Canada, then the UK. */
-const payMarket = (loc: ParsedLocation): "US" | "CA" | "UK" => (loc.markets.includes("US") ? "US" : loc.markets.includes("CA") ? "CA" : "UK");
+/** The market whose pay we show: US first, then Canada, the UK, Germany. */
+const payMarket = (loc: ParsedLocation): Market =>
+  loc.markets.includes("US") ? "US" : loc.markets.includes("CA") ? "CA" : loc.markets.includes("UK") ? "UK" : "DE";
+const PAY_SYMBOL = { US: "$", CA: "$", UK: "£", DE: "€" } as const;
+const MARKET_CURRENCY_TEXT = { UK: /£|\bGBP\b/, DE: /€|\bEUR\b/ } as const;
 
 /** Pay with the right currency: CAD for Canada-only jobs, GBP for UK-only jobs, unless the posting says otherwise. */
 async function payFor(company: CompanyRow, job: RawJob, loc: ParsedLocation) {
@@ -199,15 +207,17 @@ async function payFor(company: CompanyRow, job: RawJob, loc: ParsedLocation) {
   // Never guess a currency. Board pay in euros (or anything we don't show) is dropped, and so is
   // board pay with no currency on a UK job unless the posting itself talks in pounds.
   const sc = structured.currency?.trim().toUpperCase() || null;
-  const unknownCurrency = sc ? !["USD", "CAD", "GBP"].includes(sc) : market === "UK" && !/£|\bGBP\b/.test(job.description);
+  const unknownCurrency = sc
+    ? !["USD", "CAD", "GBP", "EUR"].includes(sc) || (sc === "EUR" && market !== "DE")
+    : (market === "UK" || market === "DE") && !MARKET_CURRENCY_TEXT[market].test(job.description);
   if (structured.min != null && unknownCurrency) structured = { ...structured, min: null, max: null, currency: null };
-  const comp = resolveCompensation(structured, job.description, market === "UK" ? "£" : "$");
+  const comp = resolveCompensation(structured, job.description, PAY_SYMBOL[market]);
   const hasPay = comp.salary_min != null || comp.ote_min != null;
   return { ...comp, currency: hasPay ? payCurrency(structured.currency, job.description, loc.markets) : null };
 }
 
 /** Structured pay from the ATS. Greenhouse only exposes it per job, so it's fetched just for kept jobs. */
-async function structuredPay(company: CompanyRow, job: RawJob, market: "US" | "CA" | "UK" = "US") {
+async function structuredPay(company: CompanyRow, job: RawJob, market: Market = "US") {
   let structured = { min: job.salary_min, max: job.salary_max, currency: job.currency, isOte: !!job.structured_is_ote };
   if (job.source_provider === "greenhouse") {
     try {

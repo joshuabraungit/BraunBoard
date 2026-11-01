@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyTitle, isTalentPool, normalizeTitle } from "../src/lib/ingest/classify";
+import { classifyTitle, isTalentPool, normalizeTitle, stripGenderTag, writtenInGerman } from "../src/lib/ingest/classify";
 
 describe("classifyTitle: spec section 8 examples", () => {
   it.each([
@@ -231,5 +231,20 @@ describe("isTalentPool", () => {
   });
   it("drops Open Application titles", () => {
     expect(classifyTitle("Account Executive - Open Application")).toBeNull();
+  });
+});
+
+describe("Germany", () => {
+  it("strips gender tags from titles", () => {
+    expect(stripGenderTag("Account Manager (Deutschsprachig) – Berlin (m/w/d)")).toBe("Account Manager (Deutschsprachig) – Berlin");
+    expect(stripGenderTag("Field Account Executive - München (w/m/d)")).toBe("Field Account Executive - München");
+    expect(stripGenderTag("Strategic Core Account Executive - Insurance, m/f/d")).toBe("Strategic Core Account Executive - Insurance");
+    expect(stripGenderTag("Associate Product Manager (all genders)")).toBe("Associate Product Manager");
+    expect(stripGenderTag("Enterprise Account Executive")).toBe("Enterprise Account Executive");
+  });
+  it("spots postings written in German", () => {
+    const de = "Wir wachsen schnell und suchen erfahrene Account Manager, die Bestandskunden strategisch entwickeln. In dieser Rolle übernimmst du ein bestehendes Portfolio im DACH-Markt und arbeitest eng mit unseren Teams. Du bist die Schnittstelle zwischen Kunden und unseren Teams in Sales, Implementation, Support und Product. Das bringst du mit: Erfahrung im B2B SaaS. Was du von uns erwarten kannst: Arbeite bis zu 60 Tage im Jahr remote. Wir freuen uns auf deine Bewerbung für die Rolle bei uns.";
+    expect(writtenInGerman(de)).toBe(true);
+    expect(writtenInGerman("You will close new business across the DACH region. Fluency in German and English. Die-hard closers welcome.")).toBe(false);
   });
 });

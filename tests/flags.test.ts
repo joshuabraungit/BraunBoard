@@ -143,3 +143,19 @@ describe("card chips", () => {
     expect(cardFlags(flagsFromCodes(["open_90_days", "publishes_ote", "mass_posting"])).map((f) => f.code)).toEqual(["mass_posting"]);
   });
 });
+
+describe("german required", () => {
+  it("flags postings that ask for fluent German", () => {
+    expect(codes({ description_raw: "Fluency in German and English" })).toContain("german_required");
+    expect(codes({ description_raw: "Business-level German is required." })).toContain("german_required");
+    expect(codes({ description_raw: "Account Manager (German speaking, Hamburg based)" })).toContain("german_required");
+  });
+  it("leaves other postings alone", () => {
+    expect(codes({ description_raw: "Our customers include German automakers." })).not.toContain("german_required");
+    expect(codes({ description_raw: "Fluent English required." })).not.toContain("german_required");
+  });
+  it("is a heads-up, not a red flag", () => {
+    const f = computeFlags({ ...base, description_raw: "Fluent German required." }).find((x) => x.code === "german_required");
+    expect(f?.scored).toBe(false);
+  });
+});

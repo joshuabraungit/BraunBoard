@@ -39,7 +39,7 @@ export function cleanPrefill(raw: Record<string, unknown>): ResumePrefill {
   const answers: ResumePrefill["answers"] = {};
   const roles = Array.isArray(raw.roles) ? raw.roles.filter((r): r is RoleChoice => typeof r === "string" && r in ROLE_CHOICES) : [];
   if (roles.length) answers.roles = [...new Set(roles)].slice(0, 3);
-  if (raw.country === "US" || raw.country === "CA" || raw.country === "UK") answers.country = raw.country;
+  if (raw.country === "US" || raw.country === "CA" || raw.country === "UK" || raw.country === "DE") answers.country = raw.country;
   const loc = short(raw.location, 40);
   if (loc) answers.location = loc;
   if (typeof raw.work === "string" && raw.work in WORK_CHOICES && raw.work !== "any") answers.work = raw.work as OnboardingAnswers["work"];
