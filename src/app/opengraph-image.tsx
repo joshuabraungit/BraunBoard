@@ -3,11 +3,11 @@ import { OG_SIZE, OgCard } from "@/lib/og";
 
 export const size = OG_SIZE;
 export const contentType = "image/png";
-export const alt = "Braun Board: B2B sales jobs, with the pay and what the posting leaves out";
+export const alt = "Braun Board: Great OTE. How many reps earn it? B2B sales jobs with the real pay.";
 
 export default function Image() {
   return new ImageResponse(
-    <OgCard title="Find the sales job you'd actually take" line="See the pay and what they really sell." sub="Plus the questions to ask before you say yes." />,
+    <OgCard title="Great OTE. How many reps earn it?" line="Big OTE on paper. Find out if reps earn it." sub="See the pay, what they really sell, and what to ask before you say yes." />,
     size,
   );
 }
