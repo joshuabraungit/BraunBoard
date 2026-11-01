@@ -4,9 +4,9 @@ import { freshnessLabel, isFresh } from "@/lib/freshness";
 import { languageFor, formatComp, formatLocation } from "@/lib/format";
 import { CompanyLogo } from "./CompanyLogo";
 import { SaveJobButton, HideJobButton } from "./Actions";
-import { MatchBadge } from "./MatchBadge";
-import { FlagChips, VerdictPill } from "./BraunRead";
-import { braunRead, cardFlags, flagsFromCodes } from "@/lib/flags";
+import { MatchBadge, matchShowsOnCard } from "./MatchBadge";
+import { VerdictPill } from "./BraunRead";
+import { braunRead, flagsFromCodes, isHeadsUp, isRedFlag, type Flag } from "@/lib/flags";
 import type { MatchResult } from "@/lib/match";
 import { attainmentLabel } from "@/lib/attainment";
 import { collapseOpenings, openingsLabel } from "@/lib/openings";
@@ -29,37 +29,81 @@ export function tagsFor(j: Pick<JobView, "sales_segment" | "sales_motion" | "sel
   return t;
 }
 
-/** The Braun Read's specifics on a card: what the posting says about quota attainment, then the two most telling flags. */
-function readDetails(job: JobView, read: ReturnType<typeof braunRead>) {
+type Tone = "green" | "yellow" | "red";
+interface Light {
+  tone: Tone;
+  text: string;
+  why?: string;
+}
+
+const DOT: Record<Tone, string> = { green: "bg-accent", yellow: "bg-amber", red: "bg-red" };
+
+// Flags the pay and quota lights already cover, or that are too routine to be the standout.
+const NOT_STANDOUT = new Set(["publishes_ote", "shares_attainment", "attainment_average", "states_quota", "states_deal_size", "open_90_days"]);
+const SHORT: Record<string, string> = { wide_pay_range: "Wide pay range", aggressive_split: "Mostly variable pay", mass_posting: "Posted many times" };
+
+/**
+ * The Braun Read on a card: three lights a rep can scan. Pay, quota, and the one thing that
+ * stands out most about this job. The full verdict and the reasons live on the job page.
+ */
+export function cardLights(job: JobView, read: ReturnType<typeof braunRead>, now = Date.now()): Light[] {
+  // Pay
+  const pay: Light =
+    job.ote_min != null && job.salary_min != null
+      ? { tone: "green", text: "Base + OTE listed" }
+      : job.ote_min != null
+        ? { tone: "green", text: "OTE listed" }
+        : job.salary_min != null
+          ? { tone: "yellow", text: "Base only, no OTE" }
+          : { tone: "red", text: "No pay listed" };
+
+  // Quota
   const a = job.attainment;
-  const flags = cardFlags(flagsFromCodes(job.flags));
-  // When there are fewer than two flags, say why the verdict landed where it did, in a few words.
-  const why: string[] = [];
-  const check = (label: string) => read.checks.find((c) => c.label === label);
-  if (check("Transparency")?.grade === "bad") why.push("No quota or deal details");
-  if (check("Time on market")?.grade === "bad") why.push(check("Time on market")!.detail.split(".")[0]!);
-  if (check("Company hiring")?.grade === "bad") why.push("Hiring slowing");
-  if (job.self_sourcing_level === "High") why.push("Mostly outbound");
-  if (job.self_sourcing_level === "Low") why.push("Mostly inbound");
-  const extra = why.slice(0, Math.max(0, 2 - flags.length));
+  const t = read.checks.find((c) => c.label === "Transparency")?.grade;
+  const quota: Light = a
+    ? { tone: a.kind === "hit" ? "green" : "yellow", text: attainmentLabel(a), why: `In their words: "${a.quote}"` }
+    : job.disclosures?.quota_size
+      ? { tone: "green", text: "States the quota" }
+      : t === "good"
+        ? { tone: "green", text: "Shares deal details" }
+        : t === "ok"
+          ? { tone: "yellow", text: "Some quota info" }
+          : { tone: "red", text: "No quota info" };
+
+  // The standout: a red flag first, then a stale posting, then a heads-up, then the best green flag, then freshness.
+  const flags = flagsFromCodes(job.flags).filter((f) => !NOT_STANDOUT.has(f.code));
+  const days = Math.floor((now - new Date(job.first_seen_at).getTime()) / 86_400_000);
+  const asLight = (f: Flag, tone: Tone): Light => ({ tone, text: SHORT[f.code] ?? f.label, why: f.why });
+  const red = flags.find(isRedFlag);
+  const headsUp = flags.find(isHeadsUp);
+  const green = flags.find((f) => f.tone === "green");
+  const standout: Light = red
+    ? asLight(red, "red")
+    : days > 45
+      ? { tone: "red", text: `Open ${days} days`, why: "Ask why it's been hard to fill." }
+      : headsUp
+        ? asLight(headsUp, "yellow")
+        : green
+          ? asLight(green, "green")
+          : days <= 7
+            ? { tone: "green", text: "New this week" }
+            : days <= 21
+              ? { tone: "green", text: `Open ${days} days` }
+              : { tone: "yellow", text: `Open ${days} days` };
+
+  return [pay, quota, standout];
+}
+
+function Lights({ lights }: { lights: Light[] }) {
   return (
-    <>
-      {a && (
-        <span
-          title={`In their words: "${a.quote}"`}
-          className={`rounded border px-1.5 py-0.5 text-xs font-semibold ${a.kind === "hit" ? "border-accent/25 bg-accent-soft text-accent" : "border-line-strong bg-surface text-ink-2"}`}
-        >
-          {a.kind === "hit" ? "✓ " : ""}
-          {attainmentLabel(a)}
-        </span>
-      )}
-      <FlagChips flags={flags} max={2} inline />
-      {extra.map((w) => (
-        <span key={w} className="rounded border border-line-strong bg-surface px-1.5 py-0.5 text-xs font-medium text-ink-2">
-          {w}
-        </span>
+    <ul className="flex flex-wrap gap-x-3 gap-y-1">
+      {lights.map((l) => (
+        <li key={l.text} title={l.why} className="flex items-center gap-1.5 text-xs font-medium text-ink-2">
+          <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[l.tone]}`} aria-label={l.tone} />
+          {l.text}
+        </li>
       ))}
-    </>
+    </ul>
   );
 }
 
@@ -101,14 +145,16 @@ export function JobCard({ job, ctx, openings = 1, locations = 1 }: { job: JobVie
         </span>
       </p>
 
-      <p className={`mt-2 text-[15px] font-semibold ${comp ? "text-accent" : "text-sm font-normal text-ink-3"}`}>
-        {comp || "Pay not listed"}
-      </p>
+      {comp && <p className="mt-2 text-[15px] font-semibold text-accent">{comp}</p>}
 
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <span className="text-xs text-ink-3">Braun Read:</span>
-        <VerdictPill verdict={read.verdict} />
-        {readDetails(job, read)}
+      {/* Only the two ends of the verdict earn a spot on the card; the lights carry the rest. */}
+      {(read.verdict === "Strong posting" || read.verdict === "Proceed with caution") && (
+        <div className="mt-2">
+          <VerdictPill verdict={read.verdict} />
+        </div>
+      )}
+      <div className="mt-2.5">
+        <Lights lights={cardLights(job, read)} />
       </div>
 
       {job.company_sells && (
@@ -118,7 +164,7 @@ export function JobCard({ job, ctx, openings = 1, locations = 1 }: { job: JobVie
         </p>
       )}
 
-      {match && (
+      {match && matchShowsOnCard(match) && (
         <div className="mt-3 border-t border-line pt-3">
           <MatchBadge match={match} />
         </div>

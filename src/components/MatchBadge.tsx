@@ -8,6 +8,10 @@ const TONE = { pass: "text-accent", fail: "text-fresh", unknown: "text-ink-3" } 
  * everything scores 100%, which says nothing and reads like attainment. The score still ranks For You.
  * On cards, only shown when something didn't match or isn't stated; on the job page, always.
  */
+/** Whether a card has anything to show for this match (something didn't match, or isn't stated). */
+export const matchShowsOnCard = (match: MatchResult) =>
+  match.score != null && match.checks.length > 0 && !match.checks.every((c) => c.result === "pass");
+
 export function MatchBadge({ match, detailed = false }: { match: MatchResult; detailed?: boolean }) {
   if (match.score == null || !match.checks.length) return null;
   if (!detailed && match.checks.every((c) => c.result === "pass")) return null;
