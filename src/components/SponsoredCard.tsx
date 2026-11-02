@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CompanyLogo } from "./CompanyLogo";
-import { logoUrl, type SponsoredJobRow } from "@/lib/sponsor";
+import { logoUrl, reviewFields, videoUrl, type SponsoredJobRow } from "@/lib/sponsor";
+import { videoApproved } from "@/lib/sponsor-review";
 import { attainmentBadge, payLine } from "@/lib/sponsor-form";
 import { adPlainText } from "@/lib/ad-text";
 
@@ -21,50 +22,129 @@ export function AttainmentBadge({ pct }: { pct: number | null | undefined }) {
   );
 }
 
-/** Paid placement at the top of the home page. Always labeled. No Braun Read: Josh doesn't grade jobs he's paid to show. */
-export function SponsoredCard({ s }: { s: SponsoredJobRow }) {
+/** The owl's head and claws, hanging on to the top edge of the card. Blinks and reads (globals.css .owl-*). */
+function PeekingOwl() {
   return (
-    <article className="group relative rounded-2xl border-[1.5px] border-amber/40 bg-surface p-5 transition hover:border-amber/70 hover:shadow-[0_2px_12px_rgba(22,20,15,0.05)] sm:p-6">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <span className="rounded-full bg-amber-soft px-2.5 py-0.5 text-xs font-semibold text-amber">Sponsored</span>
-        <span className="text-xs text-ink-3">Hiring now</span>
+    <svg
+      viewBox="70 55 260 180"
+      aria-hidden="true"
+      className="pointer-events-none absolute -top-[54px] left-[128px] z-10 h-[58px] w-[84px] sm:-top-[66px] sm:left-44 sm:h-[70px] sm:w-[101px]"
+    >
+      <defs>
+        <clipPath id="sponsor-owl-clip">
+          <rect x="0" y="0" width="400" height="226" />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#sponsor-owl-clip)">
+        <path d="M110 120 L100 62 L156 96 Z" fill="#16140f" />
+        <path d="M290 120 L300 62 L244 96 Z" fill="#16140f" />
+        <ellipse cx="200" cy="215" rx="125" ry="128" fill="#16140f" />
+        <circle cx="158" cy="172" r="44" fill="#faf8f4" />
+        <circle cx="242" cy="172" r="44" fill="#faf8f4" />
+        <g className="owl-pupils">
+          <circle cx="160" cy="188" r="17" fill="#16140f" />
+          <circle cx="244" cy="188" r="17" fill="#16140f" />
+          <circle cx="165" cy="183" r="4" fill="#ffffff" />
+          <circle cx="249" cy="183" r="4" fill="#ffffff" />
+        </g>
+        <circle className="owl-lid" cx="158" cy="172" r="45" fill="#16140f" />
+        <circle className="owl-lid" cx="242" cy="172" r="45" fill="#16140f" />
+        <circle cx="158" cy="174" r="30" fill="none" stroke="#4cae73" strokeWidth="6" />
+        <circle cx="242" cy="174" r="30" fill="none" stroke="#4cae73" strokeWidth="6" />
+        <path d="M188 172 L212 172" stroke="#4cae73" strokeWidth="6" strokeLinecap="round" />
+        <path d="M186 210 L214 210 L200 226 Z" fill="#c98a1a" />
+      </g>
+      <g className="owl-claws-l" fill="#c98a1a">
+        <ellipse cx="108" cy="224" rx="9" ry="12" />
+        <ellipse cx="128" cy="226" rx="9" ry="12" />
+        <ellipse cx="148" cy="224" rx="9" ry="12" />
+      </g>
+      <g className="owl-claws-r" fill="#c98a1a">
+        <ellipse cx="252" cy="224" rx="9" ry="12" />
+        <ellipse cx="272" cy="226" rx="9" ry="12" />
+        <ellipse cx="292" cy="224" rx="9" ry="12" />
+      </g>
+    </svg>
+  );
+}
+
+/** A still from the approved explainer video. The whole card links to the job page, where it plays. */
+function VideoTeaser({ src }: { src: string }) {
+  return (
+    <div className="relative mt-4 overflow-hidden rounded-xl bg-ink sm:mt-0 sm:w-52 sm:shrink-0">
+      <video src={`${src}#t=1`} muted playsInline preload="metadata" aria-hidden="true" className="pointer-events-none aspect-video w-full object-cover opacity-90 sm:aspect-square" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-ink/20 transition group-hover:bg-ink/10">
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-[0_4px_18px_rgba(0,0,0,0.3)] transition group-hover:scale-105">
+          <svg viewBox="0 0 24 24" className="ml-1 h-5 w-5 fill-ink" aria-hidden="true">
+            <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" />
+          </svg>
+        </span>
+        <span className="rounded-full bg-ink/70 px-2.5 py-0.5 text-xs font-semibold text-white">Watch: what you&apos;d sell</span>
       </div>
-      <div className="flex items-start gap-4">
-        <CompanyLogo name={s.company} logoUrl={logoUrl(s.logo_path)} domain={null} size={44} />
-        <div className="min-w-0 flex-1">
-          <h3 className="text-lg font-bold leading-snug tracking-tight">
-            <Link href={`/sponsored/${s.id}`} className="after:absolute after:inset-0">
-              {s.job_title}
-            </Link>
-          </h3>
-          <p className="mt-0.5 text-sm text-ink-2">
-            {s.company} · {sponsorWhere(s)}
-          </p>
-          <p className="mt-2.5 text-[15px] font-semibold text-accent">
-            {payLine(s)
-              .split(" · ")
-              .map((part, i) => (
-                <span key={part} className="whitespace-nowrap">
-                  {i > 0 && " · "}
-                  {part}
-                </span>
-              ))}
-          </p>
-          {s.ote_attainment_pct != null && (
-            <p className="mt-2">
-              <AttainmentBadge pct={s.ote_attainment_pct} />
+    </div>
+  );
+}
+
+/**
+ * Paid placement at the top of the home page. Always labeled. No Braun Read: Josh doesn't grade jobs he's paid to show.
+ * `peek` puts the owl on the card's top edge; the home page gives it to the first sponsor only.
+ */
+export function SponsoredCard({ s, peek = false }: { s: SponsoredJobRow; peek?: boolean }) {
+  const video = s.video_path && videoApproved(reviewFields(s)) ? videoUrl(s.video_path) : null;
+  return (
+    <article
+      className={`group relative rounded-2xl border-[1.5px] border-amber/40 bg-surface transition hover:border-amber/70 hover:shadow-[0_2px_12px_rgba(22,20,15,0.05)] ${peek ? "mt-14 sm:mt-16" : ""}`}
+    >
+      {peek && <PeekingOwl />}
+      <div className="flex items-center justify-between gap-3 rounded-t-[14px] bg-amber-soft px-5 py-2.5 sm:px-6">
+        <span className="text-xs font-semibold uppercase tracking-wide text-amber">Sponsored</span>
+        <span className="flex items-center gap-2 text-xs font-semibold text-amber">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-[#4cae73] opacity-70 motion-safe:animate-ping" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#2f8f57]" />
+          </span>
+          Hiring now
+        </span>
+      </div>
+      <div className="p-5 sm:flex sm:gap-6 sm:p-6">
+        <div className="flex min-w-0 flex-1 items-start gap-4">
+          <CompanyLogo name={s.company} logoUrl={logoUrl(s.logo_path)} domain={null} size={44} />
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-bold leading-snug tracking-tight">
+              <Link href={`/sponsored/${s.id}`} className="after:absolute after:inset-0 after:z-20">
+                {s.job_title}
+              </Link>
+            </h3>
+            <p className="mt-0.5 text-sm text-ink-2">
+              {s.company} · {sponsorWhere(s)}
             </p>
-          )}
-          {s.product_short && (
-            <p className="mt-2.5 text-sm">
-              <span className="text-ink-3">What they sell: </span>
-              <span className="font-semibold">{s.product_short}</span>
+            <p className="mt-2.5 text-[15px] font-semibold text-accent">
+              {payLine(s)
+                .split(" · ")
+                .map((part, i) => (
+                  <span key={part} className="whitespace-nowrap">
+                    {i > 0 && " · "}
+                    {part}
+                  </span>
+                ))}
             </p>
-          )}
-          <p className="mt-2 line-clamp-3 text-[15px] leading-relaxed text-ink-2">{adPlainText(s.description)}</p>
+            {s.ote_attainment_pct != null && (
+              <p className="mt-2">
+                <AttainmentBadge pct={s.ote_attainment_pct} />
+              </p>
+            )}
+            {s.product_short && (
+              <p className="mt-2.5 text-sm">
+                <span className="text-ink-3">What they sell: </span>
+                <span className="font-semibold">{s.product_short}</span>
+              </p>
+            )}
+            <p className="mt-2 line-clamp-3 text-[15px] leading-relaxed text-ink-2">{adPlainText(s.description)}</p>
+          </div>
         </div>
+        {video && <VideoTeaser src={video} />}
       </div>
-      <div className="mt-4 flex justify-end">
+      <div className="flex justify-end px-5 pb-5 sm:px-6 sm:pb-6">
         <span className="inline-flex min-h-10 items-center rounded-lg bg-ink px-4 text-sm font-semibold text-white group-hover:opacity-90">
           See the job →
         </span>

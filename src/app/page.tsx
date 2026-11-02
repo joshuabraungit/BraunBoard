@@ -78,8 +78,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
       {sponsors.length > 0 && (
         <section className="mt-10 space-y-3 first:mt-0" aria-label="Sponsored jobs">
-          {sponsors.map((s) => (
-            <SponsoredCard key={s.id} s={s} />
+          {sponsors.map((s, i) => (
+            <SponsoredCard key={s.id} s={s} peek={i === 0} />
           ))}
         </section>
       )}
