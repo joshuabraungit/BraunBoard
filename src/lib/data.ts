@@ -113,7 +113,7 @@ function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
       (!f.q || `${j.title_raw} ${j.company_name}`.toLowerCase().includes(f.q.toLowerCase())) &&
       (!f.role || j.role_family === f.role) &&
       (!f.segment || j.sales_segment === f.segment) &&
-      (!f.motion || j.sales_motion === f.motion) &&
+      (!f.motion || motionsFor(f.motion).includes(j.sales_motion)) &&
       (!f.remote || j.remote_type === f.remote) &&
       (!f.markets?.length || (j.markets ?? ["US"]).some((m) => f.markets!.includes(m))) &&
       (!f.minBase || (j.salary_max ?? j.salary_min ?? 0) >= f.minBase) &&
@@ -146,12 +146,17 @@ const cachedJobs = unstable_cache(
   { revalidate: JOB_CACHE_SECONDS, tags: ["jobs"] },
 );
 
+/** New Business and Account Growth each include the jobs that do both. */
+export function motionsFor(m: SalesMotion): SalesMotion[] {
+  return m === "New Logo" || m === "Expansion" ? [m, "Mixed"] : [m];
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function withFilters<Q extends { or: any; eq: any; overlaps: any; gte: any }>(q: Q, f: JobFilters): Q {
+function withFilters<Q extends { or: any; eq: any; in: any; overlaps: any; gte: any }>(q: Q, f: JobFilters): Q {
   if (f.q) q = q.or(`title_raw.ilike.%${f.q.replace(/[%,()]/g, "")}%,company_name.ilike.%${f.q.replace(/[%,()]/g, "")}%`);
   if (f.role) q = q.eq("role_family", f.role);
   if (f.segment) q = q.eq("sales_segment", f.segment);
-  if (f.motion) q = q.eq("sales_motion", f.motion);
+  if (f.motion) q = q.in("sales_motion", motionsFor(f.motion));
   if (f.remote) q = q.eq("remote_type", f.remote);
   if (f.markets?.length) q = q.overlaps("markets", f.markets);
   // Pay filters are in USD; Canadian pay is compared at a conservative USD value.

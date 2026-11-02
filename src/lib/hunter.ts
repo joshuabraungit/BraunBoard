@@ -18,8 +18,8 @@ export const HUNTER_WHY: Partial<Record<SalesMotion, string>> = {
   Mixed: "New Business + Account Growth: you win new customers and grow existing ones.",
 };
 
-/** What the filter offers, in order. Partnerships has its own spot in the Role list. */
-export const HUNTER_FILTER: SalesMotion[] = ["New Logo", "Expansion", "Mixed"];
+/** What the filter offers. Each choice includes jobs that do both (see motionsFor in data.ts). Partnerships has its own spot in the Role list. */
+export const HUNTER_FILTER: SalesMotion[] = ["New Logo", "Expansion"];
 
 const HUNTER_TITLE = /\b(hunters?|new business|new logos?|net[- ]new|acquisition)\b/i;
 const FARMER_TITLE = /\b(growers?|farmers?|existing business|existing customers?|install(ed)? base|account management)\b/i;
