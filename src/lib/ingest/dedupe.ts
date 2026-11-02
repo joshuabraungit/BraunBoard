@@ -32,8 +32,9 @@ export const DUPLICATE_THRESHOLD = 0.85;
 /**
  * Same role, different city: one company posting one job once per location. Same exact title,
  * same countries, same remote setup, posted within a week of each other, and the
- * descriptions match once place names are taken out. A title that names its own city or
- * territory ("Territory Manager - Memphis") is a separate seat, so different titles never match.
+ * descriptions match once place names are taken out. Titles count as the same when they only
+ * differ by the place tacked on the end ("Territory Rep - San Luis Obispo, CA" vs
+ * "Territory Rep - Ventura/Oxnard/Ojai, CA"): those still show as one card, open in N places.
  */
 export const SAME_ROLE_DAYS = 7;
 
@@ -56,9 +57,29 @@ function stripPlaces(text: string, places: string[]): string {
   return t;
 }
 
+const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * The title with a trailing place taken off: " - San Luis Obispo, CA", " | Austin", " (Chicago)".
+ * Only strips the last segment when it names one of the job's places or ends in a state code,
+ * so "Account Executive - Enterprise" stays as it is.
+ */
+export function titleWithoutPlace(title: string, places: string[]): string {
+  const t = title.trim().replace(/\s+/g, " ");
+  const names = places.flatMap((p) => p.split(/[,/]/)).map((p) => p.trim()).filter((p) => p.length >= 3);
+  const isPlace = (seg: string) =>
+    /,\s*[A-Z]{2}\.?$/.test(seg.trim()) || names.some((n) => new RegExp(`(^|[^a-z])${esc(n)}([^a-z]|$)`, "i").test(seg));
+  const paren = t.match(/^(.*\S)\s*\(([^()]*)\)$/);
+  if (paren && isPlace(paren[2]!)) return titleWithoutPlace(paren[1]!, places);
+  const dash = t.match(/^(.*?\S)\s+[-–—|:]\s+((?:(?!\s[-–—|:]\s).)+)$/);
+  if (dash && isPlace(dash[2]!)) return dash[1]!;
+  return t;
+}
+
 export function sameRole(a: RoleCandidate, b: RoleCandidate): boolean {
   if (a.title_normalized !== b.title_normalized) return false;
-  const t = (x: string) => x.trim().toLowerCase().replace(/\s+/g, " ");
+  const places = [...a.places, ...b.places];
+  const t = (x: string) => titleWithoutPlace(x, places).toLowerCase();
   if (t(a.title) !== t(b.title)) return false;
   if (a.remote_type !== b.remote_type) return false;
   if ([...a.markets].sort().join() !== [...b.markets].sort().join()) return false;
@@ -66,6 +87,5 @@ export function sameRole(a: RoleCandidate, b: RoleCandidate): boolean {
     const gap = Math.abs(new Date(a.posted_at).getTime() - new Date(b.posted_at).getTime());
     if (gap > SAME_ROLE_DAYS * 86_400_000) return false;
   }
-  const places = [...a.places, ...b.places];
   return descriptionSimilarity(stripPlaces(a.description, places), stripPlaces(b.description, places)) >= DUPLICATE_THRESHOLD;
 }

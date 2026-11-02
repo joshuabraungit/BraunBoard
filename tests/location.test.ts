@@ -171,3 +171,10 @@ describe("Germany-only titles", () => {
     expect(titleNamesGermanyOnly(t)).toBe(want);
   });
 });
+
+describe("stray commas in the city", () => {
+  it("drops a trailing comma so it never shows as Obispo,, CA", () => {
+    expect(cleanCity("San Luis Obispo,")).toBe("San Luis Obispo");
+    expect(cleanCity("St. Louis")).toBe("St. Louis");
+  });
+});

@@ -308,7 +308,7 @@ async function insertNewJob(
   if (!duplicateOf) {
     const { data: siblings } = await db
       .from("jobs")
-      .select("id, title_raw, description_raw, markets, remote_type, posted_at, city, state")
+      .select("id, title_raw, description_raw, markets, remote_type, posted_at, city, state, location_raw")
       .eq("company_id", company.id)
       .eq("title_normalized", cls.title_normalized)
       .eq("is_active", true)
@@ -333,7 +333,7 @@ async function insertNewJob(
         remote_type: s.remote_type as string,
         posted_at: s.posted_at as string | null,
         description: (s.description_raw as string) ?? "",
-        places: [(s.city as string) ?? ""],
+        places: [(s.city as string) ?? "", (s.location_raw as string) ?? ""],
       };
       if (sameRole(me, them)) {
         roleGroup = s.id as string;

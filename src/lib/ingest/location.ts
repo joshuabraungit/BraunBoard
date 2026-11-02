@@ -88,7 +88,8 @@ const KNOWN_CITIES = [...Object.keys(US_CITIES), ...Object.keys(CA_CITIES), ...U
  * a country ("US"), a state code ("NC"), a street address, "Remote".
  */
 export function cleanCity(city: string | null | undefined): string | null {
-  const c = city?.trim().replace(/\s+/g, " ");
+  // "San Luis Obispo," -> "San Luis Obispo": stray punctuation from the ATS showed up as "Obispo,, CA".
+  const c = city?.trim().replace(/\s+/g, " ").replace(/^[\s,;.\-–]+|[\s,;\-–]+$/g, "");
   if (!c) return null;
   const lower = c.toLowerCase();
   if (/^(us|usa|u\.s\.a?\.?|united states( of america)?|canada|uk|united kingdom|germany|deutschland|dach|remote|hybrid|anywhere|flexible|n\/a|tbd)$/i.test(c)) return null;

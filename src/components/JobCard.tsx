@@ -11,6 +11,7 @@ import { braunRead } from "@/lib/flags";
 import { cardLights, sellsTo, type Light } from "@/lib/card-lights";
 import type { MatchResult } from "@/lib/match";
 import { collapseOpenings, openingsLabel } from "@/lib/openings";
+import { titleWithoutPlace } from "@/lib/ingest/dedupe";
 import { cardExtrasFor, type CardExtras } from "@/lib/card-extras";
 import { HUNTER_LABELS, HUNTER_WHY } from "@/lib/hunter";
 
@@ -116,6 +117,9 @@ function MoneyRow({ job, extras }: { job: JobView; extras?: CardExtras }) {
 
 export function JobCard({ job, ctx, openings = 1, locations = 1, extras }: { job: JobView; ctx: CardContext; openings?: number; locations?: number; extras?: CardExtras }) {
   const more = openingsLabel({ openings, locations });
+  // One role in several places: the card stands for all of them, so don't name one city.
+  const multi = locations > 1;
+  const title = multi ? titleWithoutPlace(job.title_raw, [job.city ?? "", job.location_raw ?? ""]) : job.title_raw;
   const comp = formatComp(job);
   const match = ctx.matches?.get(job.id);
   const fresh = isFresh(job.first_seen_at);
@@ -125,7 +129,7 @@ export function JobCard({ job, ctx, openings = 1, locations = 1, extras }: { job
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-[15px] font-semibold leading-snug">
           <Link href={`/jobs/${job.slug}`} className="after:absolute after:inset-0">
-            {job.title_raw}
+            {title}
           </Link>
         </h3>
         <div className="relative z-10 -mr-1 -mt-1 flex shrink-0 items-center">
@@ -142,11 +146,11 @@ export function JobCard({ job, ctx, openings = 1, locations = 1, extras }: { job
       <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-2">
         <CompanyLogo name={job.company_name} logoUrl={job.company_logo_url} domain={job.company_domain} size={18} />
         <span className="min-w-0">
-          <span className="font-medium text-ink">{job.company_name}</span> · {job.remote_type === "Onsite" && "In office · "}{formatLocation(job)} ·{" "}
+          <span className="font-medium text-ink">{job.company_name}</span> · {job.remote_type === "Onsite" && "In office · "}{multi ? <span className="font-medium text-ink">{more}</span> : formatLocation(job)} ·{" "}
           <span className="whitespace-nowrap">
             <LifeMeter postedAt={job.first_seen_at} /> <span className={fresh ? "font-medium text-fresh" : ""}>{freshnessLabel(job.first_seen_at)}</span>
           </span>
-          {more && <span className="font-medium text-ink"> · {more}</span>}
+          {more && !multi && <span className="font-medium text-ink"> · {more}</span>}
         </span>
       </p>
 

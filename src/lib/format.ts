@@ -27,7 +27,8 @@ export function formatComp(j: { salary_min: number | null; salary_max: number | 
 const MARKET_NAME: Record<string, string> = { US: "US", CA: "Canada", UK: "UK", DE: "Germany" };
 
 export function formatLocation(j: { remote_type: string; city: string | null; state: string | null; location_raw?: string | null; markets?: string[] | null }): string {
-  const place = [j.city, j.state].filter(Boolean).join(", ");
+  // Trim stray commas so a stored "San Luis Obispo," never renders as "San Luis Obispo,, CA".
+  const place = [j.city, j.state].map((x) => x?.trim().replace(/^[,\s]+|[,\s]+$/g, "")).filter(Boolean).join(", ");
   const m = j.markets?.length ? j.markets : ["US"];
   const names = m.map((x) => MARKET_NAME[x] ?? x);
   // "US", "US & Canada", "US, Canada & UK"

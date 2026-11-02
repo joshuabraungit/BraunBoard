@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { JobView } from "../src/lib/data";
 import { collapseOpenings, openingsLabel } from "../src/lib/openings";
-import { sameRole } from "../src/lib/ingest/dedupe";
+import { sameRole, titleWithoutPlace } from "../src/lib/ingest/dedupe";
 
 const job = (id: string, title: string, city: string | null, company = "Braze") =>
   ({ id, title_raw: title, company_name: company, city, state: city ? "NY" : null, remote_type: "Unknown", markets: ["US"] }) as unknown as JobView;
@@ -53,8 +53,17 @@ describe("sameRole", () => {
   it("matches the same posting with only the city swapped", () => {
     expect(sameRole(base, other)).toBe(true);
   });
-  it("keeps territory seats separate when the title names the place", () => {
-    expect(sameRole({ ...base, title: "Territory Manager - Chicago" }, { ...other, title: "Territory Manager - Austin" })).toBe(false);
+  it("groups territory copies whose titles only differ by the place", () => {
+    expect(sameRole({ ...base, title: "Territory Manager - Chicago" }, { ...other, title: "Territory Manager - Austin" })).toBe(true);
+    expect(
+      sameRole(
+        { ...base, title: "Territory Sales Representative / Restaurant Specialist - San Luis Obispo, CA", places: ["Chicago", "San Luis Obispo", "San Luis Obispo, CA"] },
+        { ...other, title: "Territory Sales Representative / Restaurant Specialist - Ventura/Oxnard/Ojai, CA", places: ["Austin", "Ventura", "Ventura/Oxnard/Ojai, CA"] },
+      ),
+    ).toBe(true);
+  });
+  it("keeps titles that differ by more than the place separate", () => {
+    expect(sameRole({ ...base, title: "Account Executive - Enterprise" }, { ...other, title: "Account Executive - Mid-Market" })).toBe(false);
   });
   it("keeps roles posted weeks apart separate", () => {
     expect(sameRole(base, { ...other, posted_at: "2026-10-20T00:00:00Z" })).toBe(false);
@@ -64,5 +73,18 @@ describe("sameRole", () => {
   });
   it("keeps different text separate", () => {
     expect(sameRole(base, { ...other, description: "Totally different SMB inbound role selling payroll software to restaurants. ".repeat(6) })).toBe(false);
+  });
+});
+
+describe("titleWithoutPlace", () => {
+  it.each([
+    ["Territory Sales Representative / Restaurant Specialist - San Luis Obispo, CA", ["San Luis Obispo"], "Territory Sales Representative / Restaurant Specialist"],
+    ["Territory Sales Representative / Restaurant Specialist - Ventura/Oxnard/Ojai, CA", ["Ventura"], "Territory Sales Representative / Restaurant Specialist"],
+    ["Account Executive | Austin", ["Austin"], "Account Executive"],
+    ["Account Executive (Chicago)", ["Chicago"], "Account Executive"],
+    ["Sales Rep - Winston-Salem, NC", ["Winston-Salem"], "Sales Rep"],
+    ["Account Executive - Enterprise", ["Austin"], "Account Executive - Enterprise"],
+  ])("%s", (title, places, want) => {
+    expect(titleWithoutPlace(title, places)).toBe(want);
   });
 });
