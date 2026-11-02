@@ -107,7 +107,7 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
           <p className="mt-1 flex items-center gap-2 text-sm text-ink-2">
             <LifeMeter postedAt={job.first_seen_at} /> {lifeFor(job.first_seen_at).line}
           </p>
-          {/* Hunter or farmer, spelled out (the card shows it as a pill). */}
+          {/* New Business or Account Growth, spelled out (the card shows it as a pill). */}
           {HUNTER_WHY[job.sales_motion] && <p className="mt-1 text-sm text-ink-2">{HUNTER_WHY[job.sales_motion]}</p>}
           {siblings.length > 0 && (
             <p className="mt-1 text-sm text-ink-3">

@@ -130,12 +130,12 @@ function sellsTo(job: JobView): string | null {
   return words ? words[0]!.toUpperCase() + words.slice(1) : null;
 }
 
-const HUNTER_ICON: Record<string, string> = { "New Logo": "🏹", Expansion: "🌱", Mixed: "🏹🌱", Channel: "🤝" };
+const HUNTER_ICON: Record<string, string> = { "New Logo": "✨", Expansion: "🌱", Mixed: "✨🌱", Channel: "🤝" };
 
-// Roles where hunter vs. farmer is the question a rep asks. SEs and sales leaders aren't, so they stay blank when unsaid.
+// Roles where new business vs. account growth is the question a rep asks. SEs and sales leaders aren't, so they stay blank when unsaid.
 const QUOTA_ROLES = new Set(["Account Executive", "Account Manager", "Customer Expansion", "SDR/BDR"]);
 
-/** Hunter, Farmer, both, or Partnerships. A quota role that doesn't say gets "ask"; anything else that doesn't say, nothing. */
+/** New Business, Account Growth, both, or Partnerships. A quota role that doesn't say gets "ask"; anything else that doesn't say, nothing. */
 export function HunterPill({ motion, role }: { motion: JobView["sales_motion"]; role?: string }) {
   const label = motion === "Channel" ? "Partnerships" : HUNTER_LABELS[motion];
   const pill = "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold";
@@ -144,7 +144,7 @@ export function HunterPill({ motion, role }: { motion: JobView["sales_motion"]; 
     return (
       <p className="mt-2">
         <span className={`${pill} border-dashed border-line text-ink-3`} title="The posting doesn't say if you'd win new customers or grow existing ones. Worth asking.">
-          Hunter or farmer? Ask
+          New business or growth? Ask
         </span>
       </p>
     );

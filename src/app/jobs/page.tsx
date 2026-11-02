@@ -174,7 +174,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
           {sp.motion === "Channel" ? (
             <input type="hidden" name="motion" value="Channel" />
           ) : (
-            <Select name="motion" label="Hunter or farmer" options={HUNTER_FILTER} value={sp.motion} labels={MOTION_LABELS} />
+            <Select name="motion" label="New business or growth" options={HUNTER_FILTER} value={sp.motion} labels={MOTION_LABELS} />
           )}
         </div>
         <MoreFilters active={moreActive}>
