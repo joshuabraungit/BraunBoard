@@ -33,6 +33,12 @@ describe("one role in several cities", () => {
     expect(openingsLabel(r[0]!)).toBeNull();
   });
 
+  it("shows the base pay range across the cities it folds together", () => {
+    const pay = (id: string, city: string, root: string | null, base: number) => ({ ...grouped(id, city, root), salary_min: base, salary_max: null }) as JobView;
+    const r = collapseOpenings([pay("a", "Pasadena", null, 60000), pay("b", "Ventura", "a", 40000)]);
+    expect([r[0]!.job.salary_min, r[0]!.job.salary_max]).toEqual([40000, 60000]);
+  });
+
   it("keeps the old wording for repeat openings in one city", () => {
     expect(openingsLabel({ openings: 2, locations: 1 })).toBe("2 openings");
   });
@@ -61,6 +67,11 @@ describe("sameRole", () => {
         { ...other, title: "Territory Sales Representative / Restaurant Specialist - Ventura/Oxnard/Ojai, CA", places: ["Austin", "Ventura", "Ventura/Oxnard/Ojai, CA"] },
       ),
     ).toBe(true);
+  });
+  it("groups territory copies even when pay text and dates differ", () => {
+    const a = { ...base, title: "Territory Rep - Pasadena, CA", places: ["Pasadena"] };
+    const b = { ...base, title: "Territory Rep - San Luis Obispo, CA", places: ["San Luis Obispo"], posted_at: "2026-11-30T00:00:00Z", description: "Base pay is $40,000 in this market. ".repeat(5) };
+    expect(sameRole(a, b)).toBe(true);
   });
   it("keeps titles that differ by more than the place separate", () => {
     expect(sameRole({ ...base, title: "Account Executive - Enterprise" }, { ...other, title: "Account Executive - Mid-Market" })).toBe(false);

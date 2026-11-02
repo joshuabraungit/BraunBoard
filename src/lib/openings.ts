@@ -31,6 +31,11 @@ export function collapseOpenings(jobs: JobView[]): Collapsed[] {
       for (const k of keys) if (!at.has(k)) at.set(k, i);
       out[i]!.openings++;
       places[i]!.add(formatLocation(j));
+      // Base pay often differs by city: show the range across the copies instead of one city's number.
+      const c = out[i]!.job;
+      const lo = [c.salary_min, j.salary_min].filter((x): x is number => x != null);
+      const hi = [c.salary_max ?? c.salary_min, j.salary_max ?? j.salary_min].filter((x): x is number => x != null);
+      if (lo.length && hi.length) out[i]!.job = { ...c, salary_min: Math.min(...lo), salary_max: Math.max(...hi) };
       out[i]!.locations = places[i]!.size;
     }
   }
