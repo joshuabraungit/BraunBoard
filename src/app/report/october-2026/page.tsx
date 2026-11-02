@@ -160,6 +160,16 @@ export default async function Report() {
         </p>
       </section>
 
+      <figure className="mt-10 border-l-4 border-accent pl-5">
+        <p className="text-sm text-ink-2">Here&apos;s how Vedish Kukshal, a rep, put it:</p>
+        <blockquote className="mt-2 text-lg font-semibold leading-snug text-ink sm:text-xl">
+          &ldquo;If pay and quota are both missing, I&apos;m out. I&apos;m not doing detective work for a role that wants 40 hours a week.&rdquo;
+        </blockquote>
+        <figcaption className="mt-3 text-[15px] leading-relaxed text-ink-2">
+          Employers think a vague post keeps their options open. It does. Just not the options they want.
+        </figcaption>
+      </figure>
+
       <section className="mt-10 rounded-2xl border border-accent/30 bg-accent-soft p-5 sm:p-6">
         <h2 className="text-lg font-bold">The one that said it</h2>
         <p className="mt-2 text-[15px] leading-relaxed text-ink">

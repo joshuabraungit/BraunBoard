@@ -40,6 +40,11 @@ export function FounderLetter() {
             call.
           </p>
           <p>
+            Vedish Kukshal, a rep, told me he skips any job with no pay and no quota. &ldquo;I&apos;m not doing detective work for a role that wants 40 hours a
+            week.&rdquo;
+          </p>
+          <p>So I do the detective work.</p>
+          <p>
             The job you take shapes your next few years. You should know what you&apos;re walking into before the first interview, not after the first quarter.
           </p>
           <p>It&apos;s free. Hope it helps.</p>
