@@ -4,7 +4,8 @@
 // Pure functions over rows, so they're tested without a database.
 
 import { parseLocation } from "./ingest/location";
-import { writtenInGerman } from "./ingest/classify";
+import { isChannelTitle, writtenInGerman } from "./ingest/classify";
+import { descriptionSimilarity } from "./ingest/dedupe";
 import type { Market } from "./ingest/location";
 
 export interface QaJob {
@@ -59,14 +60,20 @@ export function missingMarkets(jobs: QaJob[], now = Date.now()): QaIssue | null 
   };
 }
 
-// Base pay above this (in USD terms) is almost always OTE labeled as base. Leaders can earn it.
+// Base pay above this (in USD terms) is usually OTE labeled as base. Leaders can earn it, and so can
+// partnerships roles (mostly salary, little commission).
 const BASE_CEILING: Record<string, number> = { "SDR/BDR": 150_000, "Account Manager": 220_000, "Customer Expansion": 220_000, "Account Executive": 250_000, "Sales Engineer": 260_000 };
 
-/** New jobs whose "base" is too high to be base. */
+// The posting itself calls it base ("Base pay: $80,000 - $300,000", "$234,000-286,000 plus annual bonus").
+const SAYS_BASE = /\bbase\b[^$£€.]{0,40}[$£€]|[$£€][\d,.]+\s*[kK]?\s*(?:-|–|to)\s*[$£€]?[\d,.]+\s*[kK]?\s*(?:USD|EUR|GBP|CAD)?\s*(?:\+|plus)\s*(?:annual |an? )?(?:bonus|commission|variable)/i;
+
+/** New jobs whose "base" is too high to be base, where the posting doesn't say it's base. */
 export function baseLooksLikeOte(jobs: QaJob[], now = Date.now()): QaIssue | null {
   const bad = jobs.filter((j) => {
     const cap = BASE_CEILING[j.role_family];
-    return cap != null && (j.salary_max_usd ?? 0) > cap && isNew(j, now);
+    if (cap == null || (j.salary_max_usd ?? 0) <= cap || !isNew(j, now)) return false;
+    if (isChannelTitle(j.title_raw) || /\bmanager\b/i.test(j.title_raw) && j.role_family === "SDR/BDR") return false;
+    return !SAYS_BASE.test((j.description_raw ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " "));
   });
   if (!bad.length) return null;
   return {
@@ -100,7 +107,14 @@ export function germanPostings(jobs: QaJob[], now = Date.now()): QaIssue | null 
   };
 }
 
-/** The same job twice: same company, title and city, both the main listing. */
+/**
+ * The same job twice: same company, title and city, and nearly the same posting. Holding companies
+ * (one "Account Executive" title for five different businesses) post different jobs under one name,
+ * so the text has to match too. Needs both descriptions.
+ */
+// Lower than the crawler's own duplicate bar: a repost often changes a paragraph or adds the pay.
+const REPOST_SIMILARITY = 0.5;
+
 export function duplicateListings(jobs: QaJob[], now = Date.now()): QaIssue | null {
   const seen = new Map<string, QaJob>();
   const bad: QaJob[] = [];
@@ -109,7 +123,8 @@ export function duplicateListings(jobs: QaJob[], now = Date.now()): QaIssue | nu
     const k = `${j.company_name}|${j.title_raw.trim().toLowerCase()}|${(j.city ?? j.location_raw ?? "").toLowerCase()}`;
     const first = seen.get(k);
     if (!first) seen.set(k, j);
-    else if (isNew(j, now) || isNew(first, now)) bad.push(isNew(j, now) ? j : first);
+    else if ((isNew(j, now) || isNew(first, now)) && first.description_raw && j.description_raw && descriptionSimilarity(first.description_raw, j.description_raw) >= REPOST_SIMILARITY)
+      bad.push(isNew(j, now) ? j : first);
   }
   if (!bad.length) return null;
   return {

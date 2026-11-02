@@ -95,8 +95,14 @@ async function main() {
   }
   // Descriptions only for new jobs (the German-language check), so this stays a small read.
   const since = new Date(Date.now() - 2 * 24 * HOUR).toISOString();
-  const { data: fresh } = await db.from("visible_jobs").select("id, description_raw").gte("first_seen_at", since);
-  const desc = new Map((fresh ?? []).map((r) => [r.id as string, r.description_raw as string | null]));
+  // Descriptions for new jobs, plus older jobs with the same company and title (for the repost check).
+  const newKeys = new Set(jobs.filter((j) => j.first_seen_at >= since).map((j) => `${j.company_name}|${j.title_raw.trim().toLowerCase()}`));
+  const ids = jobs.filter((j) => j.first_seen_at >= since || newKeys.has(`${j.company_name}|${j.title_raw.trim().toLowerCase()}`)).map((j) => j.id);
+  const desc = new Map<string, string | null>();
+  for (let i = 0; i < ids.length; i += 200) {
+    const { data } = await db.from("visible_jobs").select("id, description_raw").in("id", ids.slice(i, i + 200));
+    for (const r of data ?? []) desc.set(r.id as string, r.description_raw as string | null);
+  }
   for (const j of jobs) j.description_raw = desc.get(j.id) ?? null;
   const qa = jobs.length ? runDataQa(jobs) : [];
   for (const i of qa) problems.push([i.line, ...i.examples.map((e) => `   ${e}`)].join("\n"));

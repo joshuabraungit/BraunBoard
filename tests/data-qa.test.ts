@@ -30,6 +30,13 @@ describe("baseLooksLikeOte", () => {
   it("flags an AE with a $300K base", () => {
     expect(baseLooksLikeOte([job({ salary_max: 300000, salary_max_usd: 300000 })], NOW)?.line).toMatch(/probably OTE/);
   });
+  it("trusts a posting that says it's base", () => {
+    expect(baseLooksLikeOte([job({ salary_max: 300000, salary_max_usd: 300000, description_raw: "Compensation - Base pay: $80,000 - $300,000" })], NOW)).toBeNull();
+    expect(baseLooksLikeOte([job({ salary_max: 286000, salary_max_usd: 286000, description_raw: "The San Francisco, CA salary range for this role is $234,000-286,000 plus annual bonus." })], NOW)).toBeNull();
+  });
+  it("lets partnerships roles earn it", () => {
+    expect(baseLooksLikeOte([job({ title_raw: "Sr. Partner Development Manager, Google Cloud", salary_max: 257250, salary_max_usd: 257250 })], NOW)).toBeNull();
+  });
   it("lets leaders earn it", () => {
     expect(baseLooksLikeOte([job({ role_family: "VP Sales", salary_max: 320000, salary_max_usd: 320000 })], NOW)).toBeNull();
   });
@@ -52,8 +59,12 @@ describe("germanPostings", () => {
 });
 
 describe("duplicateListings", () => {
+  const text = "MediaRadar equips marketing, sales and analytics leaders with the intelligence they need to stay ahead. You will own a book of agency accounts in New York and grow them.";
   it("flags the same job twice when one is new", () => {
-    expect(duplicateListings([job({ first_seen_at: lastMonth }), job({})], NOW)?.line).toMatch(/listed twice/);
+    expect(duplicateListings([job({ first_seen_at: lastMonth, description_raw: text }), job({ description_raw: `Location: NYC Hybrid. ${text}` })], NOW)?.line).toMatch(/listed twice/);
+  });
+  it("leaves different jobs with the same title alone (a holding company's businesses)", () => {
+    expect(duplicateListings([job({ description_raw: "Sadie is building technology for hospitality. Win new restaurant customers across the United States." }), job({ description_raw: "Variphy is the preferred reporting and analytics platform for unified communications." })], NOW)).toBeNull();
   });
   it("ignores old duplicates and grouped city copies", () => {
     expect(duplicateListings([job({ first_seen_at: lastMonth }), job({ first_seen_at: lastMonth })], NOW)).toBeNull();
