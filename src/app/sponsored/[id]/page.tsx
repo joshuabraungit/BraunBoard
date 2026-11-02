@@ -3,7 +3,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { CompanyLogo } from "@/components/CompanyLogo";
-import { AttainmentBadge, sponsorWhere } from "@/components/SponsoredCard";
+import { OteBadge, sponsorWhere } from "@/components/SponsoredCard";
 import { bump, getOrder, logoUrl, reviewFields, videoUrl } from "@/lib/sponsor";
 import { videoApproved } from "@/lib/sponsor-review";
 import { AdText } from "@/components/AdText";
@@ -91,9 +91,9 @@ export default async function SponsoredJobPage({ params }: Props) {
       </div>
 
       <p className="mt-5 text-lg font-semibold text-accent">{payLine(s)}</p>
-      {s.ote_attainment_pct != null && (
+      {(s.ote_attainment_pct != null || s.first_sales_hire) && (
         <p className="mt-2">
-          <AttainmentBadge pct={s.ote_attainment_pct} />
+          <OteBadge s={s} />
         </p>
       )}
 

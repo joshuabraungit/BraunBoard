@@ -22,6 +22,26 @@ export function AttainmentBadge({ pct }: { pct: number | null | undefined }) {
   );
 }
 
+/** For a sponsor's first dedicated sales hire: no team yet, so no hit-OTE number. Green, framed as the upside. */
+export function FirstHireBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded border border-accent/25 bg-accent-soft px-1.5 py-0.5 text-xs font-semibold text-accent">
+      <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M3 21h18" />
+        <path d="M5 21V10l7-6 7 6v11" />
+      </svg>
+      Ground floor: first sales hire
+    </span>
+  );
+}
+
+/** The line under pay: the shared hit-OTE number, else the first-hire badge, else nothing. */
+export function OteBadge({ s }: { s: Pick<SponsoredJobRow, "ote_attainment_pct" | "first_sales_hire"> }) {
+  if (s.ote_attainment_pct != null) return <AttainmentBadge pct={s.ote_attainment_pct} />;
+  if (s.first_sales_hire) return <FirstHireBadge />;
+  return null;
+}
+
 /** The owl's head and claws, hanging on to the top edge of the card. Blinks and reads (globals.css .owl-*). */
 function PeekingOwl() {
   return (
@@ -128,9 +148,9 @@ export function SponsoredCard({ s, peek = false }: { s: SponsoredJobRow; peek?: 
                   </span>
                 ))}
             </p>
-            {s.ote_attainment_pct != null && (
+            {(s.ote_attainment_pct != null || s.first_sales_hire) && (
               <p className="mt-2">
-                <AttainmentBadge pct={s.ote_attainment_pct} />
+                <OteBadge s={s} />
               </p>
             )}
             {s.product_short && (

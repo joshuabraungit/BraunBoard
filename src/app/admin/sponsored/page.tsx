@@ -183,6 +183,10 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                             )}
                           </label>
                         ))}
+                        <label className="flex items-center gap-2 text-sm">
+                          <input type="checkbox" name="first_sales_hire" defaultChecked={!!r.first_sales_hire} className="h-4 w-4" />
+                          <span>First sales hire (shows &ldquo;Ground floor: first sales hire&rdquo; when there&apos;s no OTE %)</span>
+                        </label>
                         <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">Save copy</button>
                         <p className="text-xs text-ink-3">Updates the home page card and job page right away. Pay, location and dates stay as the buyer sent them.</p>
                       </form>

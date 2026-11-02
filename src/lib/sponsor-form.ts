@@ -177,11 +177,12 @@ const editSchema = z.object({
       .transform((v) => (v ? v.replace(/%/g, "").trim() : ""))
       .refine((v) => v === "" || (/^\d{1,3}$/.test(v) && Number(v) <= 100), "Use a number from 0 to 100")
       .transform((v) => (v === "" ? null : Number(v))),
+  first_sales_hire: z.string().transform((v) => v === "on"),
 });
 export type SponsorEdit = z.output<typeof editSchema>;
 
 export function parseSponsorEdit(fd: FormData): { ok: true; edit: SponsorEdit } | { ok: false; error: string } {
-  const raw = Object.fromEntries(["job_title", "job_url", "description", "product_short", "product_story", "ote_attainment_pct"].map((k) => [k, String(fd.get(k) ?? "")]));
+  const raw = Object.fromEntries(["job_title", "job_url", "description", "product_short", "product_story", "ote_attainment_pct", "first_sales_hire"].map((k) => [k, String(fd.get(k) ?? "")]));
   const r = editSchema.safeParse(raw);
   if (!r.success) {
     const i = r.error.issues[0];
