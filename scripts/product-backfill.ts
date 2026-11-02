@@ -1,10 +1,12 @@
 // "What they sell": write (and fact-check) the plain-English story for companies that need one.
 // A company needs one when it has never been checked, when the last check came back empty (after 2 days),
 // when it posted new jobs since the last check (at most once a week), or when the story is more than a month old.
-// Usage: npx tsx scripts/product-backfill.ts [max companies, default 40]
+// When the postings never say what the company sells, its own home page is read as a fallback.
+// Usage: npx tsx scripts/product-backfill.ts [max companies, default 40] [--core-only] [--empty: retry every empty one now]
 
 import { adminClient } from "../src/lib/supabase/admin";
 import { extractCoreProduct, extractProduct, isCoreCompany, needsPlainRewrite } from "../src/lib/ingest/product";
+import { fetchSiteText, homeUrl } from "../src/lib/ingest/site-text";
 import { fail, notice, requireEnv, warn } from "./report";
 
 const DAY = 86_400_000;
@@ -45,14 +47,14 @@ async function main() {
 
   const ids = [...byCo.keys()];
   const locked = new Set<string>();
-  const meta = new Map<string, { size: string | null; source: string | null }>();
+  const meta = new Map<string, { size: string | null; source: string | null; home: string | null }>();
   const checked = new Map<string, { at: number | null; story: string | null; short: string | null }>();
   for (let i = 0; i < ids.length; i += 300) {
-    const { data, error } = await db.from("companies").select("id, product_checked_at, product_story, product_short, product_locked, product_source, size_bucket").in("id", ids.slice(i, i + 300));
+    const { data, error } = await db.from("companies").select("id, product_checked_at, product_story, product_short, product_locked, product_source, size_bucket, website_url, domain").in("id", ids.slice(i, i + 300));
     if (error) throw error;
     // Written or approved by Josh in Admin: never rewritten.
     for (const c of data ?? []) if (c.product_locked) locked.add(c.id as string);
-    for (const c of data ?? []) meta.set(c.id as string, { size: c.size_bucket as string | null, source: c.product_source as string | null });
+    for (const c of data ?? []) meta.set(c.id as string, { size: c.size_bucket as string | null, source: c.product_source as string | null, home: homeUrl(c.website_url as string | null, c.domain as string | null) });
     for (const c of data ?? []) checked.set(c.id as string, { at: c.product_checked_at ? new Date(c.product_checked_at as string).getTime() : null, story: c.product_story as string | null, short: c.product_short as string | null });
   }
 
@@ -72,7 +74,8 @@ async function main() {
       const core = isCoreCompany(meta.get(id)?.size, c.open);
       const notCore = core && meta.get(id)?.source !== "core" && (at == null || at < CORE_LIVE || now - at > 3 * HOUR);
       const notPlain = !noStory && needsPlainRewrite(k?.short ?? null, k?.story ?? null) && (at! < PLAIN_LIVE || now - at! > 3 * HOUR);
-      const why = at == null ? 0 : noStory && now - at > 2 * DAY ? 0.5 : now - at > 30 * DAY ? 2 : c.newest > at && now - at > 7 * DAY ? 1 : notCore ? 1.3 : notPlain ? 1.4 : oldFormat ? 1.5 : null;
+      const retryEmpty = noStory && (now - at! > 2 * DAY || process.argv.includes("--empty"));
+      const why = at == null ? 0 : retryEmpty ? 0.5 : now - at > 30 * DAY ? 2 : c.newest > at && now - at > 7 * DAY ? 1 : notCore ? 1.3 : notPlain ? 1.4 : oldFormat ? 1.5 : null;
       return { id, c, why, core };
     })
     .filter((x) => x.why != null)
@@ -82,19 +85,32 @@ async function main() {
     .sort((a, b) => a.why! - b.why! || b.c.open - a.c.open)
     .slice(0, max);
 
-  let stories = 0, changed = 0, errors = 0;
+  let stories = 0, changed = 0, errors = 0, fromSite = 0;
   let lastError = "";
   for (let i = 0; i < due.length; i += 5) {
     await Promise.all(
       due.slice(i, i + 5).map(async ({ id, c, core }) => {
         try {
-          const r = core ? await extractCoreProduct(c.name, c.postings) : await extractProduct(c.name, c.postings);
+          let r = core ? await extractCoreProduct(c.name, c.postings) : await extractProduct(c.name, c.postings);
+          let source = core ? "core" : "postings";
+          // The postings never said what they sell: read the company's own home page and try again.
+          const home = meta.get(id)?.home;
+          if (!r.story && !core && home) {
+            const site = await fetchSiteText(home);
+            if (site) {
+              r = await extractProduct(c.name, c.postings, undefined, site);
+              if (r.story) {
+                source = "website";
+                fromSite++;
+              }
+            }
+          }
           const prev = checked.get(id)?.story ?? null;
           const patch: Record<string, unknown> = { product_checked_at: new Date().toISOString() };
           // Only replace a story with a new one. If this pass couldn't write one, keep the last good one.
           if (r.story) {
             stories++;
-            Object.assign(patch, { product_story: r.story, product_short: r.short, product_quote: r.quote, product_category: r.category, product_source: core ? "core" : "postings" });
+            Object.assign(patch, { product_story: r.story, product_short: r.short, product_quote: r.quote, product_category: r.category, product_source: source });
             if (r.story !== prev) {
               patch.product_changed_at = new Date().toISOString();
               changed++;
@@ -109,7 +125,7 @@ async function main() {
       }),
     );
   }
-  notice(`What they sell: checked ${due.length - errors} companies, story for ${stories}, ${changed} new or changed${errors ? `, ${errors} errors (will retry)` : ""}. ${Math.max(0, ids.length - due.length)} others are up to date.`);
+  notice(`What they sell: checked ${due.length - errors} companies, story for ${stories} (${fromSite} from their website), ${changed} new or changed${errors ? `, ${errors} errors (will retry)` : ""}. ${Math.max(0, ids.length - due.length)} others are up to date.`);
   if (errors) warn(`Last product story error: ${lastError}`);
 }
 

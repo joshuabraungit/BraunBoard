@@ -205,17 +205,25 @@ export function joinPostings(postings: string[], max = 3): string {
     .join("\n\n");
 }
 
+export const SITE_HEADER = "The company's own home page";
+// The postings-only rule, widened to the company's own home page (still its own words, still quote-checked).
+const SITE_NOTE = `The text after "--- ${SITE_HEADER} ---" is from the company's own website. Treat it exactly like a posting:
+you may use it, and quote from it, but nothing from outside these texts. Ignore cookie banners, menus and sign-up prompts.`;
+
 /**
  * Write, then fact-check. A draft with problems gets one rewrite with the problems named.
  * Throws on API errors so callers can retry later.
  */
-export async function extractProduct(company: string, postings: string[], key = process.env.ANTHROPIC_API_KEY): Promise<ProductInfo & { raw: unknown }> {
-  const text = joinPostings(postings);
+export async function extractProduct(company: string, postings: string[], key = process.env.ANTHROPIC_API_KEY, site?: string | null): Promise<ProductInfo & { raw: unknown }> {
+  // Postings first; the company's own home page after them when the postings alone came back empty.
+  const text = [joinPostings(postings), site ? `--- ${SITE_HEADER} ---\n${site}` : ""].filter(Boolean).join("\n\n");
   if (!key || !text) return { ...EMPTY_PRODUCT, raw: null };
   const base = `Company: ${company}\n\nPostings:\n${text}`;
+  const system = site ? `${SYSTEM}\n\n${SITE_NOTE}` : SYSTEM;
+  const checkSystem = site ? `${CHECK}\n\n${SITE_NOTE}` : CHECK;
   const log: Record<string, unknown> = {};
 
-  let draft = (await ask(SYSTEM, base, key)) as Partial<ProductInfo>;
+  let draft = (await ask(system, base, key)) as Partial<ProductInfo>;
   log.first = draft;
   // Up to 3 rewrites in total. Wording fixes (banned words, length, quote) don't use up a fact-check;
   // a story only gets two fact-checks, and if the second still finds made-up claims it's dropped.
@@ -224,7 +232,7 @@ export async function extractProduct(company: string, postings: string[], key = 
     const problems = problemsWith(draft, text);
     if (!problems.length) {
       checks++;
-      const check = (await ask(CHECK, `${base}\n\nStory: ${draft.story}\nShort line: ${draft.short ?? ""}`, key)) as { unsupported?: string[]; category?: string };
+      const check = (await ask(checkSystem, `${base}\n\nStory: ${draft.story}\nShort line: ${draft.short ?? ""}`, key)) as { unsupported?: string[]; category?: string };
       log[`check${checks}`] = check;
       if (PRODUCT_CATEGORIES.includes(check.category as ProductCategory)) draft.category = check.category as ProductCategory;
       if (!check.unsupported?.length) break;
@@ -239,7 +247,7 @@ export async function extractProduct(company: string, postings: string[], key = 
       draft = { story: null };
       break;
     }
-    draft = (await ask(SYSTEM, `${base}\n\nYour last draft:\n${JSON.stringify(draft)}\n\nFix these problems and rewrite, keeping every rule:\n- ${problems.join("\n- ")}`, key)) as Partial<ProductInfo>;
+    draft = (await ask(system, `${base}\n\nYour last draft:\n${JSON.stringify(draft)}\n\nFix these problems and rewrite, keeping every rule:\n- ${problems.join("\n- ")}`, key)) as Partial<ProductInfo>;
     log[`rewrite${rewrites + 1}`] = draft;
   }
   return { ...cleanProduct(draft, text), raw: log };

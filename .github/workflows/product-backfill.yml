@@ -11,6 +11,10 @@ on:
         description: "Only big companies getting main-product stories"
         type: boolean
         default: false
+      empty:
+        description: "Retry every company with no story now (reads their website if the postings don't say)"
+        type: boolean
+        default: false
 
 jobs:
   run:
@@ -27,4 +31,4 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx tsx scripts/product-backfill.ts ${{ inputs.max }} ${{ inputs.core_only && '--core-only' || '' }}
+      - run: npx tsx scripts/product-backfill.ts ${{ inputs.max }} ${{ inputs.core_only && '--core-only' || '' }} ${{ inputs.empty && '--empty' || '' }}
