@@ -5,6 +5,7 @@
 // - Picks must publish pay and get a "Strong posting" or "Worth a look" Braun Read.
 // - One job per company, at most 2 per role, at most 3 per segment.
 // - Takes only restate facts we have. The "skip" names the posting's red flags, never the company.
+// - Quota-carrying sales roles only: Sales Engineers stay on the site but out of Picks.
 
 import { braunRead, flagsFromCodes, type ReadInput } from "./flags";
 import { formatComp, formatLocation, money } from "./format";
@@ -25,6 +26,11 @@ export interface PickCandidate extends ReadInput {
   flags?: string[];
   currency?: string | null;
   markets?: string[];
+  sales_motion?: string;
+  customer_segment?: string;
+  attainment?: unknown;
+  company_sells?: string | null;
+  buyer_short?: string | null;
 }
 
 export const PICK_COUNT = 5;
@@ -35,7 +41,12 @@ const daysOld = (j: PickCandidate, now: number) => (now - new Date(j.first_seen_
 const oteMid = (j: PickCandidate) => (j.ote_min == null ? null : (j.ote_min + (j.ote_max ?? j.ote_min)) / 2);
 const hasPay = (j: PickCandidate) => j.salary_min != null || j.ote_min != null;
 
+/** Roles that carry a quota and sell to a segment. Leaders and SEs don't get a segment tag (it's often wrong for them). */
+export const QUOTA_ROLES = new Set(["Account Executive", "Account Manager", "Customer Expansion", "SDR/BDR"]);
+const NOT_IN_PICKS = new Set(["Sales Engineer"]);
+
 export function scorePick(j: PickCandidate, now = Date.now()): number | null {
+  if (NOT_IN_PICKS.has(j.role_family)) return null;
   if (!hasPay(j) || daysOld(j, now) > FRESH_DAYS) return null;
   const read = braunRead(j, now);
   if (read.verdict !== "Strong posting" && read.verdict !== "Worth a look") return null;
@@ -142,8 +153,23 @@ export function pickPay(j: PickCandidate): string {
   return formatComp(j) || "Pay not listed";
 }
 
-export function pickMeta(j: PickCandidate): string {
-  return [formatLocation({ remote_type: j.remote_type, city: j.city, state: j.state, location_raw: j.location_raw ?? null, markets: j.markets }), j.sales_segment !== "Unknown" ? j.sales_segment : null]
+/**
+ * Recruiter bookkeeping out of job titles: "Core AE Southeast [FY27][Pipeline]" -> "Core AE Southeast".
+ * Drops [bracketed] tags, (FY27)-style or req-number parentheticals, and stray separators left behind.
+ */
+export function cleanTitle(t: string): string {
+  return t
+    .replace(/\[[^\]]*\]/g, " ")
+    .replace(/\((?:[^)]*\b(?:FY\s?\d{2,4}|H[12]\s?\d{2,4}|Q[1-4]\s?\d{2,4}|req|R-?\d{3,}|\d{4,})\b[^)]*)\)/gi, " ")
+    .replace(/\s+-\s+(?:FY\s?\d{2,4}|R-?\d{4,})\s*$/i, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s*[-–|,·:]\s*$/, "")
+    .trim() || t.trim();
+}
+
+export function pickMeta(j: Pick<PickCandidate, "remote_type" | "city" | "state" | "location_raw" | "markets" | "sales_segment" | "role_family">): string {
+  const seg = j.sales_segment !== "Unknown" && QUOTA_ROLES.has(j.role_family) ? j.sales_segment : null;
+  return [formatLocation({ remote_type: j.remote_type, city: j.city, state: j.state, location_raw: j.location_raw ?? null, markets: j.markets }), seg]
     .filter(Boolean)
     .join(" · ");
 }
@@ -152,11 +178,17 @@ export function subjectFor(picks: PickCandidate[]): string {
   const top = [...picks].sort((a, b) => (oteMid(b) ?? 0) - (oteMid(a) ?? 0))[0];
   if (!top) return "Braun's Picks: this week's sales jobs worth a look";
   const o = oteMid(top);
-  const hook = o ? `${money(top.ote_max ?? o, top.currency)} OTE at ${top.company_name}` : `${top.title_raw} at ${top.company_name}`;
+  const hook = o ? `${money(top.ote_max ?? o, top.currency)} OTE at ${top.company_name}` : `${cleanTitle(top.title_raw)} at ${top.company_name}`;
   return `Braun's Picks: ${hook} + ${picks.length - 1} more`;
 }
 
 export const DEFAULT_INTRO = "5 sales jobs I'd actually look at this week, and one I'd skip.";
+
+/** The headline, kept honest about what's in the issue: the pick count and whether a skip made it. */
+export function introFor(picks: number, hasSkip: boolean): string {
+  const n = picks === 1 ? "1 sales job" : `${picks} sales jobs`;
+  return `${n} I'd actually look at this week${hasSkip ? ", and one I'd skip" : ""}.`;
+}
 
 // ---------------------------------------------------------------------------
 // Scheduling: issues go out Tuesday 8am New York time.

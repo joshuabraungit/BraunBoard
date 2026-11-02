@@ -1,7 +1,7 @@
 // Monday: build Tuesday's Braun's Picks and email Josh a preview.
 // Never overwrites an issue that already exists (so manual edits are safe).
 import { adminClient } from "../src/lib/supabase/admin";
-import { createDraft, lastTakeError } from "../src/lib/picks-db";
+import { createDraft, lastTakeError, loadItemExtras } from "../src/lib/picks-db";
 import { renderPicks, type ItemContent } from "../src/lib/picks-email";
 import { sendEmail } from "../src/lib/alerts/email";
 import { adminEmails } from "../src/lib/admin-emails";
@@ -23,9 +23,10 @@ async function main() {
   if (lastTakeError) warn(`Some takes used the plain template because the AI call failed: ${lastTakeError}`);
   if (r.picks < 3) warn(`Only ${r.picks} jobs qualified for Picks this week.`);
 
-  const { data: issue } = await db.from("picks_issues").select("subject, intro, stat_line, issue_date, send_at").eq("id", r.issueId).single();
-  const { data: items } = await db.from("picks_items").select("id, kind, title, company, pay, meta, take").eq("issue_id", r.issueId).order("kind").order("position");
-  const email = renderPicks(issue!, (items ?? []) as ItemContent[], { siteUrl: site, subscriberId: "preview" });
+  const { data: issue } = await db.from("picks_issues").select("subject, intro, opener, stat_line, issue_date, send_at").eq("id", r.issueId).single();
+  const { data: items } = await db.from("picks_items").select("id, kind, job_id, title, company, pay, meta, take").eq("issue_id", r.issueId).order("kind").order("position");
+  const extras = await loadItemExtras(db, items ?? []);
+  const email = renderPicks(issue!, (items ?? []) as ItemContent[], { siteUrl: site, subscriberId: "preview", extras });
   const banner = `<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto 16px;padding:14px 16px;border-radius:10px;background:#16140f;color:#fff;font-size:14px;line-height:1.5">
     <b>Preview.</b> This goes out Tuesday at 8am ET on its own. Want to change a pick, edit a take, or pause this week?
     <a href="${site}/admin/picks/${r.issueId}" style="color:#9fe0b5;font-weight:700">Open it in Admin &rarr;</a></div>`;

@@ -4,7 +4,7 @@ import { adminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin";
 import { addPick, removePick, saveIssueText, savePickTake, setIssuePaused } from "../../actions";
 import { AdminNotice } from "@/components/AdminNotice";
-import { loadCandidates } from "@/lib/picks-db";
+import { loadCandidates, loadItemExtras } from "@/lib/picks-db";
 import { choosePicks, pickMeta, pickPay } from "@/lib/picks";
 import { renderPicks, type ItemContent } from "@/lib/picks-email";
 
@@ -39,7 +39,7 @@ export default async function EditIssue({ params, searchParams }: { params: Prom
   const options = locked ? [] : choosePicks(await loadCandidates(db), 40, Date.now(), usedJobs).filter((c) => !usedCompanies.has(c.company_name)).slice(0, 12);
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.braunboard.com";
-  const preview = renderPicks(issue, items, { siteUrl: site, subscriberId: "preview" });
+  const preview = renderPicks(issue, items, { siteUrl: site, subscriberId: "preview", extras: await loadItemExtras(db, items) });
   const when = new Date(issue.send_at).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
   const input = "w-full rounded-md border border-line bg-bg px-3 py-2 text-sm";
 
@@ -74,8 +74,10 @@ export default async function EditIssue({ params, searchParams }: { params: Prom
             <input type="hidden" name="id" value={id} />
             <label className="block text-xs font-semibold uppercase tracking-wide text-ink-3">Subject line</label>
             <input name="subject" defaultValue={issue.subject} disabled={locked} className={input} />
-            <label className="block pt-1 text-xs font-semibold uppercase tracking-wide text-ink-3">Opening line</label>
+            <label className="block pt-1 text-xs font-semibold uppercase tracking-wide text-ink-3">Headline</label>
             <input name="intro" defaultValue={issue.intro} disabled={locked} className={input} />
+            <label className="block pt-1 text-xs font-semibold uppercase tracking-wide text-ink-3">A word from you (optional, shows under the headline)</label>
+            <textarea name="opener" defaultValue={issue.opener ?? ""} disabled={locked} rows={2} placeholder="Lots of enterprise roles this week, and two don't list base. Here's why that matters..." className={input} />
             <label className="block pt-1 text-xs font-semibold uppercase tracking-wide text-ink-3">This week&apos;s number</label>
             <textarea name="stat_line" defaultValue={issue.stat_line ?? ""} disabled={locked} rows={2} className={input} />
             {!locked && <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white">Save</button>}

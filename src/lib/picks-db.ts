@@ -6,7 +6,8 @@ import type { CompanyStats } from "./data";
 import {
   chooseSkip,
   choosePicks,
-  DEFAULT_INTRO,
+  cleanTitle,
+  introFor,
   nextIssueDate,
   pickMeta,
   pickPay,
@@ -17,9 +18,78 @@ import {
   type PickCandidate,
 } from "./picks";
 import { k } from "./salaries";
+import { cardLights, sellsTo } from "./card-lights";
+import { HUNTER_LABELS } from "./hunter";
+import type { JobView } from "./data";
+import type { PickExtras } from "./picks-email";
 
 const COLUMNS =
-  "id, slug, title_raw, company_id, company_name, role_family, sales_segment, remote_type, city, state, location_raw, summary, salary_min, salary_max, ote_min, ote_max, self_sourcing_level, disclosures, flags, currency, markets, first_seen_at:posted_at";
+  "id, slug, title_raw, company_id, company_name, role_family, sales_segment, sales_motion, customer_segment, remote_type, city, state, location_raw, summary, salary_min, salary_max, ote_min, ote_max, self_sourcing_level, disclosures, flags, currency, markets, attainment, company_sells, buyer_short, first_seen_at:posted_at";
+
+// ---------------------------------------------------------------------------
+// What the email shows beyond the stored item: what you'd sell, who to, the motion, the key light,
+// and how long it's been open. Looked up live from the job so older drafts get it too.
+// ---------------------------------------------------------------------------
+
+type ExtrasJob = Pick<
+  JobView,
+  | "id" | "role_family" | "sales_segment" | "sales_motion" | "customer_segment" | "self_sourcing_level" | "remote_type" | "city" | "state" | "location_raw"
+  | "markets" | "salary_min" | "salary_max" | "ote_min" | "ote_max" | "flags" | "attainment" | "disclosures" | "company_sells" | "buyer_short" | "first_seen_at"
+>;
+
+function motionLabel(j: ExtrasJob): string | null {
+  if (j.sales_motion === "Channel") return "Partnerships";
+  return HUNTER_LABELS[j.sales_motion] ?? null;
+}
+
+/**
+ * The single light worth a line in the email: any red, then a yellow about pay or the standout, then the
+ * standout green. Missing quota info is so common it would say the same thing on every pick, so it goes last.
+ */
+export function keyLight(j: ExtrasJob): PickExtras["light"] {
+  const job = j as unknown as JobView;
+  const lights = cardLights(job, braunRead({ ...job, description_raw: null }));
+  // The quota light's own wording (see card-lights.ts), not a green flag that happens to mention quota.
+  const quota = /quota info$|^States the quota$|^Shares deal details$|hit quota$|average attainment$/;
+  const pick =
+    lights.find((l) => l.tone === "red") ??
+    lights.find((l) => l.tone === "yellow" && !quota.test(l.text)) ??
+    lights.find((l) => l.tone === "green" && !quota.test(l.text) && !/listed$/.test(l.text)) ??
+    lights.find((l) => l.tone === "yellow") ??
+    lights[lights.length - 1];
+  return pick ? { tone: pick.tone, text: pick.text } : null;
+}
+
+export function extrasFor(j: ExtrasJob): PickExtras {
+  return {
+    meta: pickMeta(j as unknown as PickCandidate),
+    motion: motionLabel(j),
+    sells: j.company_sells?.trim() || null,
+    sellsTo: sellsTo(j),
+    light: keyLight(j),
+    postedAt: j.first_seen_at,
+  };
+}
+
+/** Live extras for an issue's items, keyed by item id. Jobs that went away just get none. */
+export async function loadItemExtras(db: SupabaseClient, items: { id: string; job_id?: string | null }[]): Promise<Map<string, PickExtras>> {
+  const ids = [...new Set(items.map((i) => i.job_id).filter((x): x is string => !!x))];
+  const out = new Map<string, PickExtras>();
+  if (!ids.length) return out;
+  const { data, error } = await db
+    .from("visible_jobs")
+    .select(
+      "id, role_family, sales_segment, sales_motion, customer_segment, self_sourcing_level, remote_type, city, state, location_raw, markets, salary_min, salary_max, ote_min, ote_max, flags, attainment, disclosures, company_sells, buyer_short, first_seen_at:posted_at",
+    )
+    .in("id", ids);
+  if (error) return out; // the email still works without extras
+  const byJob = new Map(((data ?? []) as unknown as ExtrasJob[]).map((j) => [j.id, j]));
+  for (const i of items) {
+    const j = i.job_id ? byJob.get(i.job_id) : null;
+    if (j) out.set(i.id, extrasFor(j));
+  }
+  return out;
+}
 
 /** Jobs posted in the last 2 weeks, with company hiring stats attached. Picks is a US + Canada email. */
 export async function loadCandidates(db: SupabaseClient): Promise<PickCandidate[]> {
@@ -83,12 +153,17 @@ async function remoteVsOffice(db: SupabaseClient): Promise<string | null> {
 // ---------------------------------------------------------------------------
 
 const TAKE_SYSTEM = `You write one short "Josh's take" for a sales job in Josh Braun's weekly job picks email.
-Josh is a sales trainer known for plain, warm, curious, no-hype writing. He talks to sellers like a friend.
+Josh is a sales trainer known for plain, warm, curious, no-hype writing. He talks to sellers like a friend over coffee.
+The reader already sees the title, pay, location, what they'd sell and the key light. Don't repeat those back.
+Your job is the opinion: who this job is a good fit for, and the one thing Josh would want to know before taking the call.
 Rules:
-- 15 to 30 words. One or two sentences. No greeting, no hashtags, no exclamation points, no em dashes.
-- Say why a seller might want this job, using ONLY the facts provided. Never invent facts about the company, product, culture, quota or pay.
-- If something is unknown, you may suggest a question to ask on the first call.
-- Plain text only.`;
+- 15 to 35 words. One or two sentences. No greeting, no hashtags, no exclamation points, no em dashes.
+- Use ONLY the facts provided. Never invent facts about the company, product, culture, quota or pay.
+- Interpret signals instead of restating them. A company hiring lots of reps could mean new territory or a revolving door, so say what to ask. A long sales cycle or finding your own leads is a "yellow light" to know about, not a reason to pass.
+- End with one specific question to ask on the first call when something important is unknown.
+- No jargon. If a non-tech friend wouldn't get a word, use a plainer one.
+- Plain text only.
+Example of the voice: "Good fit if you like finding your own deals and talking to people who run warehouses. Eight reps hired in a month is a lot. Ask if those are new seats or backfills."`;
 
 /** Why the last AI take fell back to the template, for the job log. */
 export let lastTakeError = "";
@@ -99,8 +174,10 @@ export async function aiTake(c: PickCandidate, description: string | null): Prom
   if (!key) return fallback;
   const read = braunRead({ ...c, description_raw: null });
   const facts = {
-    title: c.title_raw,
+    title: cleanTitle(c.title_raw),
     company: c.company_name,
+    what_youd_sell: c.company_sells ?? null,
+    new_business_or_account_growth: motionLabel(c as unknown as ExtrasJob),
     pay: pickPay(c),
     where: pickMeta(c),
     summary: c.summary,
@@ -145,6 +222,47 @@ export async function aiTake(c: PickCandidate, description: string | null): Prom
   }
 }
 
+const OPENER_SYSTEM = `You write the 1 to 2 sentence opener for Josh Braun's weekly sales job picks email.
+Josh is a sales trainer known for plain, warm, curious, no-hype writing. He talks to sellers like a friend.
+You get this week's picks. Notice one pattern across them (pay not listed, lots of remote, lots of finding your own leads, a range of deal sizes) and say what a rep should do about it.
+Rules: 20 to 40 words. No greeting, no "this week's picks", no hashtags, no exclamation points, no em dashes. Don't name a company. Use only the facts given. Plain text only.`;
+
+/** A short, pattern-spotting opener from Josh. Null if the AI isn't available; the email works without it. */
+export async function aiOpener(picks: PickCandidate[]): Promise<string | null> {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key || picks.length < 2) return null;
+  const facts = picks.map((c) => {
+    const x = extrasFor(c as unknown as ExtrasJob);
+    return { pay: pickPay(c), where: x.meta, motion: x.motion, light: x.light ? `${x.light.tone}: ${x.light.text}` : null, finds_own_leads: c.self_sourcing_level };
+  });
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+      body: JSON.stringify({
+        model: process.env.EXTRACTION_MODEL ?? "claude-haiku-5-5",
+        max_tokens: 1500,
+        system: OPENER_SYSTEM,
+        messages: [{ role: "user", content: JSON.stringify(facts, null, 1) }],
+      }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { content: { type: string; text?: string }[] };
+    const text = data.content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text ?? "")
+      .join("")
+      .replace(/\s*[—–]\s*/g, ", ")
+      .replace(/!/g, ".")
+      .replace(/^["']|["']$/g, "")
+      .trim();
+    const words = text.split(/\s+/).length;
+    return words >= 10 && words <= 55 ? text : null;
+  } catch {
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Drafts
 // ---------------------------------------------------------------------------
@@ -182,7 +300,7 @@ export async function createDraft(db: SupabaseClient, now = new Date(), { rebuil
   // Full text for the chosen jobs only, so the AI can quote real details.
   const { data: descs } = await db.from("visible_jobs").select("id, description_raw").in("id", picks.map((p) => p.id));
   const descBy = new Map((descs ?? []).map((d) => [d.id as string, d.description_raw as string | null]));
-  const takes = await Promise.all(picks.map((p) => aiTake(p, descBy.get(p.id) ?? null)));
+  const [takes, opener] = await Promise.all([Promise.all(picks.map((p) => aiTake(p, descBy.get(p.id) ?? null))), aiOpener(picks)]);
 
   const week = Math.floor(now.getTime() / (7 * 86_400_000));
   const { data: issue, error } = await db
@@ -191,7 +309,8 @@ export async function createDraft(db: SupabaseClient, now = new Date(), { rebuil
       issue_date: issueDate,
       status: "scheduled",
       subject: subjectFor(picks),
-      intro: picks.length === 5 ? DEFAULT_INTRO : `${picks.length} sales jobs I'd actually look at this week${skip ? ", and one I'd skip" : ""}.`,
+      intro: introFor(picks.length, !!skip),
+      opener,
       stat_line: await statLine(db, week),
       send_at: sendAtFor(issueDate),
     })
@@ -206,7 +325,7 @@ export async function createDraft(db: SupabaseClient, now = new Date(), { rebuil
       position: i + 1,
       job_id: p.id,
       job_slug: p.slug,
-      title: p.title_raw,
+      title: cleanTitle(p.title_raw),
       company: p.company_name,
       pay: pickPay(p),
       meta: pickMeta(p),
@@ -225,5 +344,5 @@ export async function createDraft(db: SupabaseClient, now = new Date(), { rebuil
 
 /** Item fields for adding a job to an issue (admin swap). */
 export function itemFromCandidate(c: PickCandidate) {
-  return { job_id: c.id, job_slug: c.slug, title: c.title_raw, company: c.company_name, pay: pickPay(c), meta: pickMeta(c), take: templateTake(c) };
+  return { job_id: c.id, job_slug: c.slug, title: cleanTitle(c.title_raw), company: c.company_name, pay: pickPay(c), meta: pickMeta(c), take: templateTake(c) };
 }

@@ -1,9 +1,13 @@
 // Tuesday: send any scheduled Braun's Picks issue whose time has come.
 import { adminClient } from "../src/lib/supabase/admin";
 import { postalAddress, renderPicks, type ItemContent } from "../src/lib/picks-email";
+import { loadItemExtras } from "../src/lib/picks-db";
+import { adminEmails } from "../src/lib/admin-emails";
 import { fail, notice, requireEnv } from "./report";
 
 const FROM = process.env.PICKS_FROM ?? "Braun's Picks <picks@braunboard.com>";
+// Replies go to Josh, since the email asks readers to hit reply.
+const REPLY_TO = process.env.PICKS_REPLY_TO ?? adminEmails()[0];
 
 async function sendBatch(key: string, emails: object[]) {
   const res = await fetch("https://api.resend.com/emails/batch", {
@@ -28,11 +32,12 @@ async function main() {
     .eq("status", "scheduled")
     .lte("send_at", now.toISOString())
     .gte("send_at", new Date(now.getTime() - 36 * 3_600_000).toISOString())
-    .select("id, subject, intro, stat_line, issue_date");
+    .select("id, subject, intro, opener, stat_line, issue_date");
   if (!due?.length) return notice("Picks: nothing due to send.");
 
   for (const issue of due) {
-    const { data: items } = await db.from("picks_items").select("id, kind, title, company, pay, meta, take").eq("issue_id", issue.id).order("kind").order("position");
+    const { data: items } = await db.from("picks_items").select("id, kind, job_id, title, company, pay, meta, take").eq("issue_id", issue.id).order("kind").order("position");
+    const extras = await loadItemExtras(db, items ?? []);
     const subs: { id: string; email: string }[] = [];
     for (let from = 0; ; from += 1000) {
       const { data } = await db.from("picks_subscribers").select("id, email").eq("status", "active").order("created_at").range(from, from + 999);
@@ -42,10 +47,11 @@ async function main() {
     let sent = 0;
     for (let i = 0; i < subs.length; i += 100) {
       const batch = subs.slice(i, i + 100).map((s) => {
-        const e = renderPicks(issue, (items ?? []) as ItemContent[], { siteUrl: site, subscriberId: s.id });
+        const e = renderPicks(issue, (items ?? []) as ItemContent[], { siteUrl: site, subscriberId: s.id, extras });
         return {
           from: FROM,
           to: [s.email],
+          ...(REPLY_TO ? { reply_to: REPLY_TO } : {}),
           subject: e.subject,
           html: e.html,
           text: e.text,

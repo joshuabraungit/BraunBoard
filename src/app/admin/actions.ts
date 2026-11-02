@@ -161,8 +161,9 @@ export async function saveIssueText(formData: FormData) {
   const subject = String(formData.get("subject") ?? "").trim();
   const intro = String(formData.get("intro") ?? "").trim();
   const stat = String(formData.get("stat_line") ?? "").trim();
-  if (!subject || !intro) back(`/admin/picks/${id}`, "Subject and intro can't be empty.", false);
-  await adminClient().from("picks_issues").update({ subject, intro, stat_line: stat || null }).eq("id", id);
+  const opener = String(formData.get("opener") ?? "").trim();
+  if (!subject || !intro) back(`/admin/picks/${id}`, "Subject and headline can't be empty.", false);
+  await adminClient().from("picks_issues").update({ subject, intro, opener: opener || null, stat_line: stat || null }).eq("id", id);
   back(`/admin/picks/${id}`, "Saved.");
 }
 
