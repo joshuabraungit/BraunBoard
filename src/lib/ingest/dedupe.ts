@@ -81,13 +81,16 @@ export function sameRole(a: RoleCandidate, b: RoleCandidate): boolean {
   const places = [...a.places, ...b.places];
   const t = (x: string) => titleWithoutPlace(x, places).toLowerCase();
   if (t(a.title) !== t(b.title)) return false;
-  if (a.remote_type !== b.remote_type) return false;
+  const raw = (x: string) => x.trim().toLowerCase().replace(/\s+/g, " ");
+  const placeOnly = raw(a.title) !== raw(b.title);
+  // A territory copy that doesn't state its setup can join one that does; remote vs. onsite stays apart.
+  const setupMatches = a.remote_type === b.remote_type || (placeOnly && (a.remote_type === "Unknown" || b.remote_type === "Unknown"));
+  if (!setupMatches) return false;
   if ([...a.markets].sort().join() !== [...b.markets].sort().join()) return false;
   // Titles that differ only by the place on the end are territory copies of one role. The
   // title says so on its own; base pay often varies by market and they roll out over weeks,
   // so the date and text checks below would wrongly split them.
-  const raw = (x: string) => x.trim().toLowerCase().replace(/\s+/g, " ");
-  if (raw(a.title) !== raw(b.title)) return true;
+  if (placeOnly) return true;
   if (a.posted_at && b.posted_at) {
     const gap = Math.abs(new Date(a.posted_at).getTime() - new Date(b.posted_at).getTime());
     if (gap > SAME_ROLE_DAYS * 86_400_000) return false;

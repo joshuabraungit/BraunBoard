@@ -73,6 +73,11 @@ describe("sameRole", () => {
     const b = { ...base, title: "Territory Rep - San Luis Obispo, CA", places: ["San Luis Obispo"], posted_at: "2026-11-30T00:00:00Z", description: "Base pay is $40,000 in this market. ".repeat(5) };
     expect(sameRole(a, b)).toBe(true);
   });
+  it("lets a copy with no stated setup join one that has it, but keeps remote and onsite apart", () => {
+    const a = { ...base, title: "Territory Rep - Helotes, TX", places: ["Helotes"], remote_type: "Onsite" };
+    expect(sameRole(a, { ...base, title: "Territory Rep - Austin, TX", places: ["Austin"], remote_type: "Unknown" })).toBe(true);
+    expect(sameRole(a, { ...base, title: "Territory Rep - Las Vegas, NV", places: ["Las Vegas"], remote_type: "Remote" })).toBe(false);
+  });
   it("keeps titles that differ by more than the place separate", () => {
     expect(sameRole({ ...base, title: "Account Executive - Enterprise" }, { ...other, title: "Account Executive - Mid-Market" })).toBe(false);
   });
