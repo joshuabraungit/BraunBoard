@@ -57,7 +57,7 @@ const openWords = (d: number) => (d <= 1 ? "Posted this week" : `Open ${d} days`
 
 /** The site's life meter, in email-safe HTML. Picks are under two weeks old, but this follows the site's scale anyway. */
 function lifeMeterHtml(d: number): string {
-  const bars = d <= 14 ? 5 : d <= 30 ? 4 : d <= 45 ? 3 : d <= 60 ? 2 : d <= 90 ? 1 : 0;
+  const bars = d <= 7 ? 5 : d <= 14 ? 4 : d <= 30 ? 3 : d <= 45 ? 2 : d <= 60 ? 1 : 0;
   const color = bars >= 4 ? DOT.green : bars >= 2 ? DOT.yellow : DOT.red;
   return Array.from(
     { length: 5 },

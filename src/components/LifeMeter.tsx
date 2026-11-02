@@ -4,14 +4,15 @@ type Tone = keyof typeof LIGHT;
 
 /**
  * The life meter: a video-game health bar that drains as a job stays open. Five bars when it's
- * new, one lost about every two weeks. Long-open jobs are worth a question, not a pass.
+ * new, one lost about every week for the first month, then every two weeks. Long-open jobs are worth a question, not a pass.
  */
 const LIFE: { maxDays: number; bars: number; tone: Tone; line: string }[] = [
-  { maxDays: 14, bars: 5, tone: "green", line: "Full health. Just posted." },
-  { maxDays: 30, bars: 4, tone: "green", line: "Still going strong." },
-  { maxDays: 45, bars: 3, tone: "yellow", line: "Taking some hits. Ask how long they've been looking." },
-  { maxDays: 60, bars: 2, tone: "yellow", line: "Health running low. Ask why it's still open." },
-  { maxDays: 90, bars: 1, tone: "red", line: "Last life. Ask why it's been hard to fill." },
+  { maxDays: 7, bars: 5, tone: "green", line: "Full health. Just posted." },
+  { maxDays: 14, bars: 4, tone: "green", line: "Still going strong." },
+  { maxDays: 30, bars: 3, tone: "yellow", line: "Taking some hits. Ask how long they've been looking." },
+  { maxDays: 45, bars: 2, tone: "yellow", line: "Health running low. Ask why it's still open." },
+  { maxDays: 60, bars: 1, tone: "red", line: "Last life. Ask why it's been hard to fill." },
+  { maxDays: 90, bars: 0, tone: "red", line: "Game over? Still on their site, but open 2+ months." },
   { maxDays: Infinity, bars: 0, tone: "red", line: "Game over? Still on their site, but open 3+ months." },
 ];
 
