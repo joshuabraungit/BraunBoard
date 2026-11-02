@@ -3,7 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { AdText } from "@/components/AdText";
 import { CompanyLogo } from "@/components/CompanyLogo";
-import { sponsorWhere } from "@/components/SponsoredCard";
+import { sponsorWhere, SellLines } from "@/components/SponsoredCard";
 import { getOrderByReviewToken, logoUrl, markReviewOpened, reviewFields, videoUrl } from "@/lib/sponsor";
 import { adPlainText } from "@/lib/ad-text";
 import { payLine } from "@/lib/sponsor-form";
@@ -48,12 +48,7 @@ export default async function ReviewPage({ params }: Props) {
             {o.company} · {sponsorWhere(o)}
           </p>
           <p className="mt-2 text-[15px] font-semibold text-accent">{payLine(o)}</p>
-          {o.product_short && (
-            <p className="mt-2 text-sm">
-              <span className="text-ink-3">What they sell: </span>
-              <span className="font-semibold">{o.product_short}</span>
-            </p>
-          )}
+          <SellLines s={o} />
           <p className="mt-2 line-clamp-3 text-[15px] leading-relaxed text-ink-2">{adPlainText(o.description)}</p>
         </div>
       </div>

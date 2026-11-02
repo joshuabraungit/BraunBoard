@@ -96,6 +96,12 @@ export default async function SponsoredJobPage({ params }: Props) {
           <OteBadge s={s} />
         </p>
       )}
+      {s.buyer_short && (
+        <p className="mt-3 text-[15px]">
+          <span className="text-ink-3">Who you&apos;d sell to: </span>
+          <span className="font-semibold">{s.buyer_short}</span>
+        </p>
+      )}
 
       {s.video_path && videoApproved(reviewFields(s)) && (
         <ExplainerVideo src={videoUrl(s.video_path)!} label="Watch: what you'd sell" className="mt-6 max-w-md rounded-2xl" />

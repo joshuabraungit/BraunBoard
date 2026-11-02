@@ -10,6 +10,7 @@ export interface ReviewFields {
   job_title: string;
   description: string;
   product_short: string | null;
+  buyer_short?: string | null;
   video_path: string | null;
   video_review: Verdict | null;
   video_note: string | null;
@@ -25,9 +26,12 @@ export interface AssetReview {
 }
 
 /** A fingerprint of the ad words the client approves: title, the ad itself, and the "What they sell" line. */
-export function adHash(o: Pick<ReviewFields, "job_title" | "description" | "product_short">): string {
+export function adHash(o: Pick<ReviewFields, "job_title" | "description" | "product_short" | "buyer_short">): string {
+  const words = [o.job_title.trim(), o.description.trim(), (o.product_short ?? "").trim()];
+  // Added later: only part of the fingerprint when set, so ads approved before it existed stay approved.
+  if (o.buyer_short?.trim()) words.push(o.buyer_short.trim());
   return createHash("sha256")
-    .update(JSON.stringify([o.job_title.trim(), o.description.trim(), (o.product_short ?? "").trim()]))
+    .update(JSON.stringify(words))
     .digest("hex")
     .slice(0, 32);
 }

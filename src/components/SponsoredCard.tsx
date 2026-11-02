@@ -42,6 +42,27 @@ export function OteBadge({ s }: { s: Pick<SponsoredJobRow, "ote_attainment_pct" 
   return null;
 }
 
+/** "What you'd sell" and "Who you'd sell to", worded like the regular job cards. */
+export function SellLines({ s }: { s: Pick<SponsoredJobRow, "product_short" | "buyer_short"> }) {
+  if (!s.product_short && !s.buyer_short) return null;
+  return (
+    <div className="mt-2.5 space-y-0.5 text-sm">
+      {s.product_short && (
+        <p>
+          <span className="text-ink-3">What you&apos;d sell: </span>
+          <span className="font-semibold">{s.product_short}</span>
+        </p>
+      )}
+      {s.buyer_short && (
+        <p>
+          <span className="text-ink-3">Who you&apos;d sell to: </span>
+          <span className="font-semibold">{s.buyer_short}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** The owl's head and claws, hanging on to the top edge of the card. Blinks and reads (globals.css .owl-*). */
 function PeekingOwl() {
   return (
@@ -153,12 +174,7 @@ export function SponsoredCard({ s, peek = false }: { s: SponsoredJobRow; peek?: 
                 <OteBadge s={s} />
               </p>
             )}
-            {s.product_short && (
-              <p className="mt-2.5 text-sm">
-                <span className="text-ink-3">What they sell: </span>
-                <span className="font-semibold">{s.product_short}</span>
-              </p>
-            )}
+            <SellLines s={s} />
             <p className="mt-2 line-clamp-3 text-[15px] leading-relaxed text-ink-2">{adPlainText(s.description)}</p>
           </div>
         </div>

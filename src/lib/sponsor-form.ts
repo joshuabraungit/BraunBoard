@@ -170,6 +170,7 @@ const editSchema = z.object({
   description: text(10000),
   product_short: z.string().trim().max(80, "Keep it under 80 characters").transform((v) => v || null),
   product_story: z.string().trim().max(500, "Keep it under 500 characters").transform((v) => v || null),
+  buyer_short: z.string().trim().max(100, "Keep it under 100 characters").transform((v) => v || null),
   ote_attainment_pct: z
       .string()
       .trim()
@@ -182,7 +183,7 @@ const editSchema = z.object({
 export type SponsorEdit = z.output<typeof editSchema>;
 
 export function parseSponsorEdit(fd: FormData): { ok: true; edit: SponsorEdit } | { ok: false; error: string } {
-  const raw = Object.fromEntries(["job_title", "job_url", "description", "product_short", "product_story", "ote_attainment_pct", "first_sales_hire"].map((k) => [k, String(fd.get(k) ?? "")]));
+  const raw = Object.fromEntries(["job_title", "job_url", "description", "product_short", "product_story", "buyer_short", "ote_attainment_pct", "first_sales_hire"].map((k) => [k, String(fd.get(k) ?? "")]));
   const r = editSchema.safeParse(raw);
   if (!r.success) {
     const i = r.error.issues[0];

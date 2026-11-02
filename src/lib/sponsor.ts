@@ -30,6 +30,8 @@ export interface SponsoredJobRow extends SponsorOrder, Partial<Omit<ReviewFields
   renewal_of?: string | null;
   /** Josh's flag: their first dedicated sales hire, so there's no OTE track record to share. */
   first_sales_hire?: boolean;
+  /** Josh's plain-English "Who you'd sell to" line. */
+  buyer_short?: string | null;
   review_token?: string;
   review_opened_at?: string | null;
   review_sent_at?: string | null;
@@ -40,6 +42,7 @@ export const reviewFields = (o: SponsoredJobRow): ReviewFields => ({
   job_title: o.job_title,
   description: o.description,
   product_short: o.product_short ?? null,
+  buyer_short: o.buyer_short ?? null,
   video_path: o.video_path ?? null,
   video_review: o.video_review ?? null,
   video_note: o.video_note ?? null,
@@ -133,7 +136,7 @@ export async function createRenewal(oldId: string): Promise<{ id: string; order:
   const keep = [
     "company", "contact_name", "email", "job_title", "job_url", "description", "salary_min", "salary_max", "ote_min", "ote_max",
     "currency", "location", "remote_type", "logo_path", "notes", "ote_attainment_pct", "product_short", "product_story",
-    "first_sales_hire",
+    "first_sales_hire", "buyer_short",
   ] as const;
   const copy = Object.fromEntries(keep.map((k) => [k, old[k as keyof SponsoredJobRow] ?? null]));
   const { data, error } = await adminClient()
