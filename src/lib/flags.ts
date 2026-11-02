@@ -325,7 +325,7 @@ export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
   } else if (j.salary_min != null) {
     checks.push({ label: "Pay", grade: "ok", detail: "Base is listed but not OTE. Ask what the variable is and how many people hit it." });
   } else {
-    checks.push({ label: "Pay", grade: "bad", missing: true, detail: "No pay listed at all. Ask for the base and OTE on the first call." });
+    checks.push({ label: "Pay", grade: "bad", detail: "No pay listed at all." });
   }
 
   // Transparency

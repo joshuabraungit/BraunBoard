@@ -56,7 +56,7 @@ export function cardLights(job: JobView, read: ReturnType<typeof braunRead>): Li
         ? { tone: "green", text: "OTE listed" }
         : job.salary_min != null
           ? { tone: "yellow", text: "Base only, no OTE" }
-          : { tone: "yellow", text: "No pay listed" };
+          : { tone: "red", text: "No pay listed" };
 
   // Quota
   const a = job.attainment;
