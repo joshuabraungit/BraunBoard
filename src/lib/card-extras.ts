@@ -14,7 +14,7 @@ const HIRING_FAST_MIN = 15;
 export interface CardExtras {
   /** "Top 25% pay for Enterprise AEs" (up) or "Below typical for Enterprise AEs" (down). */
   pay?: { dir: "up" | "down"; text: string };
-  /** "Hiring fast · 12 sales jobs this month" */
+  /** "Hiring fast · 12 openings this month" */
   hiring?: string;
 }
 
@@ -86,7 +86,7 @@ export async function cardExtrasFor(jobs: JobView[]): Promise<Map<string, CardEx
     // Company momentum: only when it's really ramping up, so the tag stays rare enough to mean something.
     // "Ramping" alone (5+ new in 30 days) covered about 1 job in 5; 15+ keeps it to the real surges.
     const c = byCompany.get(j.company_id);
-    if (c?.trend === "ramping" && c.new_30d >= HIRING_FAST_MIN) extras.hiring = `Hiring fast · ${c.new_30d} sales jobs this month`;
+    if (c?.trend === "ramping" && c.new_30d >= HIRING_FAST_MIN) extras.hiring = `Hiring fast · ${c.new_30d} openings this month`;
 
     if (extras.pay || extras.hiring) out.set(j.id, extras);
   }
