@@ -159,3 +159,11 @@ describe("german required", () => {
     expect(f?.scored).toBe(false);
   });
 });
+
+import { checkLight } from "../src/lib/flags";
+describe("checkLight", () => {
+  it("shows missing info as yellow, real problems as red", () => {
+    expect(checkLight({ label: "Transparency", grade: "bad", missing: true, detail: "" })).toBe("yellow");
+    expect(checkLight({ label: "Time on market", grade: "bad", detail: "" })).toBe("red");
+  });
+});

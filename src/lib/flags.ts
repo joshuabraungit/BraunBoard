@@ -284,6 +284,8 @@ export interface Check {
   label: string;
   grade: Grade;
   detail: string;
+  /** The posting just doesn't say. Still scores as "bad", but shows as a yellow light (a question for the first call), not a red one. */
+  missing?: boolean;
 }
 export interface BraunRead {
   verdict: "Strong posting" | "Worth a look" | "Ask hard questions" | "Proceed with caution";
@@ -323,7 +325,7 @@ export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
   } else if (j.salary_min != null) {
     checks.push({ label: "Pay", grade: "ok", detail: "Base is listed but not OTE. Ask what the variable is and how many people hit it." });
   } else {
-    checks.push({ label: "Pay", grade: "bad", detail: "No pay listed at all." });
+    checks.push({ label: "Pay", grade: "bad", missing: true, detail: "No pay listed at all. Ask for the base and OTE on the first call." });
   }
 
   // Transparency
@@ -331,6 +333,7 @@ export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
   checks.push({
     label: "Transparency",
     grade: shared >= 2 ? "good" : shared === 1 ? "ok" : "bad",
+    missing: shared === 0,
     detail:
       shared === 0
         ? "Says nothing about quota, attainment, deal size, territory or sales cycle."
@@ -400,4 +403,10 @@ export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
     line = "Too much is left unsaid. Make them answer before you invest.";
   }
   return { verdict, line, checks, flags };
+}
+
+/** The light a check shows. Missing info is a question (yellow), not a warning (red). */
+export function checkLight(c: Check): "green" | "yellow" | "red" | "none" {
+  if (c.grade === "bad") return c.missing ? "yellow" : "red";
+  return c.grade === "good" ? "green" : c.grade === "ok" ? "yellow" : "none";
 }

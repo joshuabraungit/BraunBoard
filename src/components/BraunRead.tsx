@@ -1,4 +1,4 @@
-import { isHeadsUp, isRedFlag, type BraunRead as Read, type Flag, type Grade } from "@/lib/flags";
+import { checkLight, isHeadsUp, isRedFlag, type BraunRead as Read, type Flag } from "@/lib/flags";
 
 const CHIP = {
   red: { cls: "border-red/25 bg-red-soft text-red", icon: "▲ " },
@@ -56,11 +56,11 @@ const VERDICT_STYLE: Record<Read["verdict"], string> = {
   "Proceed with caution": "bg-red-soft text-red",
 };
 
-const GRADE: Record<Grade, { dot: string; label: string }> = {
-  good: { dot: LIGHT.green, label: "Good" },
-  ok: { dot: LIGHT.yellow, label: "Mixed" },
-  bad: { dot: LIGHT.red, label: "Weak" },
-  unknown: { dot: "bg-line-strong", label: "Unknown" },
+const ROW_LIGHT: Record<ReturnType<typeof checkLight>, { dot: string; label: string }> = {
+  green: { dot: LIGHT.green, label: "Good" },
+  yellow: { dot: LIGHT.yellow, label: "Ask about it" },
+  red: { dot: LIGHT.red, label: "Watch out" },
+  none: { dot: "bg-line-strong", label: "Unknown" },
 };
 
 /** Small verdict pill for cards. */
@@ -71,7 +71,11 @@ export function VerdictPill({ verdict }: { verdict: Read["verdict"] }) {
 /** "The Braun Read" panel on the job page. */
 /** `hide` drops rows the page already shows elsewhere (they still count toward the verdict). */
 export function BraunReadPanel({ read, hide = [] }: { read: Read; hide?: string[] }) {
-  const reds = read.flags.filter(isRedFlag);
+  // Any row that shows red also gets listed under Red lights, so the two never disagree.
+  const redRows: Flag[] = read.checks
+    .filter((c) => checkLight(c) === "red")
+    .map((c) => ({ code: `check:${c.label}`, label: c.label, why: c.detail, tone: "red" }) as Flag);
+  const reds = [...read.flags.filter(isRedFlag), ...redRows];
   const headsUps = read.flags.filter(isHeadsUp);
   const greens = read.flags.filter((f) => f.tone === "green");
   return (
@@ -85,7 +89,7 @@ export function BraunReadPanel({ read, hide = [] }: { read: Read; hide?: string[
       <dl className="divide-y divide-line">
         {read.checks.filter((c) => !hide.includes(c.label)).map((c) => (
           <div key={c.label} className="flex gap-3 px-4 py-2.5">
-            <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${GRADE[c.grade].dot}`} aria-label={GRADE[c.grade].label} />
+            <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${ROW_LIGHT[checkLight(c)].dot}`} aria-label={ROW_LIGHT[checkLight(c)].label} />
             <dt className="w-28 shrink-0 sm:w-32 text-sm font-semibold">{c.label}</dt>
             <dd className="text-sm text-ink-2">{c.detail}</dd>
           </div>

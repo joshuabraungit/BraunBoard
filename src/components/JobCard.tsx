@@ -56,7 +56,7 @@ export function cardLights(job: JobView, read: ReturnType<typeof braunRead>): Li
         ? { tone: "green", text: "OTE listed" }
         : job.salary_min != null
           ? { tone: "yellow", text: "Base only, no OTE" }
-          : { tone: "red", text: "No pay listed" };
+          : { tone: "yellow", text: "No pay listed" };
 
   // Quota
   const a = job.attainment;
@@ -69,7 +69,7 @@ export function cardLights(job: JobView, read: ReturnType<typeof braunRead>): Li
         ? { tone: "green", text: "Shares deal details" }
         : t === "ok"
           ? { tone: "yellow", text: "Some quota info" }
-          : { tone: "red", text: "No quota info" };
+          : { tone: "yellow", text: "No quota info" };
 
   // The standout: a red flag first, then a stale posting, then a heads-up, then the best green flag, then freshness.
   const flags = flagsFromCodes(job.flags).filter((f) => !NOT_STANDOUT.has(f.code));
