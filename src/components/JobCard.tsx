@@ -12,6 +12,7 @@ import type { MatchResult } from "@/lib/match";
 import { attainmentLabel } from "@/lib/attainment";
 import { collapseOpenings, openingsLabel } from "@/lib/openings";
 import { cardExtrasFor, type CardExtras } from "@/lib/card-extras";
+import { HUNTER_LABELS, HUNTER_WHY } from "@/lib/hunter";
 
 export interface CardContext {
   savedJobIds?: Set<string>;
@@ -25,7 +26,7 @@ export function tagsFor(j: Pick<JobView, "sales_segment" | "sales_motion" | "sel
   const lang = j.title_raw ? languageFor(j.title_raw) : null;
   if (lang) t.push(lang);
   if (j.sales_segment !== "Unknown") t.push(j.sales_segment);
-  if (j.sales_motion !== "Unknown") t.push(j.sales_motion === "Channel" ? "Partnerships" : j.sales_motion);
+  if (j.sales_motion !== "Unknown") t.push(j.sales_motion === "Channel" ? "Partnerships" : HUNTER_LABELS[j.sales_motion] ?? j.sales_motion);
   if (j.self_sourcing_level === "High") t.push("Outbound");
   if (j.self_sourcing_level === "Low") t.push("Inbound");
   return t;
@@ -129,6 +130,22 @@ function sellsTo(job: JobView): string | null {
   return words ? words[0]!.toUpperCase() + words.slice(1) : null;
 }
 
+const HUNTER_ICON: Record<string, string> = { "New Logo": "🏹", Expansion: "🌱", Mixed: "🏹🌱" };
+
+/** Hunter, Farmer, or both. Nothing when the posting doesn't say. */
+export function HunterPill({ motion }: { motion: JobView["sales_motion"] }) {
+  const label = HUNTER_LABELS[motion];
+  if (!label) return null;
+  return (
+    <p className="mt-2">
+      <span className="inline-flex items-center gap-1 rounded-full border border-line px-2 py-0.5 text-xs font-semibold text-ink-2" title={HUNTER_WHY[motion]}>
+        <span aria-hidden>{HUNTER_ICON[motion]}</span>
+        {label}
+      </span>
+    </p>
+  );
+}
+
 /** The money row under the pay: base vs. commission, how the pay ranks, and deal size. */
 function MoneyRow({ job, extras }: { job: JobView; extras?: CardExtras }) {
   const share = baseShare(job);
@@ -190,6 +207,8 @@ export function JobCard({ job, ctx, openings = 1, locations = 1, extras }: { job
       </p>
 
       {extras?.hiring && <p className="mt-1 text-xs font-semibold text-fresh">🔥 {extras.hiring}</p>}
+
+      <HunterPill motion={job.sales_motion} />
 
       {comp && <p className="mt-2 text-[15px] font-semibold text-accent">{comp}</p>}
       <MoneyRow job={job} extras={extras} />

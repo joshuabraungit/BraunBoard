@@ -5,6 +5,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { adapters } from "./adapters";
 import { fetchGreenhousePayRange } from "./adapters/greenhouse";
+import { fetchSitePayText } from "./site-pay";
 import { primeWorkable } from "./adapters/workable";
 import { classifyTitle, isTalentPool, stripGenderTag, writtenInGerman } from "./classify";
 import { canadaPlaceFromTitle, germanyPlaceFrom, parseLocation, titleNamesGermanyOnly, titleNamesCanadaOnly, namesForeignPlace, titleNamesUkOnly, titleOutOfMarket, descriptionPlacesRoleAbroad, ukPlaceFromTitle, type Market, type ParsedLocation } from "./location";
@@ -226,9 +227,16 @@ async function payFor(company: CompanyRow, job: RawJob, loc: ParsedLocation) {
     ? !["USD", "CAD", "GBP", "EUR"].includes(sc) || (sc === "EUR" && market !== "DE")
     : (market === "UK" || market === "DE") && !MARKET_CURRENCY_TEXT[market].test(job.description);
   if (structured.min != null && unknownCurrency) structured = { ...structured, min: null, max: null, currency: null };
-  const comp = resolveCompensation(structured, job.description, PAY_SYMBOL[market]);
+  // Some companies (Stripe) only publish pay on their own careers page. Read it there when the feed has none.
+  let text = job.description;
+  // US jobs only: these pages give the US range, and it must never land on a Canada, UK or Germany job.
+  if (structured.min == null && market === "US" && job.source_provider === "greenhouse") {
+    const site = await fetchSitePayText(company.ats_identifier, job.source_job_id, job.title).catch(() => null);
+    if (site) text = `${text}\n\n${site}`;
+  }
+  const comp = resolveCompensation(structured, text, PAY_SYMBOL[market]);
   const hasPay = comp.salary_min != null || comp.ote_min != null;
-  return { ...comp, currency: hasPay ? payCurrency(structured.currency, job.description, loc.markets) : null };
+  return { ...comp, currency: hasPay ? payCurrency(structured.currency, text, loc.markets) : null };
 }
 
 /** Structured pay from the ATS. Greenhouse only exposes it per job, so it's fetched just for kept jobs. */

@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { SALES_MOTIONS, SALES_SEGMENTS, SELF_SOURCING_LEVELS, type SalesAttributes } from "./types";
 import type { TitleClassification } from "./classify";
+import { motionFromTitle } from "../hunter";
 
 export const Disclosures = z.object({
   quota_size: z.boolean(),
@@ -46,7 +47,14 @@ Return ONLY a JSON object with these keys:
 
 Hard rule: never guess. If the posting doesn't support a value, use "Unknown" (or false). Never invent compensation, quota, deal size, attainment or territory facts.`;
 
-export async function extractAttributes(
+export async function extractAttributes(title: string, description: string, cls: TitleClassification): Promise<Extracted> {
+  const out = await extractFromPosting(title, description, cls);
+  // Hunter or farmer: a title that says so ("Hunter", "Grower", "Existing Business") beats the read of the description.
+  const fromTitle = cls.is_channel ? null : motionFromTitle(title);
+  return fromTitle ? { ...out, sales_motion: fromTitle } : out;
+}
+
+async function extractFromPosting(
   title: string,
   description: string,
   cls: TitleClassification,

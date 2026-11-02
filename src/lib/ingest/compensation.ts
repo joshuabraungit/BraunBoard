@@ -39,6 +39,9 @@ function payRegexes(sym: PaySymbol) {
 const PAY = { $: payRegexes("$"), "£": payRegexes("£"), "€": payRegexes("€") };
 
 const OTE_WORDS = /\b(ote|on[- ]target[- ]earnings?|on[- ]target compensation|target(ed)? total (cash|compensation)|total target(ed)? (cash|compensation))\b/i;
+// "the range provided is the role's On Target Earnings ("OTE") range", "the pay range listed reflects OTE".
+export const RANGE_IS_OTE =
+  /\bthe (?:salary |pay |compensation )?ranges? (?:provided |listed |shown |posted |above |below |stated |displayed |here )?(?:is|are|reflects?|represents?) (?:the )?(?:role['’]s |position['’]s )?(?:on[- ]target earnings?|ote\b|on[- ]target (?:compensation|incentive)|total target (?:cash|compensation)|target total (?:cash|compensation))/i;
 const BASE_WORDS = /\b(base|base salary|base pay|salary range|annual salary)\b/i;
 
 function toNumber(s: string): number {
@@ -164,7 +167,12 @@ export function resolveCompensation(
   description = description.replace(/\s+/g, " ");
   const found = findPayInText(description, sym);
   // "The estimated annual salary range includes the on-target incentive compensation": the "salary" is OTE.
-  const salaryIsTotal = /\b(salary|pay|compensation) range\b[^.]{0,30}\bincludes\b[^.]{0,40}\b(on[- ]target|incentive|commission|variable)/i.test(description);
+  // Or a note anywhere on the page that the range is OTE, even when the line with the number says "base":
+  // Stripe's "The annual US base salary range ... is $283,600 - $425,400" followed later by
+  // "For sales roles, the range provided is the role's On Target Earnings ("OTE") range".
+  const salaryIsTotal =
+    /\b(salary|pay|compensation) range\b[^.]{0,30}\bincludes\b[^.]{0,40}\b(on[- ]target|incentive|commission|variable)/i.test(description) ||
+    RANGE_IS_OTE.test(description);
   if (salaryIsTotal && !found.some((f) => f.label === "ote")) for (const f of found) if (f.label === "base") f.label = "ote";
   const ote = found.find((f) => f.label === "ote");
   const base = found.find((f) => f.label === "base");

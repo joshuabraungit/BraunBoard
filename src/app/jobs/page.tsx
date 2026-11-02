@@ -1,3 +1,4 @@
+import { HUNTER_FILTER, HUNTER_LABELS } from "@/lib/hunter";
 import { LightsKey } from "@/components/BraunRead";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -61,7 +62,7 @@ function payOptions(market: MarketChoice, kind: "base" | "ote", current?: string
 const PARTNERSHIPS_ROLE = "Partnerships";
 const ROLE_OPTIONS = [...ROLE_FAMILIES, PARTNERSHIPS_ROLE];
 const ROLE_LABELS: Record<string, string> = { [PARTNERSHIPS_ROLE]: "Partnerships & Channel" };
-const MOTION_LABELS: Record<string, string> = { Channel: "Partnerships & Channel" };
+const MOTION_LABELS: Record<string, string> = { ...HUNTER_LABELS, Channel: "Partnerships & Channel" };
 
 const SELECT = "rounded-md border border-line bg-surface px-2 py-1.5 text-sm";
 
@@ -131,7 +132,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
     .filter((c): c is { key: string; label: string } => !!c)
     .map((c) => ({ ...c, href: without(c.key) }));
   // How many of the tucked-away filters are on, so "More filters" can say so.
-  const moreActive = ["minOte", "minBase", "segment", "motion", "size", "posted"].filter((k) => chips.some((c) => c.key === k)).length;
+  const moreActive = ["minOte", "minBase", "segment", "size", "posted"].filter((k) => chips.some((c) => c.key === k)).length;
   // A watch should cover the countries the person was looking at, even if they never touched the picker.
   const watchQs = (() => {
     const p = new URLSearchParams(qs);
@@ -170,6 +171,11 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
             ))}
           </select>
           <Select name="remote" label="Any workplace" options={REMOTE_TYPES} value={sp.remote} />
+          {sp.motion === "Channel" ? (
+            <input type="hidden" name="motion" value="Channel" />
+          ) : (
+            <Select name="motion" label="Hunter or farmer" options={HUNTER_FILTER} value={sp.motion} labels={MOTION_LABELS} />
+          )}
         </div>
         <MoreFilters active={moreActive}>
             <select name="minOte" defaultValue={sp.minOte ?? ""} className={SELECT} aria-label="Minimum OTE">
@@ -181,7 +187,6 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
               {payOptions(market, "base", sp.minBase).map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
             </select>
             <Select name="segment" label="Any segment" options={SALES_SEGMENTS} value={sp.segment} />
-            <Select name="motion" label="Any motion" options={sp.motion === "Channel" ? SALES_MOTIONS : SALES_MOTIONS.filter((m) => m !== "Channel")} value={sp.motion} labels={MOTION_LABELS} />
             <select name="size" defaultValue={isSizeBucket(sp.size) ? sp.size : ""} className={SELECT} aria-label="Company size">
               <option value="">Any company size</option>
               {SIZE_BUCKETS.map((b) => (

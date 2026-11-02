@@ -1,0 +1,27 @@
+name: Fill in pay from company careers pages
+
+# Catch-up: Stripe (and any company added to site-pay.ts) only publishes pay on its own careers page.
+# New jobs get it from the crawler; this fills in jobs already listed.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only report, don't save"
+        type: boolean
+        default: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/site-pay-backfill.ts ${{ inputs.dry_run && '--dry-run' || '' }}
