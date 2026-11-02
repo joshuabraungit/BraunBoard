@@ -7,6 +7,8 @@ import type { SalesMotion } from "./types";
 export interface Reread {
   motion: SalesMotion;
   evidence: string | null;
+  /** What the model said, kept for the dry-run log when its answer is thrown out. */
+  raw?: string;
 }
 
 const PROMPT = `You read one sales job posting and answer one question: is this a hunter role, a farmer role, both, or does the posting not say?
@@ -60,6 +62,7 @@ export async function rereadMotion(title: string, posting: string, key: string):
     }
     if (!res.ok) throw new Error(`Anthropic ${res.status}`);
     const data = (await res.json()) as { content: { type: string; text?: string }[] };
-    return parseReread(data.content.map((c) => c.text ?? "").join(""), text);
+    const raw = data.content.map((c) => c.text ?? "").join("");
+    return { ...parseReread(raw, text), raw };
   }
 }

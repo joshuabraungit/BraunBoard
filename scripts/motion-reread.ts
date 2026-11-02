@@ -24,7 +24,7 @@ async function main() {
       return null;
     });
     if (!r || r.motion === "Unknown") {
-      console.log(`  still not stated · ${j.company_name} · ${j.title_raw}`);
+      console.log(`  still not stated · ${j.company_name} · ${j.title_raw}${dry && r?.raw && !/Not stated/.test(r.raw) ? ` · model said: ${r.raw.replace(/\s+/g, " ").slice(0, 300)}` : ""}`);
       continue;
     }
     tagged++;
