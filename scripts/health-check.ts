@@ -8,6 +8,7 @@ import { adminClient } from "../src/lib/supabase/admin";
 import { adminEmails } from "../src/lib/admin-emails";
 import { sendEmail } from "../src/lib/alerts/email";
 import { fail, notice, requireEnv, warn } from "./report";
+import { runDataQa, type QaJob } from "../src/lib/data-qa";
 
 const SITE = process.env.SITE_URL ?? "https://www.braunboard.com";
 const HOUR = 3_600_000;
@@ -83,13 +84,30 @@ async function main() {
   const { count } = await db.from("visible_jobs").select("id", { count: "exact", head: true });
   if ((count ?? 0) < 500) problems.push(`Only ${count ?? 0} jobs are showing on the site. Usually it's over 2,000.`);
 
+  // Data checks: pages can load fine while the jobs on them are wrong (wrong country, OTE shown as base...).
+  const qaCols = "id, slug, title_raw, company_name, location_raw, markets, city, role_family, salary_max_usd, currency, salary_min, salary_max, first_seen_at, role_group";
+  const jobs: QaJob[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await db.from("visible_jobs").select(qaCols).order("id").range(from, from + 999);
+    if (error) { problems.push(`Couldn't run the data checks: ${error.message}`); break; }
+    jobs.push(...((data ?? []) as QaJob[]));
+    if (!data || data.length < 1000) break;
+  }
+  // Descriptions only for new jobs (the German-language check), so this stays a small read.
+  const since = new Date(Date.now() - 2 * 24 * HOUR).toISOString();
+  const { data: fresh } = await db.from("visible_jobs").select("id, description_raw").gte("first_seen_at", since);
+  const desc = new Map((fresh ?? []).map((r) => [r.id as string, r.description_raw as string | null]));
+  for (const j of jobs) j.description_raw = desc.get(j.id) ?? null;
+  const qa = jobs.length ? runDataQa(jobs) : [];
+  for (const i of qa) problems.push([i.line, ...i.examples.map((e) => `   ${e}`)].join("\n"));
+
   const ok = problems.length === 0;
-  notice(ok ? `Health check: all ${checks.length} pages fine, jobs refreshed ${Math.round(age / HOUR)}h ago, ${count} jobs live.` : `Health check found ${problems.length} problem(s): ${problems.join(" | ")}`);
+  notice(ok ? `Health check: all ${checks.length} pages fine, ${jobs.length} jobs pass the data checks, jobs refreshed ${Math.round(age / HOUR)}h ago, ${count} jobs live.` : `Health check found ${problems.length} problem(s): ${problems.join(" | ")}`);
   if (!ok || test) {
     const subject = ok ? "Braun Board health check: all good (test)" : `Braun Board: ${problems.length} problem${problems.length > 1 ? "s" : ""} on the site`;
     const lines = ok ? [`All ${checks.length} pages loaded fine and ${count} jobs are live.`] : problems;
     const text = `${ok ? "" : "The daily check found something wrong:\n\n"}${lines.map((l) => `- ${l}`).join("\n")}\n\nChecked ${SITE} at ${new Date().toUTCString()}.`;
-    const html = `<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#16140f">${ok ? "" : "<p>The daily check found something wrong:</p>"}<ul>${lines.map((l) => `<li>${l.replace(/</g, "&lt;")}</li>`).join("")}</ul><p style="color:#5b574e;font-size:13px">Checked ${SITE} at ${new Date().toUTCString()}.</p></div>`;
+    const html = `<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#16140f">${ok ? "" : "<p>The daily check found something wrong:</p>"}<ul>${lines.map((l) => `<li>${l.replace(/</g, "&lt;").replace(/\n/g, "<br>")}</li>`).join("")}</ul><p style="color:#5b574e;font-size:13px">Checked ${SITE} at ${new Date().toUTCString()}.</p></div>`;
     for (const to of adminEmails()) {
       try {
         await sendEmail(to, { subject, html, text });
