@@ -1,6 +1,7 @@
 // Location parsing + market filter. Braun Board covers the United States, Canada, the UK and Germany.
 
 import type { RemoteType } from "./types";
+import { euRemoteScope } from "../eu-remote";
 
 const US_STATES: Record<string, string> = {
   AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California", CO: "Colorado",
@@ -270,6 +271,13 @@ export function parseLocation(
 
   // Structured hints win when the ATS gives them (Ashby, Lever, Workday).
   const hintCountry = hints.country?.trim().toLowerCase();
+
+  // Remote anywhere in Europe ("Remote - EU", "EMEA (Remote)"): open to someone living in Germany.
+  const euWide =
+    remote_type === "Remote" &&
+    (!hintCountry || /^(de|deu|germany|deutschland|eu|european union|europe)$/.test(hintCountry)) &&
+    euRemoteScope(text) != null;
+  if (euWide) markets.add("DE");
   if (hintCountry && /^(us|usa|u\.s\.a?\.?|united states( of america)?)$/.test(hintCountry)) {
     const st = hints.region ? (US_STATES[hints.region.toUpperCase()] ? hints.region.toUpperCase() : STATE_NAMES[hints.region.toLowerCase()] ?? null) : null;
     const city = hints.city && !/^(remote|hybrid|anywhere|)$/i.test(hints.city.trim()) ? hints.city : null;
@@ -312,6 +320,7 @@ export function parseLocation(
   if (caPlace) return out(caPlace, list);
   if (ukPlace) return out(ukPlace, list);
   if (dePlace) return out(dePlace, list);
+  if (euWide) return out({ city: null, state: null, country: "DE" }, list);
   if (foreignQualifier || NON_US.test(text) || hintCountry) return out({ city: null, state: null, country: hintCountry ? hints.country ?? null : null }, []);
 
   // "Remote" with no country at all: ambiguous. Keep it as US but flag via country=null.

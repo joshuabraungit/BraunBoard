@@ -1,3 +1,5 @@
+import { euRemoteScope } from "./eu-remote";
+
 // Display formatting shared by cards, detail pages and emails.
 
 /** "$150K", "C$150K" for Canadian dollars, "£150K" for pounds, "€150K" for euros, so it's never mistaken for USD. */
@@ -32,7 +34,15 @@ export function formatLocation(j: { remote_type: string; city: string | null; st
   const primary = m.includes("US") ? "US" : m.includes("CA") ? "CA" : m.includes("UK") ? "UK" : "DE";
   const others = m.filter((x) => x !== primary).map((x) => MARKET_NAME[x] ?? x);
   // For remote roles a single city from the ATS is usually just the HQ or a placeholder. Don't imply it's required.
-  if (j.remote_type === "Remote") return `Remote · ${where}`;
+  if (j.remote_type === "Remote") {
+    // "Remote · Anywhere in the EU" rather than "Remote · Germany" when the posting is open across Europe.
+    const scope = m.includes("DE") ? euRemoteScope(j.location_raw) : null;
+    if (scope) {
+      const rest = m.filter((x) => x === "US" || x === "CA").map((x) => MARKET_NAME[x] ?? x);
+      return `Remote · ${scope}${rest.length ? ` + ${rest.join(" & ")}` : ""}`;
+    }
+    return `Remote · ${where}`;
+  }
   if (j.remote_type === "Hybrid") return place ? `Hybrid · ${place}${where !== "US" ? `, ${where}` : ""}` : `Hybrid · ${where}`;
   if (place) return `${primary === "US" ? place : `${place}, ${MARKET_NAME[primary]}`}${others.length ? ` + ${others.join(" & ")}` : ""}`;
   return j.location_raw || (where === "US" ? "United States" : where);

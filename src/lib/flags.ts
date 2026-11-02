@@ -4,6 +4,7 @@
 
 import type { Disclosures } from "./ingest/extract";
 import { parseAttainment } from "./attainment";
+import { germanLevel } from "./german";
 
 export type FlagTone = "red" | "green";
 export interface Flag {
@@ -82,13 +83,28 @@ const RULES: Rule[] = [
     test: (t) => /\bclaw[- ]?backs?\b/.test(t),
   },
   {
+    code: "german_native",
+    tone: "red",
+    label: "Native German required",
+    why: "The posting asks for native-level German. Fluent probably won't be enough.",
+    scored: false,
+    test: (_t, j) => germanLevel(j.description_raw) === "native",
+  },
+  {
     code: "german_required",
     tone: "red",
-    label: "German required",
-    why: "The posting asks for fluent German. Worth knowing before you apply if you only sell in English.",
+    label: "Fluent German required",
+    why: "The posting asks for fluent or business-level German. Worth knowing before you apply if you only sell in English.",
     scored: false,
-    test: (t) =>
-      /\b(fluent|fluency|native|business[- ]level|business[- ]fluent|proficien\w*|excellent)\b[^.]{0,40}\bgerman\b|\bgerman\b[^.]{0,25}\b(fluent|fluency|native|required|essential|mandatory|a must)\b|\bgerman[- ]speaking\b|\bdeutschsprachig/.test(t),
+    test: (_t, j) => germanLevel(j.description_raw) === "fluent",
+  },
+  {
+    code: "german_plus",
+    tone: "green",
+    label: "German a plus, not required",
+    why: "German helps but isn't a must. English-only sellers can still apply.",
+    scored: false,
+    test: (_t, j) => germanLevel(j.description_raw) === "plus",
   },
   {
     code: "many_hats",
