@@ -108,7 +108,7 @@ export default async function KitPage({ searchParams }: { searchParams: Promise<
             >
               Download the kit (PDF) →
             </a>
-            <p className="mt-2 text-xs text-ink-3">29 pages. Fill it in on your computer, or print it and write by hand.</p>
+            <p className="mt-2 text-xs text-ink-3">30 pages. Fill it in on your computer, or print it and write by hand.</p>
             {kit === "ok" && (
               <p className="mt-3 text-sm text-ink-2">Braun&apos;s Picks lands Tuesday morning: sales jobs worth a look, and why.</p>
             )}
