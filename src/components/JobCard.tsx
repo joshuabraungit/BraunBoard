@@ -130,15 +130,28 @@ function sellsTo(job: JobView): string | null {
   return words ? words[0]!.toUpperCase() + words.slice(1) : null;
 }
 
-const HUNTER_ICON: Record<string, string> = { "New Logo": "🏹", Expansion: "🌱", Mixed: "🏹🌱" };
+const HUNTER_ICON: Record<string, string> = { "New Logo": "🏹", Expansion: "🌱", Mixed: "🏹🌱", Channel: "🤝" };
 
-/** Hunter, Farmer, or both. Nothing when the posting doesn't say. */
-export function HunterPill({ motion }: { motion: JobView["sales_motion"] }) {
-  const label = HUNTER_LABELS[motion];
-  if (!label) return null;
+// Roles where hunter vs. farmer is the question a rep asks. SEs and sales leaders aren't, so they stay blank when unsaid.
+const QUOTA_ROLES = new Set(["Account Executive", "Account Manager", "Customer Expansion", "SDR/BDR"]);
+
+/** Hunter, Farmer, both, or Partnerships. A quota role that doesn't say gets "ask"; anything else that doesn't say, nothing. */
+export function HunterPill({ motion, role }: { motion: JobView["sales_motion"]; role?: string }) {
+  const label = motion === "Channel" ? "Partnerships" : HUNTER_LABELS[motion];
+  const pill = "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold";
+  if (!label) {
+    if (motion !== "Unknown" || !role || !QUOTA_ROLES.has(role)) return null;
+    return (
+      <p className="mt-2">
+        <span className={`${pill} border-dashed border-line text-ink-3`} title="The posting doesn't say if you'd win new customers or grow existing ones. Worth asking.">
+          Hunter or farmer? Ask
+        </span>
+      </p>
+    );
+  }
   return (
     <p className="mt-2">
-      <span className="inline-flex items-center gap-1 rounded-full border border-line px-2 py-0.5 text-xs font-semibold text-ink-2" title={HUNTER_WHY[motion]}>
+      <span className={`${pill} border-line text-ink-2`} title={motion === "Channel" ? "Partnerships: you sell through and with partners." : HUNTER_WHY[motion]}>
         <span aria-hidden>{HUNTER_ICON[motion]}</span>
         {label}
       </span>
@@ -208,7 +221,7 @@ export function JobCard({ job, ctx, openings = 1, locations = 1, extras }: { job
 
       {extras?.hiring && <p className="mt-1 text-xs font-semibold text-fresh">🔥 {extras.hiring}</p>}
 
-      <HunterPill motion={job.sales_motion} />
+      <HunterPill motion={job.sales_motion} role={job.role_family} />
 
       {comp && <p className="mt-2 text-[15px] font-semibold text-accent">{comp}</p>}
       <MoneyRow job={job} extras={extras} />
