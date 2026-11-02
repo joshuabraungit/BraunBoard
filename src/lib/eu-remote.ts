@@ -16,6 +16,8 @@ const OTHER_COUNTRY =
 /** "Anywhere in the EU" for a remote role open across Europe, else null. */
 export function euRemoteScope(locationRaw: string | null | undefined): string | null {
   if (!locationRaw || OTHER_COUNTRY.test(locationRaw)) return null;
+  // "Remote, Germany, EMEA": EMEA is just the region tag on a Germany job.
+  if (/\b(germany|deutschland)\b/i.test(locationRaw) && !/\b(eu|european union|europe|european)\b/i.test(locationRaw)) return null;
   for (const [re, label] of SCOPES) if (re.test(locationRaw)) return label;
   return null;
 }

@@ -103,6 +103,7 @@ describe("remote across Europe", () => {
     expect(show("Remote, EMEA")).toBe("Remote · Anywhere in EMEA");
     expect(show("Remote - US / Remote - Europe")).toBe("Remote · Anywhere in Europe + US");
     expect(euRemoteScope("Remote - Spain")).toBeNull();
+    expect(show("Remote, Germany, EMEA")).toBe("Remote · Germany");
   });
   it("leaves US remote alone", () => {
     expect(parseLocation("Remote - US").markets).toEqual(["US"]);
