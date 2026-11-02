@@ -121,7 +121,11 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
       </div>
       <div className="mt-6 rounded-xl border border-line bg-surface">
         <dl className={`grid gap-4 p-4 ${showAttainment ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
-          <Fact label="Base" value={range(job.salary_min, job.salary_max, job.currency)} />
+          {job.flags?.includes("pay_type_unclear") ? (
+            <Fact label="Pay (base or OTE?)" value={range(job.salary_min, job.salary_max, job.currency)} />
+          ) : (
+            <Fact label="Base" value={range(job.salary_min, job.salary_max, job.currency)} />
+          )}
           <Fact label="OTE" value={range(job.ote_min, job.ote_max, job.currency)} />
           {showAttainment && <Fact label="Quota attainment" value={job.attainment ? attainmentLabel(job.attainment) : null} tone={job.attainment?.kind === "hit" ? "good" : undefined} />}
           <Fact label="Posted" value={freshnessLabel(job.first_seen_at)} />

@@ -7,7 +7,7 @@ import { SaveJobButton, HideJobButton } from "./Actions";
 import { MatchBadge, matchShowsOnCard } from "./MatchBadge";
 import { LIGHT, VerdictPill } from "./BraunRead";
 import { LifeMeter } from "./LifeMeter";
-import { braunRead, flagsFromCodes, isHeadsUp, isRedFlag, type Flag } from "@/lib/flags";
+import { braunRead, FLAG_RULES, flagsFromCodes, isHeadsUp, isRedFlag, type Flag } from "@/lib/flags";
 import type { MatchResult } from "@/lib/match";
 import { attainmentLabel } from "@/lib/attainment";
 import { collapseOpenings, openingsLabel } from "@/lib/openings";
@@ -41,7 +41,7 @@ interface Light {
 const DOT: Record<Tone, string> = LIGHT;
 
 // Flags the pay and quota lights already cover, or that are too routine to be the standout.
-const NOT_STANDOUT = new Set(["publishes_ote", "shares_attainment", "attainment_average", "states_quota", "states_deal_size", "open_90_days"]);
+const NOT_STANDOUT = new Set(["pay_type_unclear", "publishes_ote", "shares_attainment", "attainment_average", "states_quota", "states_deal_size", "open_90_days"]);
 
 /**
  * The Braun Read on a card: three lights a rep can scan. Pay, quota, and the one thing that
@@ -54,7 +54,9 @@ export function cardLights(job: JobView, read: ReturnType<typeof braunRead>): Li
       ? { tone: "green", text: "Base + OTE listed" }
       : job.ote_min != null
         ? { tone: "green", text: "OTE listed" }
-        : job.salary_min != null
+        : job.salary_min != null && job.flags?.includes("pay_type_unclear")
+          ? { tone: "yellow", text: "Base or OTE? Ask", why: FLAG_RULES.pay_type_unclear?.why }
+          : job.salary_min != null
           ? { tone: "yellow", text: "Base only, no OTE" }
           : { tone: "red", text: "No pay listed" };
 

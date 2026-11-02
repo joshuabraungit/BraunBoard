@@ -5,6 +5,7 @@
 import type { Disclosures } from "./ingest/extract";
 import { parseAttainment } from "./attainment";
 import { germanLevel } from "./german";
+import { payTypeUnclear } from "./pay-unclear";
 
 export type FlagTone = "red" | "green";
 export interface Flag {
@@ -29,6 +30,8 @@ export interface FlagInput {
   seniority?: string;
   /** When the employer posted it (the site's "Posted" date). */
   first_seen_at?: string;
+  title_raw?: string | null;
+  currency?: string | null;
   /** Other open postings at the same company with the exact same title (filled in by the recompute job). */
   same_title_open?: number;
 }
@@ -81,6 +84,14 @@ const RULES: Rule[] = [
     label: "Commission can be taken back",
     why: "The posting mentions clawbacks. Ask exactly when commission can be taken back.",
     test: (t) => /\bclaw[- ]?backs?\b/.test(t),
+  },
+  {
+    code: "pay_type_unclear",
+    tone: "red",
+    label: "Base or OTE? Ask",
+    why: "They posted a number but didn't say if it's base salary or total pay with commission. It's high for a base, so ask which it is.",
+    scored: false,
+    test: (_t, j) => payTypeUnclear(j),
   },
   {
     code: "german_native",

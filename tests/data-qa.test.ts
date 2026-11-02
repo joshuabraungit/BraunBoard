@@ -28,7 +28,7 @@ describe("missingMarkets", () => {
 
 describe("baseLooksLikeOte", () => {
   it("flags an AE with a $300K base", () => {
-    expect(baseLooksLikeOte([job({ salary_max: 300000, salary_max_usd: 300000 })], NOW)?.line).toMatch(/probably OTE/);
+    expect(baseLooksLikeOte([job({ salary_max: 300000, salary_max_usd: 300000 })], NOW)?.line).toMatch(/pay as base/);
   });
   it("trusts a posting that says it's base", () => {
     expect(baseLooksLikeOte([job({ salary_max: 300000, salary_max_usd: 300000, description_raw: "Compensation - Base pay: $80,000 - $300,000" })], NOW)).toBeNull();
@@ -36,6 +36,9 @@ describe("baseLooksLikeOte", () => {
   });
   it("lets partnerships roles earn it", () => {
     expect(baseLooksLikeOte([job({ title_raw: "Sr. Partner Development Manager, Google Cloud", salary_max: 257250, salary_max_usd: 257250 })], NOW)).toBeNull();
+  });
+  it("stays quiet once the job is labeled base-or-OTE", () => {
+    expect(baseLooksLikeOte([job({ salary_max: 300000, salary_max_usd: 300000, flags: ["pay_type_unclear"] })], NOW)).toBeNull();
   });
   it("lets leaders earn it", () => {
     expect(baseLooksLikeOte([job({ role_family: "VP Sales", salary_max: 320000, salary_max_usd: 320000 })], NOW)).toBeNull();

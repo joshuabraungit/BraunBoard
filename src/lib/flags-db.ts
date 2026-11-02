@@ -22,7 +22,7 @@ export async function recomputeFlags(db: SupabaseClient): Promise<{ checked: num
   for (let from = 0; ; from += 500) {
     const { data, error } = await db
       .from("visible_jobs")
-      .select("id, flags, description_raw, salary_min, salary_max, ote_min, ote_max, self_sourcing_level, disclosures, role_family, seniority, company_id, title_normalized, first_seen_at:posted_at, attainment")
+      .select("id, flags, title_raw, currency, description_raw, salary_min, salary_max, ote_min, ote_max, self_sourcing_level, disclosures, role_family, seniority, company_id, title_normalized, first_seen_at:posted_at, attainment")
       .order("id")
       .range(from, from + 499);
     if (error) throw new Error(`recomputeFlags: ${error.message}`);

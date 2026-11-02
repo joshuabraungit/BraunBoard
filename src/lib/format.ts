@@ -16,9 +16,11 @@ function range(min: number | null, max: number | null, currency?: string | null)
 }
 
 /** "$150K–$175K base · $300K OTE". Empty string when nothing is published. */
-export function formatComp(j: { salary_min: number | null; salary_max: number | null; ote_min: number | null; ote_max: number | null; currency?: string | null }): string {
+export function formatComp(j: { salary_min: number | null; salary_max: number | null; ote_min: number | null; ote_max: number | null; currency?: string | null; flags?: string[] | null }): string {
   const base = range(j.salary_min, j.salary_max, j.currency);
   const ote = range(j.ote_min, j.ote_max, j.currency);
+  // A number with no word on what it covers, too high to assume it's base. Show it, don't label it.
+  if (base && !ote && j.flags?.includes("pay_type_unclear")) return `${base} (base or OTE not stated)`;
   return [base && `${base} base`, ote && `${ote} OTE`].filter(Boolean).join(" · ");
 }
 

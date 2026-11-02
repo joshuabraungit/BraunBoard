@@ -4,7 +4,8 @@
 // Pure functions over rows, so they're tested without a database.
 
 import { parseLocation } from "./ingest/location";
-import { isChannelTitle, writtenInGerman } from "./ingest/classify";
+import { writtenInGerman } from "./ingest/classify";
+import { payTypeUnclear } from "./pay-unclear";
 import { descriptionSimilarity } from "./ingest/dedupe";
 import type { Market } from "./ingest/location";
 
@@ -23,6 +24,9 @@ export interface QaJob {
   salary_max: number | null;
   first_seen_at: string;
   role_group: string | null;
+  seniority?: string;
+  ote_min?: number | null;
+  flags?: string[] | null;
   description_raw?: string | null;
 }
 
@@ -60,26 +64,14 @@ export function missingMarkets(jobs: QaJob[], now = Date.now()): QaIssue | null 
   };
 }
 
-// Base pay above this (in USD terms) is usually OTE labeled as base. Leaders can earn it, and so can
-// partnerships roles (mostly salary, little commission).
-const BASE_CEILING: Record<string, number> = { "SDR/BDR": 150_000, "Account Manager": 220_000, "Customer Expansion": 220_000, "Account Executive": 250_000, "Sales Engineer": 260_000 };
-
-// The posting itself calls it base ("Base pay: $80,000 - $300,000", "$234,000-286,000 plus annual bonus").
-const SAYS_BASE = /\bbase\b[^$£€.]{0,40}[$£€]|[$£€][\d,.]+\s*[kK]?\s*(?:-|–|to)\s*[$£€]?[\d,.]+\s*[kK]?\s*(?:USD|EUR|GBP|CAD)?\s*(?:\+|plus)\s*(?:annual |an? )?(?:bonus|commission|variable)/i;
-
-/** New jobs whose "base" is too high to be base, where the posting doesn't say it's base. */
+/** New jobs showing pay as base when the posting doesn't back that up (the flag should have caught it). */
 export function baseLooksLikeOte(jobs: QaJob[], now = Date.now()): QaIssue | null {
-  const bad = jobs.filter((j) => {
-    const cap = BASE_CEILING[j.role_family];
-    if (cap == null || (j.salary_max_usd ?? 0) <= cap || !isNew(j, now)) return false;
-    if (isChannelTitle(j.title_raw) || /\bmanager\b/i.test(j.title_raw) && j.role_family === "SDR/BDR") return false;
-    return !SAYS_BASE.test((j.description_raw ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " "));
-  });
+  const bad = jobs.filter((j) => isNew(j, now) && !(j.flags ?? []).includes("pay_type_unclear") && payTypeUnclear({ ...j, ote_min: j.ote_min ?? null }));
   if (!bad.length) return null;
   return {
     check: "base_is_ote",
-    line: `${bad.length} new job${bad.length > 1 ? "s show" : " shows"} a base salary that's probably OTE.`,
-    examples: bad.slice(0, 5).map((j) => ex(j, `${j.role_family}, base up to ${Math.round((j.salary_max ?? 0) / 1000)}K ${j.currency ?? "USD"}`)),
+    line: `${bad.length} new job${bad.length > 1 ? "s show" : " shows"} pay as base when the posting doesn't say so. The "Base or OTE?" label didn't kick in.`,
+    examples: bad.slice(0, 5).map((j) => ex(j, `${j.role_family}, up to ${Math.round((j.salary_max ?? 0) / 1000)}K ${j.currency ?? "USD"}`)),
   };
 }
 

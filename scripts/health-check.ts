@@ -85,7 +85,7 @@ async function main() {
   if ((count ?? 0) < 500) problems.push(`Only ${count ?? 0} jobs are showing on the site. Usually it's over 2,000.`);
 
   // Data checks: pages can load fine while the jobs on them are wrong (wrong country, OTE shown as base...).
-  const qaCols = "id, slug, title_raw, company_name, location_raw, markets, city, role_family, salary_max_usd, currency, salary_min, salary_max, first_seen_at, role_group";
+  const qaCols = "id, slug, title_raw, company_name, location_raw, markets, city, role_family, salary_max_usd, currency, salary_min, salary_max, first_seen_at, role_group, seniority, ote_min, flags";
   const jobs: QaJob[] = [];
   for (let from = 0; ; from += 1000) {
     const { data, error } = await db.from("visible_jobs").select(qaCols).order("id").range(from, from + 999);
