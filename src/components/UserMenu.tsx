@@ -3,7 +3,7 @@ import Link from "next/link";
 import { signOut } from "@/app/actions";
 import { useMe } from "./useMe";
 
-/** Top right on tablets and up: Ask Josh, a small Employers link, and your account. Phones use the bottom tab bar. */
+/** Top right on tablets and up: Ask Josh, a "Post a job" button for employers, and your account. Phones use the bottom tab bar. */
 export function UserMenu() {
   const me = useMe();
   const ask = (
@@ -11,8 +11,14 @@ export function UserMenu() {
       <Link href="/ask" className="whitespace-nowrap rounded-md px-2 py-1.5 font-semibold text-accent hover:bg-surface xl:px-2.5">
         Ask Josh
       </Link>
-      <Link href="/employers" className="whitespace-nowrap rounded-md px-2 py-1.5 text-xs text-ink-3 hover:bg-surface hover:text-ink">
-        Employers
+      <Link
+        href="/employers"
+        className="mx-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] border-ink px-3.5 py-1.5 font-semibold text-ink hover:bg-ink hover:text-white"
+      >
+        <span className="hidden lg:inline">Hiring?</span> Post a job
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M5 12h14M13 6l6 6-6 6" />
+        </svg>
       </Link>
     </>
   );
