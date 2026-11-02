@@ -54,3 +54,19 @@ describe("hunter or farmer from the title", () => {
     expect(motionFromTitle("Account Executive, Bridge")).toBeNull();
   });
 });
+
+import { parseReread } from "../src/lib/ingest/motion-reread";
+
+describe("second read for hunter or farmer", () => {
+  const posting = "You will own a book of business of 40 existing accounts and grow them through upsell.";
+  it("takes the answer when the quote is really in the posting", () => {
+    const r = parseReread('{"answer":"Farmer","evidence":"own a book of business of 40 existing accounts"}', posting);
+    expect(r.motion).toBe("Expansion");
+  });
+  it("throws out an answer whose quote isn't in the posting", () => {
+    expect(parseReread('{"answer":"Hunter","evidence":"win net-new logos across the territory"}', posting).motion).toBe("Unknown");
+  });
+  it("keeps not stated as unknown", () => {
+    expect(parseReread('{"answer":"Not stated","evidence":""}', posting).motion).toBe("Unknown");
+  });
+});

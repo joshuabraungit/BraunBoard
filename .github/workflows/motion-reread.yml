@@ -1,0 +1,28 @@
+name: Hunter or farmer (second read)
+
+# Rereads quota-role postings still marked hunter/farmer unknown, with one narrow question
+# and a required quote from the posting. Anything it can't back up stays unknown.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only report, don't save"
+        type: boolean
+        default: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/motion-reread.ts ${{ inputs.dry_run && '--dry-run' || '' }}
