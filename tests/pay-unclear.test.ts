@@ -15,6 +15,14 @@ describe("payTypeUnclear", () => {
     expect(payTypeUnclear({ role_family: "Account Executive", ote_min: null, salary_max: 300000, description_raw: "Compensation - Base pay: $80,000 - $300,000" })).toBe(false);
     expect(payTypeUnclear({ role_family: "Account Executive", ote_min: null, salary_max: 286000, description_raw: "The salary range for this role is $234,000-286,000 plus annual bonus." })).toBe(false);
   });
+  it("finds the label past a long list of cities (Scale AI)", () => {
+    expect(payTypeUnclear({ role_family: "Account Executive", ote_min: null, salary_max: 259000, description_raw: "The base salary range for this full-time position in the locations of San Francisco, New York, Seattle is: $200,000-$240,000 USD" })).toBe(false);
+  });
+  it("leaves people leaders alone", () => {
+    expect(payTypeUnclear({ role_family: "Account Manager", title_raw: "Senior Manager, Account Manager, Enterprise", ote_min: null, salary_max: 415000, description_raw: "" })).toBe(false);
+    expect(payTypeUnclear({ role_family: "Account Executive", title_raw: "Enterprise Sales Leader, Healthcare", ote_min: null, salary_max: 470000, description_raw: "" })).toBe(false);
+    expect(payTypeUnclear({ role_family: "Account Executive", title_raw: "Senior Account Executive, Enterprise", ote_min: null, salary_max: 315000, description_raw: "" })).toBe(true);
+  });
   it("leaves believable base alone", () => {
     expect(payTypeUnclear({ ...se, salary_max: 210000, description_raw: "" })).toBe(false);
   });

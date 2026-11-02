@@ -19,7 +19,7 @@ export const BASE_CEILING: Record<string, number> = {
 // The posting names the number: "Base pay: $80,000 - $300,000", "$234,000-286,000 plus annual bonus",
 // "Annual Salary Range $94,400 to $276,500", "OTE: $300K".
 export const TEXT_LABELS_PAY =
-  /\b(base|salary|ote|on[- ]target|total compensation|pay range)\b[^$£€.]{0,40}[$£€]\s?\d|[$£€][\d,.]+\s*[kK]?\s*(?:-|–|to)\s*[$£€]?[\d,.]+\s*[kK]?\s*(?:USD|EUR|GBP|CAD)?\s*(?:\+|plus)\s*(?:annual |an? )?(?:bonus|commission|variable)/i;
+  /\b(base|salary|ote|on[- ]target|total compensation|pay range)\b[^$£€.]{0,160}[$£€]\s?\d|[$£€][\d,.]+\s*[kK]?\s*(?:-|–|to)\s*[$£€]?[\d,.]+\s*[kK]?\s*(?:USD|EUR|GBP|CAD)?\s*(?:\+|plus)\s*(?:annual |an? )?(?:bonus|commission|variable)/i;
 
 export interface PayUnclearInput {
   title_raw?: string | null;
@@ -39,6 +39,8 @@ export function payTypeUnclear(j: PayUnclearInput): boolean {
   if (j.title_raw && isChannelTitle(j.title_raw)) return false;
   // Someone who manages SDRs or AEs is classed with the team but paid like a manager.
   if (j.seniority === "Manager" || (j.title_raw && /\b(manager|head|director)\b/i.test(j.title_raw) && j.role_family === "SDR/BDR")) return false;
+  // People leaders: "Senior Manager, Account Managers", "Manager, Solutions Architecture", "Enterprise Sales Leader".
+  if (j.title_raw && /(^|\b(senior|sr\.?)\s)manager,|^manager\b|\bhead of\b|\bsales leader\b|\bdirector\b/i.test(j.title_raw)) return false;
   const text = (j.description_raw ?? "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ");
   return !TEXT_LABELS_PAY.test(text);
 }
