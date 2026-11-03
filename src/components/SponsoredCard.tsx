@@ -63,7 +63,11 @@ export function SellLines({ s }: { s: Pick<SponsoredJobRow, "product_short" | "b
   );
 }
 
-/** The owl's head and claws, hanging on to the top edge of the card. Blinks and reads (globals.css .owl-*). */
+/**
+ * The sponsored owl: the editorial owl's cousin, hanging on to the top edge of the card. Gold-framed
+ * sunglasses instead of green reading glasses, so a paid card never looks like the editor vouching for it.
+ * Taps his claws (globals.css .owl-claws-*).
+ */
 function PeekingOwl() {
   return (
     <svg
@@ -82,17 +86,17 @@ function PeekingOwl() {
         <ellipse cx="200" cy="215" rx="125" ry="128" fill="#16140f" />
         <circle cx="158" cy="172" r="44" fill="#faf8f4" />
         <circle cx="242" cy="172" r="44" fill="#faf8f4" />
-        <g className="owl-pupils">
-          <circle cx="160" cy="188" r="17" fill="#16140f" />
-          <circle cx="244" cy="188" r="17" fill="#16140f" />
-          <circle cx="165" cy="183" r="4" fill="#ffffff" />
-          <circle cx="249" cy="183" r="4" fill="#ffffff" />
+        <g stroke="#c98a1a" strokeWidth="6" strokeLinejoin="round">
+          <path d="M110 152 H196 V174 Q196 206 164 206 H142 Q110 206 110 174 Z" fill="#1d1a14" />
+          <path d="M204 152 H290 V174 Q290 206 258 206 H236 Q204 206 204 174 Z" fill="#1d1a14" />
+          <path d="M196 160 Q200 154 204 160" fill="none" strokeLinecap="round" />
         </g>
-        <circle className="owl-lid" cx="158" cy="172" r="45" fill="#16140f" />
-        <circle className="owl-lid" cx="242" cy="172" r="45" fill="#16140f" />
-        <circle cx="158" cy="174" r="30" fill="none" stroke="#4cae73" strokeWidth="6" />
-        <circle cx="242" cy="174" r="30" fill="none" stroke="#4cae73" strokeWidth="6" />
-        <path d="M188 172 L212 172" stroke="#4cae73" strokeWidth="6" strokeLinecap="round" />
+        <g stroke="#ffffff" strokeLinecap="round" opacity="0.75">
+          <path d="M124 163 L140 179" strokeWidth="5" />
+          <path d="M138 162 L146 170" strokeWidth="3" />
+          <path d="M218 163 L234 179" strokeWidth="5" />
+          <path d="M232 162 L240 170" strokeWidth="3" />
+        </g>
         <path d="M186 210 L214 210 L200 226 Z" fill="#c98a1a" />
       </g>
       <g className="owl-claws-l" fill="#c98a1a">
