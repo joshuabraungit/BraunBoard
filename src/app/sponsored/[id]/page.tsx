@@ -128,6 +128,13 @@ export default async function SponsoredJobPage({ params }: Props) {
         >
           {ended ? `Check if it's still open on ${s.company}'s site ↗` : `Apply on ${s.company}'s site ↗`}
         </a>
+        {!ended && (
+          // Credit for the sponsor's renewal: most application forms ask how you heard about the job.
+          <p className="mt-3 text-sm text-ink-2">
+            When the application asks how you heard about the job, say <span className="font-semibold text-ink">Braun Board</span>. It helps
+            me bring you more jobs like this one.
+          </p>
+        )}
         <p className="mt-4 text-sm text-ink-2">
           Before your first call, here are{" "}
           <Link href="/kit?from=job-page#top-five" className="font-semibold text-ink underline underline-offset-2">
