@@ -314,6 +314,18 @@ export interface ReadInput extends FlagInput {
 }
 
 const DISCLOSURE_KEYS: (keyof Disclosures)[] = ["quota_size", "quota_attainment", "average_deal_size", "territory", "sales_cycle"];
+const DISCLOSURE_NAMES: Partial<Record<keyof Disclosures, string>> = {
+  quota_size: "quota",
+  quota_attainment: "attainment",
+  average_deal_size: "deal size",
+  territory: "territory",
+  sales_cycle: "sales cycle",
+};
+/** "a", "a and b", "a, b and c" */
+function joinList(items: (string | undefined)[]): string {
+  const xs = items.filter((x): x is string => !!x);
+  return xs.length <= 1 ? (xs[0] ?? "") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`;
+}
 
 export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
   const stored = flagsFromCodes(j.flags);
@@ -340,15 +352,19 @@ export function braunRead(j: ReadInput, now = Date.now()): BraunRead {
   }
 
   // Transparency
-  const shared = DISCLOSURE_KEYS.filter((k) => j.disclosures?.[k]).length;
+  const has = DISCLOSURE_KEYS.filter((k) => j.disclosures?.[k]).map((k) => DISCLOSURE_NAMES[k]);
+  const lacks = DISCLOSURE_KEYS.filter((k) => !j.disclosures?.[k]).map((k) => DISCLOSURE_NAMES[k]);
+  const shared = has.length;
   checks.push({
     label: "Transparency",
     grade: shared >= 2 ? "good" : shared === 1 ? "ok" : "bad",
     missing: shared === 0,
     detail:
       shared === 0
-        ? "Says nothing about quota, attainment, deal size, territory or sales cycle."
-        : `Shares ${shared} of 5: quota, attainment, deal size, territory, sales cycle.`,
+        ? "Says nothing about quota, attainment, deal size, territory or sales cycle. Ask about all five."
+        : lacks.length === 0
+          ? "Shares all 5: quota, attainment, deal size, territory and sales cycle."
+          : `Shares ${shared} of 5. Mentions ${joinList(has)}. Ask about ${joinList(lacks)}.`,
   });
 
   // Pipeline
