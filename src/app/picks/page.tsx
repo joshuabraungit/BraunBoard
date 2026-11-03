@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { PicksSignup } from "@/components/PicksSignup";
 import { adminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
@@ -23,6 +24,13 @@ interface Item {
 
 async function latestIssue() {
   if (!isSupabaseConfigured() || !process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
+  return cachedLatestIssue();
+}
+
+// The issue only changes on Tuesdays, so it's reused for a few minutes instead of two lookups per visit.
+const cachedLatestIssue = unstable_cache(fetchLatestIssue, ["picks-latest-v1"], { revalidate: 300, tags: ["picks"] });
+
+async function fetchLatestIssue() {
   const db = adminClient();
   const { data: issue } = await db.from("picks_issues").select("id, issue_date, intro, stat_line").eq("status", "sent").order("issue_date", { ascending: false }).limit(1).maybeSingle();
   if (!issue) return null;

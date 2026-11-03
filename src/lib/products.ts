@@ -70,21 +70,36 @@ export const isProductCategory = (v: unknown): v is ProductCategory => PRODUCT_C
 const JOB_COLUMNS =
   "slug, title_raw, role_family, seniority, remote_type, city, state, location_raw, salary_min, salary_max, ote_min, ote_max, currency, markets, posted_at, company_id";
 
-async function load(): Promise<{ companies: ProductCompany[]; jobs: ProductJob[] }> {
-  if (!isSupabaseConfigured()) return sampleData();
-  const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
-  const jobs: ProductJob[] = [];
+const anonDb = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
+
+// Vercel's data cache skips anything over 2MB, and jobs + companies together were over that,
+// so every visit to What You'd Sell (and every job page) reloaded ~3,000 jobs from scratch.
+// Now they're cached separately, and jobs are stored as plain rows (no repeated field names),
+// which keeps each piece well under the limit.
+const JOB_KEYS = JOB_COLUMNS.split(",").map((k) => k.trim()) as (keyof ProductJob)[];
+type JobRow = unknown[];
+
+async function fetchProductJobRows(): Promise<JobRow[]> {
+  const db = anonDb();
+  const rows: JobRow[] = [];
   for (let from = 0; ; from += 1000) {
     // Jobs open 90+ days don't count toward what a company is hiring for here.
     const { data, error } = await db.from("visible_jobs").select(JOB_COLUMNS).gte("posted_at", new Date(Date.now() - 90 * 86_400_000).toISOString()).order("id").range(from, from + 999);
     if (error) throw new Error(`products jobs: ${error.message}`);
     for (const j of (data ?? []) as unknown as ProductJob[]) {
       // location_raw is only shown when there's no city and the role isn't remote.
-      jobs.push({ ...j, location_raw: !j.city && j.remote_type !== "Remote" ? (j.location_raw ?? "").slice(0, 60) || null : null });
+      const row = { ...j, location_raw: !j.city && j.remote_type !== "Remote" ? (j.location_raw ?? "").slice(0, 60) || null : null };
+      rows.push(JOB_KEYS.map((k) => row[k]));
     }
     if (!data || data.length < 1000) break;
   }
-  const { data, error } = await db
+  return rows;
+}
+
+const cachedProductJobRows = unstable_cache(fetchProductJobRows, ["product-job-rows-v1"], { revalidate: 600, tags: ["products"] });
+
+async function fetchProductCompanies(): Promise<ProductCompany[]> {
+  const { data, error } = await anonDb()
     .from("company_stats")
     .select("trend, new_30d, closed_30d, companies!inner(id, slug, name, domain, logo_url, is_disabled, product_story, product_short, product_category, product_checked_at)")
     .gt("open_roles", 0)
@@ -92,7 +107,7 @@ async function load(): Promise<{ companies: ProductCompany[]; jobs: ProductJob[]
     .limit(3000);
   if (error) throw new Error(`products companies: ${error.message}`);
   type Row = { trend: HiringTrend; new_30d: number; closed_30d: number; companies: Record<string, unknown> };
-  const companies = ((data ?? []) as unknown as Row[]).map(({ companies: c, ...s }) => ({
+  return ((data ?? []) as unknown as Row[]).map(({ companies: c, ...s }) => ({
     id: c.id as string,
     slug: c.slug as string,
     name: c.name as string,
@@ -106,10 +121,22 @@ async function load(): Promise<{ companies: ProductCompany[]; jobs: ProductJob[]
     checked: c.product_checked_at != null,
     ...s,
   }));
-  return { companies, jobs };
 }
 
-export const loadProductData = unstable_cache(load, ["products-v3"], { revalidate: 600, tags: ["products"] });
+const cachedProductCompanies = unstable_cache(fetchProductCompanies, ["product-companies-v1"], { revalidate: 600, tags: ["products"] });
+
+/** Just the companies and their plain-English blurbs (no jobs). Enough for a job page. */
+export async function loadProductCompanies(): Promise<ProductCompany[]> {
+  if (!isSupabaseConfigured()) return sampleData().companies;
+  return cachedProductCompanies();
+}
+
+export async function loadProductData(): Promise<{ companies: ProductCompany[]; jobs: ProductJob[] }> {
+  if (!isSupabaseConfigured()) return sampleData();
+  const [rows, companies] = await Promise.all([cachedProductJobRows(), cachedProductCompanies()]);
+  const jobs = rows.map((r) => Object.fromEntries(JOB_KEYS.map((k, i) => [k, r[i]])) as unknown as ProductJob);
+  return { companies, jobs };
+}
 
 export interface ProductCard extends ProductCompany {
   open: number;

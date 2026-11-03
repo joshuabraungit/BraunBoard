@@ -13,7 +13,7 @@ import { ATTAINMENT_ROLES, attainmentLabel } from "@/lib/attainment";
 import { QuestionsPanel } from "@/components/Questions";
 import { AskJoshForm } from "@/components/AskJosh";
 import { getUser } from "@/lib/session";
-import { loadProductData } from "@/lib/products";
+import { loadProductCompanies } from "@/lib/products";
 import { formatComp, formatLocation, money } from "@/lib/format";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { SaveJobButton, WatchCompanyButton } from "@/components/Actions";
@@ -75,10 +75,10 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
     getActiveWatch(),
     getCompanyStats(job.company_id),
     getUser().catch(() => null),
-    loadProductData().catch(() => null),
+    loadProductCompanies().catch(() => null),
     getRoleSiblings(job).catch(() => []),
   ]);
-  const product = products?.companies.find((c) => c.id === job.company_id && c.story) ?? null;
+  const product = products?.find((c) => c.id === job.company_id && c.story) ?? null;
   const read = braunRead({ ...job, company: stats });
   const match = watch ? scoreMatch(job, watch.prefs) : null;
   // Attainment is the question for people carrying a number. For SEs and leaders it means something else.

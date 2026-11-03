@@ -29,7 +29,10 @@ export const metadata: Metadata = {
   description: "Find a product you'd be excited to sell. Every company's product in plain English, with its open sales roles.",
 };
 
-type SP = { cat?: string; role?: string; q?: string; sort?: string; country?: string };
+type SP = { cat?: string; role?: string; q?: string; sort?: string; country?: string; show?: string };
+
+// The full list was ~900 company cards (6MB of page). Show a batch at a time instead.
+const BATCH = 30;
 
 export default async function Products({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
@@ -41,13 +44,15 @@ export default async function Products({ searchParams }: { searchParams: Promise
   const markets = marketsFor(market);
 
   const [data, state] = await Promise.all([loadProductData(), getUserState()]);
-  const cards = productCards(data, { category, role, q, sort, markets });
+  const allCards = productCards(data, { category, role, q, sort, markets });
+  const shown = Math.min(allCards.length, Math.max(BATCH, Math.floor(Number(sp.show)) || BATCH));
+  const cards = allCards.slice(0, shown);
   const counts = categoryCounts(data, markets, role);
 
   // Links keep the other filters as they are.
   const href = (patch: Partial<SP>) => {
     const p = new URLSearchParams();
-    const next = { cat: category, role, q: q || undefined, sort: sort === "open" ? undefined : sort, country: sp.country, ...patch };
+    const next: Partial<SP> = { cat: category, role, q: q || undefined, sort: sort === "open" ? undefined : sort, country: sp.country, ...patch };
     for (const [k, v] of Object.entries(next)) if (v) p.set(k, v);
     const s = p.toString();
     return s ? `/products?${s}` : "/products";
@@ -208,6 +213,17 @@ export default async function Products({ searchParams }: { searchParams: Promise
             </li>
           ))}
         </ul>
+      )}
+      {allCards.length > shown && (
+        <div className="mt-8 text-center">
+          <Link
+            href={href({ show: String(shown + BATCH) })}
+            scroll={false}
+            className="inline-flex min-h-11 items-center rounded-lg border border-line-strong bg-surface px-5 text-sm font-semibold hover:border-ink"
+          >
+            Show more companies ({allCards.length - shown} left)
+          </Link>
+        </div>
       )}
     </>
   );
