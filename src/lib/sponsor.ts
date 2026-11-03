@@ -460,6 +460,8 @@ export function renderRefundEmail(o: SponsoredJobRow, refundedCents: number, rea
 
 export function videoUrl(path: string | null | undefined) {
   if (!path) return null;
+  // A video shipped with the site (public/sponsor-videos), e.g. a small fix swapped in by hand. Uploads stay in storage.
+  if (path.startsWith("/sponsor-videos/")) return path;
   return adminClient().storage.from(VIDEO_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
