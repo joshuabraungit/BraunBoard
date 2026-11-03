@@ -61,7 +61,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         </p>
       )}
 
-      {/* Sponsors pay for the top spot, so they sit above everything else. */}
+      {showIntro && <IntroBanner owl={sponsors.length === 0} />}
+
+      {/* Sponsors sit right under the intro banner, above everything else. */}
       {sponsors.length > 0 && (
         <section className="mb-10 space-y-3" aria-label="Sponsored jobs">
           {sponsors.map((s, i) => (
@@ -69,8 +71,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
           ))}
         </section>
       )}
-
-      {showIntro && <IntroBanner owl={sponsors.length === 0} />}
 
       <LightsKey className="mb-4" />
       {forYou ? (
