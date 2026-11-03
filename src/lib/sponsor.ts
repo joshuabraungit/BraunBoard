@@ -70,6 +70,9 @@ export async function uploadLogo(orderId: string, file: File): Promise<string> {
 
 export function logoUrl(path: string | null) {
   if (!path) return null;
+  // A hand-picked logo shipped with the site (public/sponsor-logos), e.g. just a company's mark when
+  // their uploaded logo is too busy for a small square. Uploads stay in storage, untouched.
+  if (path.startsWith("/sponsor-logos/")) return path;
   return adminClient().storage.from(LOGO_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
