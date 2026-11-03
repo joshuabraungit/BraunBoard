@@ -61,6 +61,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         </p>
       )}
 
+      {/* Sponsors pay for the top spot, so they sit above everything else. */}
+      {sponsors.length > 0 && (
+        <section className="mb-10 space-y-3" aria-label="Sponsored jobs">
+          {sponsors.map((s, i) => (
+            <SponsoredCard key={s.id} s={s} peek={i === 0} />
+          ))}
+        </section>
+      )}
+
       {showIntro && <IntroBanner owl={sponsors.length === 0} />}
 
       <LightsKey className="mb-4" />
@@ -78,14 +87,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
           Set up my watch →
         </Link>
       </div>
-      )}
-
-      {sponsors.length > 0 && (
-        <section className="mt-10 space-y-3 first:mt-0" aria-label="Sponsored jobs">
-          {sponsors.map((s, i) => (
-            <SponsoredCard key={s.id} s={s} peek={i === 0} />
-          ))}
-        </section>
       )}
 
       <Section title={newToday.week ? "Newest this week" : "New Today"} href={newToday.week ? "/jobs?posted=7" : "/new"}>
