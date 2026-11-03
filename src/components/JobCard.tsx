@@ -148,7 +148,7 @@ export function JobCard({ job, ctx, openings = 1, locations = 1, extras }: { job
         <span className="min-w-0">
           <span className="font-medium text-ink">{job.company_name}</span> · {job.remote_type === "Onsite" && "In office · "}{multi ? <span className="font-medium text-ink">{more}</span> : formatLocation(job)} ·{" "}
           <span className="whitespace-nowrap">
-            <LifeMeter postedAt={job.first_seen_at}><span className={fresh ? "font-medium text-fresh" : ""}>{openLabel(job.first_seen_at)}</span></LifeMeter>
+            <LifeMeter postedAt={job.first_seen_at} /> <span className={fresh ? "font-medium text-fresh" : ""}>{openLabel(job.first_seen_at)}</span>
           </span>
           {more && !multi && <span className="font-medium text-ink"> · {more}</span>}
         </span>

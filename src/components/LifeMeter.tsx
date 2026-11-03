@@ -16,7 +16,7 @@ const LIFE: { maxDays: number; bars: number; tone: Tone; line: string }[] = [
   { maxDays: Infinity, bars: 0, tone: "red", line: "Game over? Still on their site, but open 3+ months." },
 ];
 
-/** What the meter is, shown on hover. Just what it is, no advice. */
+/** What the meter is: read by screen readers, and spelled out on the job page. No hover. */
 export const LIFE_METER_TIP = "Drains a bar as the job stays open.";
 
 /** `decorative` for the sample in the color key: no label for screen readers. */
@@ -26,28 +26,14 @@ export function lifeFor(postedAt: string, now = Date.now()) {
   return { days, ...LIFE.find((l) => days <= l.maxDays)! };
 }
 
-export function LifeMeter({ postedAt, now = Date.now(), decorative = false, children }: { postedAt: string; now?: number; decorative?: boolean; children?: React.ReactNode }) {
+export function LifeMeter({ postedAt, now = Date.now(), decorative = false }: { postedAt: string; now?: number; decorative?: boolean }) {
   const life = lifeFor(postedAt, now);
-  const bars = (
-    <span className="inline-flex items-center gap-[2px] align-[1px]" aria-hidden>
+  const a11y = decorative ? { "aria-hidden": true as const } : { role: "img", "aria-label": `${LIFE_METER_TIP} Open ${life.days === 1 ? "1 day" : `${life.days} days`}.` };
+  return (
+    <span className="inline-flex items-center gap-[2px] align-[1px]" {...a11y}>
       {Array.from({ length: 5 }, (_, i) => (
         <span key={i} className={`h-2.5 w-[5px] rounded-[1px] ${i < life.bars ? LIGHT[life.tone] : "bg-line-strong"}`} />
       ))}
-    </span>
-  );
-  if (decorative) return bars;
-  // Sits above the card's click-anywhere link (z-10) so the hover reaches it, and shows its own
-  // bubble right away instead of the browser's slow, tiny tooltip.
-  return (
-    <span className="group/meter relative z-10 inline-flex items-center gap-1.5" tabIndex={0} role="img" aria-label={`${LIFE_METER_TIP} Open ${life.days === 1 ? "1 day" : `${life.days} days`}.`}>
-      {bars}
-      {children}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute bottom-full left-0 z-20 mb-1.5 hidden whitespace-nowrap rounded-md bg-ink px-2 py-1 text-xs font-medium text-white shadow-md group-hover/meter:block group-focus-visible/meter:block"
-      >
-        {LIFE_METER_TIP}
-      </span>
     </span>
   );
 }
