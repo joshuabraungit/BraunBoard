@@ -7,7 +7,7 @@ import { OteBadge, sponsorWhere } from "@/components/SponsoredCard";
 import { bump, getOrder, logoUrl, reviewFields, videoUrl } from "@/lib/sponsor";
 import { videoApproved } from "@/lib/sponsor-review";
 import { AdText } from "@/components/AdText";
-import { ExplainerVideo } from "@/components/ExplainerVideo";
+import { VideoLightbox } from "@/components/VideoLightbox";
 import { isRunning, payLine } from "@/lib/sponsor-form";
 import { isUuid } from "@/lib/picks-subscribe";
 import { isBot } from "@/lib/visits";
@@ -41,6 +41,8 @@ export default async function SponsoredJobPage({ params }: Props) {
 
   const admin = isAdmin(await getUser());
   const running = isRunning(s);
+  const video = s.video_path && videoApproved(reviewFields(s)) ? videoUrl(s.video_path) : null;
+  const adParts = splitAfterSellSection(s.description);
   const hasRun = s.status === "done" || (s.status === "live" && !!s.ends_at && new Date(s.ends_at) <= new Date());
   if (!running && !hasRun && !admin) notFound();
 
@@ -103,11 +105,11 @@ export default async function SponsoredJobPage({ params }: Props) {
         </p>
       )}
 
-      {s.video_path && videoApproved(reviewFields(s)) && (
-        <ExplainerVideo src={videoUrl(s.video_path)!} label="Watch: what you'd sell" className="mt-6 max-w-md rounded-2xl" />
-      )}
-
-      <AdText text={s.description} className="mt-6" />
+      {/* The video waits in a lightbox, right under the ad's "what you'll sell" part (or up top if the ad has no such part). */}
+      {video && !adParts.rest && <VideoLightbox src={video} className="mt-6" />}
+      <AdText text={adParts.lead} className="mt-6" />
+      {video && adParts.rest && <VideoLightbox src={video} className="mb-2 mt-1" />}
+      {adParts.rest && <AdText text={adParts.rest} className="mt-7" />}
 
       {/* The headline alone lives on the home page card; the box is for when there's a story to tell. */}
       {s.product_story && (
@@ -149,4 +151,16 @@ export default async function SponsoredJobPage({ params }: Props) {
       </p>
     </div>
   );
+}
+
+/**
+ * Splits the ad right after its opening "What will you sell?" section, so the video button can sit there.
+ * When the ad doesn't open with a sell section, everything stays in `lead`.
+ */
+function splitAfterSellSection(text: string): { lead: string; rest: string | null } {
+  const first = text.match(/^\s*##\s+(.+)$/m);
+  if (!first || !/sell/i.test(first[1])) return { lead: text, rest: null };
+  const next = text.indexOf("\n## ", (first.index ?? 0) + first[0].length);
+  if (next === -1) return { lead: text, rest: null };
+  return { lead: text.slice(0, next).trimEnd(), rest: text.slice(next + 1) };
 }

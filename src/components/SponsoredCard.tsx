@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CompanyLogo } from "./CompanyLogo";
+import { VideoLightbox } from "./VideoLightbox";
 import { logoUrl, reviewFields, videoUrl, type SponsoredJobRow } from "@/lib/sponsor";
 import { videoApproved } from "@/lib/sponsor-review";
 import { attainmentBadge, payLine } from "@/lib/sponsor-form";
@@ -131,23 +132,6 @@ function OwlSays() {
   );
 }
 
-/** A still from the approved explainer video. The whole card links to the job page, where it plays. */
-function VideoTeaser({ src }: { src: string }) {
-  return (
-    <div className="relative mt-4 overflow-hidden rounded-xl bg-ink sm:mt-0 sm:w-52 sm:shrink-0">
-      <video src={`${src}#t=1`} muted playsInline preload="metadata" aria-hidden="true" className="pointer-events-none aspect-video w-full object-cover opacity-90 sm:aspect-square" />
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-ink/20 transition group-hover:bg-ink/10">
-        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-[0_4px_18px_rgba(0,0,0,0.3)] transition group-hover:scale-105">
-          <svg viewBox="0 0 24 24" className="ml-1 h-5 w-5 fill-ink" aria-hidden="true">
-            <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" />
-          </svg>
-        </span>
-        <span className="rounded-full bg-ink/70 px-2.5 py-0.5 text-xs font-semibold text-white">Watch: what you&apos;d sell</span>
-      </div>
-    </div>
-  );
-}
-
 /**
  * Paid placement at the top of the home page. Always labeled. No Braun Read: Josh doesn't grade jobs he's paid to show.
  * `peek` puts the owl on the card's top edge; the home page gives it to the first sponsor only.
@@ -198,10 +182,10 @@ export function SponsoredCard({ s, peek = false }: { s: SponsoredJobRow; peek?: 
               </p>
             )}
             <SellLines s={s} />
+            {video && <VideoLightbox src={video} className="mt-3" />}
             <p className="mt-2 line-clamp-3 text-[15px] leading-relaxed text-ink-2">{adPlainText(s.description)}</p>
           </div>
         </div>
-        {video && <VideoTeaser src={video} />}
       </div>
       <div className="flex justify-end px-5 pb-5 sm:px-6 sm:pb-6">
         <span className="inline-flex min-h-10 items-center rounded-lg bg-ink px-4 text-sm font-semibold text-white group-hover:opacity-90">
