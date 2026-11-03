@@ -79,6 +79,10 @@ function PeekingOwl() {
         <clipPath id="sponsor-owl-clip">
           <rect x="0" y="0" width="400" height="226" />
         </clipPath>
+        <clipPath id="sponsor-owl-lenses">
+          <path d="M110 152 H196 V174 Q196 206 164 206 H142 Q110 206 110 174 Z" />
+          <path d="M204 152 H290 V174 Q290 206 258 206 H236 Q204 206 204 174 Z" />
+        </clipPath>
       </defs>
       <g clipPath="url(#sponsor-owl-clip)">
         <path d="M110 120 L100 62 L156 96 Z" fill="#16140f" />
@@ -90,6 +94,10 @@ function PeekingOwl() {
           <path d="M110 152 H196 V174 Q196 206 164 206 H142 Q110 206 110 174 Z" fill="#1d1a14" />
           <path d="M204 152 H290 V174 Q290 206 258 206 H236 Q204 206 204 174 Z" fill="#1d1a14" />
           <path d="M196 160 Q200 154 204 160" fill="none" strokeLinecap="round" />
+        </g>
+        {/* A band of light sweeps across both lenses every few seconds (globals.css .owl-glint). */}
+        <g clipPath="url(#sponsor-owl-lenses)">
+          <polygon className="owl-glint" points="60,140 84,140 54,220 30,220" fill="#ffffff" opacity="0.55" />
         </g>
         <g stroke="#ffffff" strokeLinecap="round" opacity="0.75">
           <path d="M124 163 L140 179" strokeWidth="5" />

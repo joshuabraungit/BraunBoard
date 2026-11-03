@@ -99,7 +99,14 @@ body {
   from { opacity: 0; transform: scale(0.6) translateX(-6px); }
   to { opacity: 1; transform: none; }
 }
+/* Sunglasses glint on the sponsored owl: a quick sweep, then a long pause. */
+.owl-glint { animation: owl-glint 5s ease-in-out 1.6s infinite; }
+@keyframes owl-glint {
+  0% { transform: translateX(0); }
+  14%, 100% { transform: translateX(290px); }
+}
 @media (prefers-reduced-motion: reduce) {
   .owl-head, .owl-pupils, .owl-lid, .owl-claws-l, .owl-claws-r, .owl-chip { animation: none; }
   .owl-say { animation: none; opacity: 1; }
+  .owl-glint { animation: none; display: none; }
 }
