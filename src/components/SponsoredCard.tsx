@@ -109,6 +109,16 @@ function PeekingOwl() {
   );
 }
 
+/** The owl's line, in a speech bubble beside his head. Two lines on phones so it stays on screen (globals.css .owl-say). */
+function OwlSays() {
+  return (
+    <p className="owl-say pointer-events-none absolute -top-[58px] left-[222px] z-10 m-0 rounded-[14px] bg-surface px-2.5 py-1.5 text-xs font-bold leading-[1.3] whitespace-nowrap text-ink sm:-top-[58px] sm:left-[286px] sm:px-[13px] sm:py-[7px] sm:text-sm">
+      I&rsquo;d apply, but
+      <br className="sm:hidden" /> I don&rsquo;t have thumbs.
+    </p>
+  );
+}
+
 /** A still from the approved explainer video. The whole card links to the job page, where it plays. */
 function VideoTeaser({ src }: { src: string }) {
   return (
@@ -137,6 +147,7 @@ export function SponsoredCard({ s, peek = false }: { s: SponsoredJobRow; peek?: 
       className={`group relative rounded-2xl border-[1.5px] border-amber/40 bg-surface transition hover:border-amber/70 hover:shadow-[0_2px_12px_rgba(22,20,15,0.05)] ${peek ? "mt-14 sm:mt-16" : ""}`}
     >
       {peek && <PeekingOwl />}
+      {peek && <OwlSays />}
       <div className="flex items-center justify-between gap-3 rounded-t-[14px] bg-amber-soft px-5 py-2.5 sm:px-6">
         <span className="text-xs font-semibold uppercase tracking-wide text-amber">Sponsored</span>
         <span className="flex items-center gap-2 text-xs font-semibold text-amber">
