@@ -11,6 +11,9 @@ import { OnboardingForm } from "./OnboardingForm";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { alternates: { canonical: "/for-you" } };
 
+// Every match on one page was ~2.5MB for a typical watch. Best matches first, a batch at a time.
+const BATCH = 30;
+
 export default async function ForYou({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
   const watch = await getActiveWatch(sp.watch);
@@ -27,6 +30,8 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<R
 
   const [state, jobs, watches] = await Promise.all([getUserState(), listJobsForWatch(watch.prefs.countries ?? ["US"], watch.prefs.keywords), listWatches()]);
   const ranked = rankForWatch(jobs, watch.prefs, state.hiddenJobIds);
+  const shown = Math.min(ranked.jobs.length, Math.max(BATCH, Math.floor(Number(sp.show)) || BATCH));
+  const moreHref = `/for-you?${new URLSearchParams({ ...(sp.watch ? { watch: sp.watch } : {}), show: String(shown + BATCH) })}`;
 
   return (
     <>
@@ -80,10 +85,21 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<R
 
       <LightsKey className="mb-3" />
       <JobGrid
-        jobs={ranked.jobs}
+        jobs={ranked.jobs.slice(0, shown)}
         ctx={{ savedJobIds: state.savedJobIds, matches: ranked.matches, back: "/for-you", allowHide: state.signedIn }}
         empty="Nothing matches yet. That's the point: I'll tell you when it shows up. Loosen a preference if you want to browse in the meantime."
       />
+      {ranked.jobs.length > shown && (
+        <div className="mt-8 text-center">
+          <Link
+            href={moreHref}
+            scroll={false}
+            className="inline-flex min-h-11 items-center rounded-lg border border-line-strong bg-surface px-5 text-sm font-semibold hover:border-ink"
+          >
+            Show more matches ({ranked.jobs.length - shown} left)
+          </Link>
+        </div>
+      )}
     </>
   );
 }
