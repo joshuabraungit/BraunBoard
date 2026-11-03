@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "test (one address only)"
+        description: "test (one address) or all (everyone on Braun Board)"
         type: choice
-        options: [test]
+        options: [test, all]
         default: test
       test_to:
         description: "Send the test to"
@@ -18,6 +18,9 @@ jobs:
     timeout-minutes: 10
     env:
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ALERTS_LINK_SECRET: ${{ secrets.ALERTS_LINK_SECRET }}
       NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
       PICKS_POSTAL_ADDRESS: ${{ secrets.PICKS_POSTAL_ADDRESS }}
       MODE: ${{ inputs.mode }}
