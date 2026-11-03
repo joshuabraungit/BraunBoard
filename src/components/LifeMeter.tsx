@@ -16,6 +16,9 @@ const LIFE: { maxDays: number; bars: number; tone: Tone; line: string }[] = [
   { maxDays: Infinity, bars: 0, tone: "red", line: "Game over? Still on their site, but open 3+ months." },
 ];
 
+/** What the meter is, shown on hover. Just what it is, no advice. */
+export const LIFE_METER_TIP = "Drains a bar as the job stays open.";
+
 /** `decorative` for the sample in the color key: no label for screen readers. */
 /** Where a job is on the meter, and the line that goes with it. */
 export function lifeFor(postedAt: string, now = Date.now()) {
@@ -25,8 +28,7 @@ export function lifeFor(postedAt: string, now = Date.now()) {
 
 export function LifeMeter({ postedAt, now = Date.now(), decorative = false }: { postedAt: string; now?: number; decorative?: boolean }) {
   const life = lifeFor(postedAt, now);
-  const days = life.days;
-  const label = `${life.line} Open ${days === 1 ? "1 day" : `${days} days`}.`;
+  const label = LIFE_METER_TIP;
   return (
     <span className="inline-flex items-center gap-[2px] align-[1px]" {...(decorative ? { "aria-hidden": true } : { title: label, "aria-label": label, role: "img" })}>
       {Array.from({ length: 5 }, (_, i) => (
