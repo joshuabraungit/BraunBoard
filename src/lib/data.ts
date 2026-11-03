@@ -209,16 +209,49 @@ export const STALE_DAYS = 90;
 
 export async function listJobsForWatch(markets: string[], keywords: string[] = []): Promise<(JobView & { text_hits?: TextHits })[]> {
   if (!isSupabaseConfigured()) return listJobs({ markets }, 1000, { withDescription: true });
-  const jobs = await listJobs({ markets, postedWithinDays: STALE_DAYS }, 1000);
+  // Both pieces are shared for a few minutes: the newest 1,000 jobs per country set, and the
+  // description checks per keyword set. Sorted so ["UK","US"] and ["US","UK"] share a cache entry.
+  const m = [...markets].sort();
+  const k = [...new Set(keywords.map((w) => w.trim().toLowerCase()).filter(Boolean))].sort();
+  const jobs = await cachedWatchJobs(m);
   if (!jobs.length) return jobs;
-  const db = publicClient();
-  const { data, error } = await db.rpc("job_text_hits", { p_ids: jobs.map((j) => j.id), p_keywords: keywords });
+  const hitRows = await cachedTextHits(m, k).catch(() => null);
   // If the check fails, fall back to the old way rather than show wrong matches.
-  if (error) return listJobs({ markets, postedWithinDays: STALE_DAYS }, 1000, { withDescription: true });
-  const hits = new Map(((data ?? []) as ({ id: string } & TextHits)[]).map(({ id, ...h }) => [id, h]));
+  if (!hitRows) return listJobs({ markets, postedWithinDays: STALE_DAYS }, 1000, { withDescription: true });
+  const hits = new Map(hitRows.map(([id, c, g, kw]) => [id, { commission_only: c, greenfield: g, keyword: kw }]));
   const none: TextHits = { commission_only: false, greenfield: false, keyword: false };
   return jobs.map((j) => ({ ...j, text_hits: hits.get(j.id) ?? none }));
 }
+
+// 1,000 jobs as objects is ~1.4MB, close to Vercel's 2MB cache limit. Stored as plain rows
+// (no repeated field names) it's well under, so it actually gets cached.
+const CARD_KEYS = CARD_COLUMNS.split(",").map((c) => c.trim().replace(/:.*$/, "")) as (keyof JobView)[];
+
+const cachedWatchJobRows = unstable_cache(
+  async (markets: string[]): Promise<unknown[][]> => {
+    const { jobs } = await fetchJobs({ markets, postedWithinDays: STALE_DAYS }, 1000, {});
+    return jobs.map((j) => CARD_KEYS.map((key) => j[key] ?? null));
+  },
+  ["watch-job-rows-v1"],
+  { revalidate: JOB_CACHE_SECONDS, tags: ["jobs"] },
+);
+
+async function cachedWatchJobs(markets: string[]): Promise<JobView[]> {
+  const rows = await cachedWatchJobRows(markets);
+  return rows.map((r) => Object.fromEntries(CARD_KEYS.map((key, i) => [key, r[i]])) as unknown as JobView);
+}
+
+/** [id, commission only, greenfield, keyword] for the jobs that hit any of them. */
+const cachedTextHits = unstable_cache(
+  async (markets: string[], keywords: string[]): Promise<[string, boolean, boolean, boolean][]> => {
+    const jobs = await cachedWatchJobs(markets);
+    const { data, error } = await publicClient().rpc("job_text_hits", { p_ids: jobs.map((j) => j.id), p_keywords: keywords });
+    if (error) throw error;
+    return ((data ?? []) as ({ id: string } & TextHits)[]).map((h) => [h.id, h.commission_only, h.greenfield, h.keyword]);
+  },
+  ["watch-text-hits-v1"],
+  { revalidate: JOB_CACHE_SECONDS, tags: ["jobs"] },
+);
 
 export async function getJob(slug: string): Promise<JobView | null> {
   if (!isSupabaseConfigured()) return SAMPLE_JOBS.find((j) => j.slug === slug) ?? null;
