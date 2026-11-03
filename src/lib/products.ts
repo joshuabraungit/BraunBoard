@@ -177,3 +177,14 @@ function sampleData(): { companies: ProductCompany[]; jobs: ProductJob[] } {
   const jobs = SAMPLE_JOBS.map((j) => ({ ...j, posted_at: j.first_seen_at, markets: j.markets ?? ["US"] })) as unknown as ProductJob[];
   return { companies, jobs };
 }
+
+/**
+ * Just the category counts, for the home page. The full product data is too big for Vercel's
+ * data cache (over 2MB), so it gets refetched a lot; this small result caches fine and keeps
+ * the home page from waiting on thousands of rows to draw a row of pills.
+ */
+export const homeCategoryCounts = unstable_cache(
+  async (markets?: string[]): Promise<[ProductCategory, number][]> => [...categoryCounts(await loadProductData(), markets)],
+  ["home-category-counts-v1"],
+  { revalidate: 600, tags: ["products"] },
+);

@@ -10,7 +10,7 @@ import { JobGrid, Section } from "@/components/JobCard";
 import { getActiveWatch, getUserState } from "@/lib/session";
 import { rankForWatch } from "@/lib/matching";
 import { marketsFor, visitorMarket } from "@/lib/market";
-import { PRODUCT_CATEGORIES, categoryCounts, loadProductData } from "@/lib/products";
+import { PRODUCT_CATEGORIES, homeCategoryCounts } from "@/lib/products";
 import { cookies } from "next/headers";
 import { INTRO_COOKIE, IntroBanner } from "@/components/IntroBanner";
 import { SponsoredCard } from "@/components/SponsoredCard";
@@ -30,24 +30,28 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   const uk = market === "UK";
   // High OTE: $250K+ in USD terms, which is £200K+ for UK jobs. German pay runs lower, so €165K+ there.
   const highOteMin = market === "DE" ? 175_000 : 250_000;
-  const [newToday, highOte, remoteEnt, state, watch, companies, sponsors] = await Promise.all([
+  // Everything loads at once. The For You box waits on the watch, so it starts as soon as that's known.
+  const watchP = getActiveWatch();
+  const stateP = getUserState();
+  const [newToday, highOte, remoteEnt, state, watch, companies, sponsors, productCountList, forYou] = await Promise.all([
     // Quiet days (weekends) can have nothing from the last 24 hours, so fall back to the past week.
     listJobs({ postedWithinDays: 1, markets }, 6).then(async (today) => (today.length >= 3 ? { jobs: today, week: false } : { jobs: await listJobs({ postedWithinDays: 7, markets }, 6), week: true })),
     listJobs({ minOte: highOteMin, postedWithinDays: 90, markets }, 6),
     listJobs({ role: "Account Executive", segment: "Enterprise", remote: "Remote", postedWithinDays: 90, markets }, 6),
-    getUserState(),
-    getActiveWatch(),
+    stateP,
+    watchP,
     listCompanies(),
     listRunningSponsors(),
+    homeCategoryCounts(markets).catch(() => [] as Awaited<ReturnType<typeof homeCategoryCounts>>),
+    Promise.all([watchP, stateP]).then(async ([w, st]) =>
+      w ? rankForWatch(await listJobsForWatch(w.prefs.countries ?? ["US"], w.prefs.keywords), w.prefs, st.hiddenJobIds) : null,
+    ),
   ]);
   // The owl intro shows until it's closed. While it's up, it stands in for the old "set up a watch" box.
   const showIntro = (await cookies()).get(INTRO_COOKIE)?.value !== "hidden";
-  const productCounts = categoryCounts((await loadProductData().catch(() => null)) ?? { companies: [], jobs: [] }, markets);
+  const productCounts = new Map(productCountList);
   const rampingUp = companies.filter((c) => c.trend === "ramping").sort(byHiringFastest).slice(0, 6);
   const ctx = { savedJobIds: state.savedJobIds, back: "/" };
-  const forYou = watch
-    ? rankForWatch(await listJobsForWatch(watch.prefs.countries ?? ["US"], watch.prefs.keywords), watch.prefs, state.hiddenJobIds)
-    : null;
 
   return (
     <>
