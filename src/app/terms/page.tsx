@@ -44,7 +44,7 @@ export default function Terms() {
 
       <h2>Contact</h2>
       <p>
-        <a className="underline" href="mailto:josh@joshbraun.com">josh@joshbraun.com</a>
+        <a className="underline" href="mailto:josh@braunboard.com">josh@braunboard.com</a>
       </p>
     </LegalPage>
   );

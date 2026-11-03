@@ -55,7 +55,7 @@ export default async function SponsorPage({ searchParams }: { searchParams: Prom
           <SponsorForm price={price} canceled={canceled === "1"} />
         ) : (
           <p className="rounded-lg bg-amber-soft px-4 py-3 text-sm text-amber">
-            Online checkout isn&apos;t open yet. Email <a href="mailto:josh@joshbraun.com" className="font-semibold underline">josh@joshbraun.com</a> and I&apos;ll set you up.
+            Online checkout isn&apos;t open yet. Email <a href="mailto:josh@braunboard.com" className="font-semibold underline">josh@braunboard.com</a> and I&apos;ll set you up.
           </p>
         )}
       </div>

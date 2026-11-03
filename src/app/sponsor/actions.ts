@@ -15,7 +15,7 @@ export async function startCheckout(_prev: SponsorState, fd: FormData): Promise<
   if (values.website) return { errors: { form: "Something went wrong. Try again?" }, values };
 
   const price = sponsorPriceCents();
-  if (!price) return { errors: { form: "Checkout isn't switched on yet. Email josh@joshbraun.com and I'll sort it out." }, values };
+  if (!price) return { errors: { form: "Checkout isn't switched on yet. Email josh@braunboard.com and I'll sort it out." }, values };
 
   const parsed = parseSponsorForm(fd);
   const logo = fd.get("logo");

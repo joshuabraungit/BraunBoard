@@ -185,8 +185,8 @@ export default function EmployersPage() {
         </div>
         <p className="mt-3 text-sm text-ink-3">
           Questions first? Email me:{" "}
-          <a href="mailto:josh@joshbraun.com" className="font-semibold text-ink underline underline-offset-2">
-            josh@joshbraun.com
+          <a href="mailto:josh@braunboard.com" className="font-semibold text-ink underline underline-offset-2">
+            josh@braunboard.com
           </a>
         </p>
         <p className="mt-1 text-sm text-ink-3">

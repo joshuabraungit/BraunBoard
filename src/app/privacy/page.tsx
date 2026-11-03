@@ -83,7 +83,7 @@ export default function Privacy() {
 
       <h2>Contact</h2>
       <p>
-        Questions or deletion requests: <a className="underline" href="mailto:josh@joshbraun.com">josh@joshbraun.com</a>
+        Questions or deletion requests: <a className="underline" href="mailto:josh@braunboard.com">josh@braunboard.com</a>
       </p>
     </LegalPage>
   );

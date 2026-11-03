@@ -49,7 +49,7 @@ export default async function SponsorThanks({ searchParams }: { searchParams: Pr
           <h1 className="text-3xl font-bold tracking-tight">Hmm, I can&apos;t confirm that payment yet</h1>
           <p className="mt-4 text-[15px] leading-relaxed text-ink-2">
             If you just paid, give it a minute and refresh. Still stuck? Email{" "}
-            <a href="mailto:josh@joshbraun.com" className="font-semibold text-ink underline underline-offset-2">josh@joshbraun.com</a> and I&apos;ll look it up.
+            <a href="mailto:josh@braunboard.com" className="font-semibold text-ink underline underline-offset-2">josh@braunboard.com</a> and I&apos;ll look it up.
           </p>
         </>
       )}

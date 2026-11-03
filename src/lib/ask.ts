@@ -90,7 +90,7 @@ export async function submitAsk(input: AskInput, ctx: { ip: string; userId: stri
   const a = c.value;
   const job = a.jobSlug ? await ctx.getJob(a.jobSlug).catch(() => null) : null;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.braunboard.com";
-  const to = process.env.ASK_TO ?? "josh@joshbraun.com";
+  const to = process.env.ASK_TO ?? "josh@braunboard.com";
   // Same verified sending address as alerts, with a friendlier name.
   const addr = /<([^>]+)>/.exec(process.env.ALERTS_FROM ?? "")?.[1] ?? "alerts@braunboard.com";
   const from = `Ask Josh via Braun Board <${addr}>`;

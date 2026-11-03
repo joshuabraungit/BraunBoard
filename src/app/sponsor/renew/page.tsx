@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Renew your sponsored job · Braun Board", robots: { index: false, follow: false } };
 
 const Email = () => (
-  <a href="mailto:josh@joshbraun.com" className="font-semibold text-ink underline underline-offset-2">
-    josh@joshbraun.com
+  <a href="mailto:josh@braunboard.com" className="font-semibold text-ink underline underline-offset-2">
+    josh@braunboard.com
   </a>
 );
 
