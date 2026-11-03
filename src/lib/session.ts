@@ -38,7 +38,8 @@ export interface WatchRow {
   [k: string]: unknown;
 }
 
-export async function listWatches(): Promise<WatchRow[]> {
+/** Asked once per page load, like getUser. */
+export const listWatches = cache(async (): Promise<WatchRow[]> => {
   const user = await getUser();
   if (!user) return [];
   const db = await serverClient();
@@ -49,7 +50,7 @@ export async function listWatches(): Promise<WatchRow[]> {
     .order("is_primary", { ascending: false })
     .order("created_at", { ascending: true });
   return (data ?? []) as WatchRow[];
-}
+});
 
 /** The signed-in user's chosen (or primary) watch, else the anonymous cookie watch. */
 export async function getActiveWatch(watchId?: string): Promise<ActiveWatch | null> {
@@ -71,7 +72,8 @@ export interface UserState {
   hiddenJobIds: Set<string>;
 }
 
-export async function getUserState(): Promise<UserState> {
+/** Asked once per page load (the page and its job cards share it). */
+export const getUserState = cache(async (): Promise<UserState> => {
   const empty = { savedJobIds: new Set<string>(), watchedCompanyIds: new Set<string>(), hiddenJobIds: new Set<string>() };
   const user = await getUser();
   if (!user) return { signedIn: false, ...empty };
@@ -87,4 +89,4 @@ export async function getUserState(): Promise<UserState> {
     watchedCompanyIds: new Set((companies.data ?? []).map((r) => r.company_id as string)),
     hiddenJobIds: new Set((hidden.data ?? []).map((r) => r.job_id as string)),
   };
-}
+});
