@@ -1,0 +1,32 @@
+name: One-off email (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "test (one address only)"
+        type: choice
+        options: [test]
+        default: test
+      test_to:
+        description: "Send the test to"
+        default: "josh@braunboard.com"
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+      PICKS_POSTAL_ADDRESS: ${{ secrets.PICKS_POSTAL_ADDRESS }}
+      MODE: ${{ inputs.mode }}
+      TEST_TO: ${{ inputs.test_to }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/oneoff-send.ts
