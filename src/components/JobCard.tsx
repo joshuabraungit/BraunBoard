@@ -6,7 +6,7 @@ import { CompanyLogo } from "./CompanyLogo";
 import { SaveJobButton, HideJobButton } from "./Actions";
 import { MatchBadge, matchShowsOnCard } from "./MatchBadge";
 import { LIGHT, VerdictPill } from "./BraunRead";
-import { LifeMeter } from "./LifeMeter";
+import { LifeMeter, lifeFor } from "./LifeMeter";
 import { braunRead } from "@/lib/flags";
 import { cardLights, sellsTo, type Light } from "@/lib/card-lights";
 import type { MatchResult } from "@/lib/match";
@@ -148,7 +148,7 @@ export function JobCard({ job, ctx, openings = 1, locations = 1, extras }: { job
         <span className="min-w-0">
           <span className="font-medium text-ink">{job.company_name}</span> · {job.remote_type === "Onsite" && "In office · "}{multi ? <span className="font-medium text-ink">{more}</span> : formatLocation(job)} ·{" "}
           <span className="whitespace-nowrap">
-            <LifeMeter postedAt={job.first_seen_at} /> <span className={fresh ? "font-medium text-fresh" : ""}>{freshnessLabel(job.first_seen_at)}</span>
+            <LifeMeter postedAt={job.first_seen_at} /> <span className={fresh ? "font-medium text-fresh" : ""} title={lifeFor(job.first_seen_at).line}>{openLabel(job.first_seen_at)}</span>
           </span>
           {more && !multi && <span className="font-medium text-ink"> · {more}</span>}
         </span>
@@ -226,4 +226,11 @@ export function Section({ title, href, children }: { title: string; href?: strin
       {children}
     </section>
   );
+}
+
+/** The words next to the life meter, so the bars explain themselves: "Open 12 days". Brand-new jobs keep "3h ago" / "Today". */
+function openLabel(firstSeen: string): string {
+  const { days } = lifeFor(firstSeen);
+  if (days < 1) return freshnessLabel(firstSeen);
+  return days === 1 ? "Open 1 day" : `Open ${days} days`;
 }
