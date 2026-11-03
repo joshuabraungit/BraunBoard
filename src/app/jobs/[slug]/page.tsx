@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import { getCompanyStats, getJob, getRoleSiblings } from "@/lib/data";
 import { braunRead } from "@/lib/flags";
 import { BraunReadPanel } from "@/components/BraunRead";
-import { LifeMeter, lifeFor } from "@/components/LifeMeter";
+import { LifeMeter, LIFE_METER_TIP, lifeFor } from "@/components/LifeMeter";
 import { checkedLabel, freshnessLabel } from "@/lib/freshness";
 import { questionsFor } from "@/lib/questions";
 import { ATTAINMENT_ROLES, attainmentLabel } from "@/lib/attainment";
@@ -105,7 +105,7 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
           </p>
           {/* The life meter, with its line spelled out (on cards it's a hover, which phones don't have). */}
           <p className="mt-1 flex items-center gap-2 text-sm text-ink-2">
-            <LifeMeter postedAt={job.first_seen_at} /> {lifeFor(job.first_seen_at).line}
+            <LifeMeter postedAt={job.first_seen_at} /> <span><span className="font-medium text-ink">{openDays(lifeFor(job.first_seen_at).days)}</span> · {LIFE_METER_TIP}</span>
           </p>
           {/* New Business or Account Growth, spelled out (the card shows it as a pill). */}
           {HUNTER_WHY[job.sales_motion] && <p className="mt-1 text-sm text-ink-2">{HUNTER_WHY[job.sales_motion]}</p>}
@@ -292,4 +292,10 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
       </div>
     </div>
   );
+}
+
+/** "Open 12 days" beside the life meter, matching the job cards. */
+function openDays(days: number): string {
+  if (days < 1) return "Posted today";
+  return days === 1 ? "Open 1 day" : `Open ${days} days`;
 }
