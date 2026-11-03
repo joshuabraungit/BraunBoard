@@ -61,7 +61,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         </p>
       )}
 
-      {showIntro && <IntroBanner />}
+      {showIntro && <IntroBanner owl={sponsors.length === 0} />}
 
       <LightsKey className="mb-4" />
       {forYou ? (

@@ -1,6 +1,7 @@
 "use client";
 
 // Top-of-home intro card with the owl. Closing it sets a cookie so it stays closed.
+// `owl={false}` while a sponsored card is live: its peeking owl is the one owl on the page.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,7 +10,7 @@ import { PeekerOwl } from "./PeekerOwl";
 
 export const INTRO_COOKIE = "bb_intro";
 
-export function IntroBanner() {
+export function IntroBanner({ owl = true }: { owl?: boolean }) {
   const [open, setOpen] = useState(true);
   const router = useRouter();
   if (!open) return null;
@@ -35,12 +36,14 @@ export function IntroBanner() {
 
       {/* Phone: the owl peeks over the headline. Wider: owl sits beside everything. */}
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 sm:gap-x-8">
-        <h1 className="col-span-2 row-start-2 text-2xl font-bold tracking-tight sm:col-span-1 sm:col-start-1 sm:row-start-1 sm:self-end sm:pr-8 sm:text-3xl">
+        <h1 className={`col-span-2 row-start-2 ${owl ? "" : "pr-10 "}text-2xl font-bold tracking-tight sm:col-span-1 sm:col-start-1 sm:row-start-1 sm:self-end sm:pr-8 sm:text-3xl`}>
           Great OTE.
           <br />
           How many reps earn it?
         </h1>
-        <PeekerOwl className="col-span-2 row-start-1 mb-4 w-28 sm:col-span-1 sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:mb-0 sm:w-44" />
+        {owl && (
+          <PeekerOwl className="col-span-2 row-start-1 mb-4 w-28 sm:col-span-1 sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:mb-0 sm:w-44" />
+        )}
         <div className="col-span-2 row-start-3 sm:col-span-1 sm:col-start-1 sm:row-start-2 sm:self-start">
           <p className="mt-3 max-w-xl text-ink-2">
             Most sales job posts don&rsquo;t say. I show you what&rsquo;s missing. Tell me the role, pay, where and your dealbreakers.
