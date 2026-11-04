@@ -7,7 +7,7 @@ import { isActive, SECTIONS } from "./Nav";
 import { useMe } from "./useMe";
 
 /**
- * Phones: the ☰ button at the top right. Opens the whole menu, for people who look up top
+ * Phones and portrait iPads: the ☰ button at the top right. Opens the whole menu, for people who look up top
  * (and on job pages, where the bottom bar gives way to Save / Apply).
  */
 export function PhoneMenu() {
@@ -33,7 +33,7 @@ export function PhoneMenu() {
   const on = (l: { href: string; also: string[] }) => (l.href === "/" ? path === "/" : isActive(path, l));
 
   return (
-    <div className="sm:hidden">
+    <div className="lg:hidden">
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}

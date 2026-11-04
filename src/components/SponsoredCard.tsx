@@ -74,7 +74,7 @@ function PeekingOwl() {
     <svg
       viewBox="70 55 260 180"
       aria-hidden="true"
-      className="pointer-events-none absolute -top-[54px] left-[128px] z-10 h-[58px] w-[84px] sm:-top-[66px] sm:left-44 sm:h-[70px] sm:w-[101px]"
+      className="pointer-events-none absolute -top-[54px] left-[44px] z-10 h-[58px] w-[84px] min-[420px]:left-[128px] sm:-top-[66px] sm:left-44 sm:h-[70px] sm:w-[101px]"
     >
       <defs>
         <clipPath id="sponsor-owl-clip">
@@ -122,10 +122,10 @@ function PeekingOwl() {
   );
 }
 
-/** The owl's line, in a speech bubble beside his head. Two lines on phones so it stays on screen (globals.css .owl-say). */
+/** The owl's line, in a speech bubble beside his head. Two lines on phones, tucked left, so it stays on screen (globals.css .owl-say). */
 function OwlSays() {
   return (
-    <p className="owl-say pointer-events-none absolute -top-[58px] left-[222px] z-10 m-0 rounded-[14px] bg-surface px-2.5 py-1.5 text-xs font-bold leading-[1.3] whitespace-nowrap text-ink sm:-top-[58px] sm:left-[286px] sm:px-[13px] sm:py-[7px] sm:text-sm">
+    <p className="owl-say pointer-events-none absolute -top-[58px] left-[138px] z-10 m-0 rounded-[14px] bg-surface px-2.5 py-1.5 text-xs font-bold leading-[1.3] whitespace-nowrap text-ink min-[420px]:left-[222px] sm:-top-[58px] sm:left-[286px] sm:px-[13px] sm:py-[7px] sm:text-sm">
       I&rsquo;d apply, but
       <br className="sm:hidden" /> I don&rsquo;t have thumbs.
     </p>
@@ -154,11 +154,11 @@ export function SponsoredCard({ s, peek = false }: { s: SponsoredJobRow; peek?: 
           Hiring now
         </span>
       </div>
-      <div className="p-5 sm:flex sm:gap-6 sm:p-6">
-        <div className="flex min-w-0 flex-1 items-start gap-4">
+      <div className="p-4 min-[400px]:p-5 sm:p-6">
+        <div className="flex min-w-0 items-start gap-3 sm:gap-4">
           <CompanyLogo name={s.company} logoUrl={logoUrl(s.logo_path)} domain={null} size={44} />
           <div className="min-w-0 flex-1">
-            <h3 className="text-lg font-bold leading-snug tracking-tight">
+            <h3 className="text-[17px] font-bold leading-snug tracking-tight [overflow-wrap:anywhere] sm:text-lg">
               <Link href={`/sponsored/${s.id}`} className="after:absolute after:inset-0 after:z-20">
                 {s.job_title}
               </Link>
@@ -166,13 +166,17 @@ export function SponsoredCard({ s, peek = false }: { s: SponsoredJobRow; peek?: 
             <p className="mt-0.5 text-sm text-ink-2">
               {s.company} · {sponsorWhere(s)}
             </p>
-            <p className="mt-2.5 text-[15px] font-semibold text-accent">
+          </div>
+        </div>
+        {/* Phones: full width under the logo row. sm up: lined up under the title. */}
+        <div className="min-w-0 sm:pl-[60px]">
+            <p className="mt-3 text-[15px] font-semibold text-accent sm:mt-2.5">
               {payLine(s)
                 .split(" · ")
                 .map((part, i) => (
-                  <span key={part} className="whitespace-nowrap">
+                  <span key={part}>
                     {i > 0 && " · "}
-                    {part}
+                    <span className="whitespace-nowrap">{part}</span>
                   </span>
                 ))}
             </p>
@@ -184,11 +188,10 @@ export function SponsoredCard({ s, peek = false }: { s: SponsoredJobRow; peek?: 
             <SellLines s={s} />
             {video && <VideoLightbox src={video} className="mt-3" />}
             <p className="mt-2 line-clamp-3 text-[15px] leading-relaxed text-ink-2">{adPlainText(s.description)}</p>
-          </div>
         </div>
       </div>
-      <div className="flex justify-end px-5 pb-5 sm:px-6 sm:pb-6">
-        <span className="inline-flex min-h-10 items-center rounded-lg bg-ink px-4 text-sm font-semibold text-white group-hover:opacity-90">
+      <div className="flex justify-end px-4 pb-4 min-[400px]:px-5 min-[400px]:pb-5 sm:px-6 sm:pb-6">
+        <span className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-ink px-4 text-sm font-semibold text-white group-hover:opacity-90 sm:min-h-10 sm:w-auto">
           See the job →
         </span>
       </div>

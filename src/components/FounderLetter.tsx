@@ -4,14 +4,14 @@ import Link from "next/link";
 // Josh's letter on why he built Braun Board. Bottom of the home page.
 export function FounderLetter() {
   return (
-    <section aria-labelledby="letter-title" className="mx-auto mt-20 max-w-2xl px-2 sm:px-0">
+    <section aria-labelledby="letter-title" className="mx-auto mt-20 max-w-2xl px-1 sm:px-0">
       <h2 id="letter-title" className="sr-only">Why I built Braun Board</h2>
       {/* A small stack of paper: two sheets peeking out behind the letter, each at its own angle. */}
       <div className="relative">
-        <div aria-hidden className="absolute inset-0 translate-x-[-6px] translate-y-[10px] rotate-[-2.2deg] rounded-[3px] bg-surface shadow-[0_2px_10px_rgba(22,20,15,0.10)]" />
-        <div aria-hidden className="absolute inset-0 translate-x-[5px] translate-y-[4px] rotate-[1.4deg] rounded-[3px] bg-surface shadow-[0_2px_12px_rgba(22,20,15,0.10)]" />
-      <div className="relative rotate-[-0.6deg] rounded-[3px] bg-surface px-6 py-10 shadow-[0_18px_40px_-18px_rgba(22,20,15,0.35),0_2px_6px_rgba(22,20,15,0.06)] sm:px-14 sm:py-16">
-        <div className="rotate-[0.6deg] space-y-5 text-[17px] leading-relaxed text-ink sm:text-[18px]">
+        <div aria-hidden className="absolute inset-0 translate-x-[-3px] translate-y-[8px] rotate-[-0.8deg] sm:translate-x-[-6px] sm:translate-y-[10px] sm:rotate-[-2.2deg] rounded-[3px] bg-surface shadow-[0_2px_10px_rgba(22,20,15,0.10)]" />
+        <div aria-hidden className="absolute inset-0 translate-x-[3px] translate-y-[4px] rotate-[0.5deg] sm:translate-x-[5px] sm:rotate-[1.4deg] rounded-[3px] bg-surface shadow-[0_2px_12px_rgba(22,20,15,0.10)]" />
+      <div className="relative rotate-[-0.3deg] rounded-[3px] bg-surface px-5 py-9 sm:rotate-[-0.6deg] shadow-[0_18px_40px_-18px_rgba(22,20,15,0.35),0_2px_6px_rgba(22,20,15,0.06)] sm:px-14 sm:py-16">
+        <div className="rotate-[0.3deg] space-y-5 sm:rotate-[0.6deg] text-[17px] leading-relaxed text-ink sm:text-[18px]">
           <p>Hi there.</p>
           <p>Sales can be a great job. You get paid to be curious. You help people fix real problems. When it goes well, you earn a good living.</p>
           <p>But finding a good sales job is hard.</p>
@@ -49,7 +49,7 @@ export function FounderLetter() {
           </p>
           <p>It&apos;s free. Hope it helps.</p>
         </div>
-        <div className="mt-8 rotate-[0.6deg]">
+        <div className="mt-8 rotate-[0.3deg] sm:rotate-[0.6deg]">
           {/* Josh's own signature. */}
           <Image src="/josh-signature.png" alt="" aria-hidden width={640} height={320} priority className="-ml-2 h-auto w-[170px] sm:w-[200px]" />
           <div className="mt-4 flex items-center gap-3">
