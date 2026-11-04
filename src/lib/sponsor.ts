@@ -308,25 +308,44 @@ async function sendPaidEmails(o: SponsoredJobRow, invoiceId?: string | null) {
   ]);
 }
 
-/** Sponsors showing right now, newest first. Never throws: the home page must load regardless. */
-/** Live sponsored jobs for the home page. Reused for a minute; admin changes refresh it right away. */
-export const listRunningSponsors = unstable_cache(fetchRunningSponsors, ["running-sponsors-v1"], { revalidate: 60, tags: ["sponsors"] });
+/**
+ * Live sponsored jobs for the home page, newest first. Never throws: the home page must load regardless.
+ *
+ * Reused for a minute; admin changes refresh it right away. If Supabase errors (like the Nov 3, 2026
+ * outage), the fetch throws instead of returning an empty list, so the cache keeps serving the last
+ * good result and a paying sponsor's card stays up through the blip. A per-server copy backs that up.
+ */
+const cachedRunningSponsors = unstable_cache(fetchRunningSponsors, ["running-sponsors-v2"], { revalidate: 60, tags: ["sponsors"] });
+
+let lastGood: SponsoredJobRow[] = [];
+
+export async function listRunningSponsors(): Promise<SponsoredJobRow[]> {
+  let rows: SponsoredJobRow[];
+  try {
+    rows = await cachedRunningSponsors();
+    lastGood = rows;
+  } catch (e) {
+    console.error("sponsors: database unavailable, showing last known sponsors", e);
+    rows = lastGood;
+  }
+  // A stale copy could hold a run that has since ended, so check the window here too.
+  const now = Date.now();
+  return rows.filter((s) => s.live_at && s.ends_at && new Date(s.live_at).getTime() <= now && new Date(s.ends_at).getTime() > now);
+}
 
 async function fetchRunningSponsors(): Promise<SponsoredJobRow[]> {
-  try {
-    const now = new Date().toISOString();
-    const { data } = await adminClient()
-      .from("sponsored_jobs")
-      .select("*")
-      .eq("status", "live")
-      .lte("live_at", now)
-      .gt("ends_at", now)
-      .order("live_at", { ascending: false })
-      .limit(MAX_LIVE_SPONSORS);
-    return (data ?? []) as SponsoredJobRow[];
-  } catch {
-    return [];
-  }
+  const now = new Date().toISOString();
+  const { data, error } = await adminClient()
+    .from("sponsored_jobs")
+    .select("*")
+    .eq("status", "live")
+    .lte("live_at", now)
+    .gt("ends_at", now)
+    .order("live_at", { ascending: false })
+    .limit(MAX_LIVE_SPONSORS);
+  // Throw, don't return []: an empty answer would be cached as "no sponsors" and hide the card.
+  if (error) throw new Error(`sponsors: ${error.message}`);
+  return (data ?? []) as SponsoredJobRow[];
 }
 
 export async function bump(id: string, what: "view" | "apply") {
