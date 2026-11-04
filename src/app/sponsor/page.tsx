@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SponsorForm } from "./SponsorForm";
 import { formatPrice, sponsorPriceCents, SPONSOR_DAYS } from "@/lib/sponsor-form";
+import { CallJoshLine } from "@/components/CallJosh";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -48,6 +49,7 @@ export default async function SponsorPage({ searchParams }: { searchParams: Prom
         <p className="mt-4 text-sm text-ink-2">
           Two rules: it has to be a sales role, and it has to show base pay.
         </p>
+        <CallJoshLine lead="Questions before you buy? Call or text me:" className="mt-2" />
       </div>
 
       <div className="mt-10">

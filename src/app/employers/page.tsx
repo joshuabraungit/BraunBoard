@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { formatPrice, sponsorPriceCents, SPONSOR_DAYS } from "@/lib/sponsor-form";
+import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/contact";
 import { AttainmentBadge } from "@/components/SponsoredCard";
 
 export const metadata: Metadata = {
@@ -191,8 +192,8 @@ export default function EmployersPage() {
         </p>
         <p className="mt-1 text-sm text-ink-3">
           Or call or text:{" "}
-          <a href="tel:+19546950844" className="font-semibold text-ink underline underline-offset-2">
-            954-695-0844
+          <a href={PHONE_TEL} className="font-semibold text-ink underline underline-offset-2">
+            {PHONE_DISPLAY}
           </a>
         </p>
       </section>

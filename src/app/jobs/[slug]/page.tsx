@@ -12,6 +12,7 @@ import { questionsFor } from "@/lib/questions";
 import { ATTAINMENT_ROLES, attainmentLabel } from "@/lib/attainment";
 import { QuestionsPanel } from "@/components/Questions";
 import { AskJoshForm } from "@/components/AskJosh";
+import { CallJoshLine } from "@/components/CallJosh";
 import { getUser } from "@/lib/session";
 import { loadProductCompanies } from "@/lib/products";
 import { formatComp, formatLocation, money } from "@/lib/format";
@@ -263,6 +264,7 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
         </summary>
         <div className="mt-4">
           <AskJoshForm source="job-page" job={{ slug: job.slug, company: job.company_name }} defaultEmail={user?.email ?? ""} />
+          <CallJoshLine className="mt-4" />
         </div>
       </details>
 

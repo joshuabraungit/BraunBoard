@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AskJoshForm } from "@/components/AskJosh";
+import { CallJoshLine } from "@/components/CallJosh";
 import { getUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
         <p>Got an offer and not sure about it? A comp plan that doesn&apos;t add up? A first call coming up and you don&apos;t know what to ask?</p>
         <p>Send it to me. I&apos;m Josh Braun, and I built Braun Board. I read every message myself.</p>
       </div>
+      <CallJoshLine lead="Rather talk it through? Call or text me:" className="mt-3 text-[15px]" />
       <div className="mt-6 rounded-2xl border border-line bg-surface p-5 sm:p-6">
         <AskJoshForm
           source={topic ? "product-report" : "ask-page"}
