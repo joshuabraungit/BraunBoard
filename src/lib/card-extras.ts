@@ -1,6 +1,7 @@
 // Extras a job card shows when they're true: how the pay compares with the same kind of job,
 // and whether the company is hiring fast. Built once per list of cards, from cached data.
 
+import { unstable_cache } from "next/cache";
 import { getPayRows } from "./salary-data";
 import { allSalaryPages, baseMid, oteMid, percentile, type PayRow } from "./salaries";
 import { listCompanies } from "./data";
@@ -18,10 +19,12 @@ export interface CardExtras {
   hiring?: string;
 }
 
-type Groups = Map<string, { ote: number[]; base: number[] }>;
+/** Per role (and role + segment): how many postings, and the 25th/75th percentile cutoffs. */
+type Cut = { n: number; p25: number; p75: number };
+type Cutoffs = Record<string, { ote?: Cut; base?: Cut }>;
 
-function group(rows: PayRow[], market: string): Groups {
-  const g: Groups = new Map();
+function cutoffs(rows: PayRow[], market: string, out: Cutoffs) {
+  const g = new Map<string, { ote: number[]; base: number[] }>();
   const add = (key: string, r: PayRow) => {
     const e = g.get(key) ?? { ote: [], base: [] };
     const o = oteMid(r);
@@ -34,12 +37,33 @@ function group(rows: PayRow[], market: string): Groups {
     add(`${market}|${r.role_family}|`, r);
     if (r.sales_segment !== "Unknown") add(`${market}|${r.role_family}|${r.sales_segment}`, r);
   }
-  for (const e of g.values()) {
-    e.ote.sort((a, b) => a - b);
-    e.base.sort((a, b) => a - b);
+  const cut = (vals: number[]): Cut | undefined => {
+    if (vals.length < MIN_COMPARE) return undefined;
+    vals.sort((a, b) => a - b);
+    return { n: vals.length, p25: percentile(vals, 0.25), p75: percentile(vals, 0.75) };
+  };
+  for (const [key, e] of g) {
+    const ote = cut(e.ote);
+    const base = cut(e.base);
+    if (ote || base) out[key] = { ote, base };
   }
-  return g;
 }
+
+/**
+ * The cutoffs are a few KB, so they cache cleanly. Caching the raw pay rows instead blew past
+ * Vercel's 2MB cache limit and re-downloaded every job on every page view (Nov 3, 2026).
+ */
+const cachedCutoffs = unstable_cache(
+  async (): Promise<Cutoffs> => {
+    const [us, uk] = await Promise.all([getPayRows("US").catch(() => null), getPayRows("UK").catch(() => null)]);
+    const out: Cutoffs = {};
+    cutoffs(us?.rows ?? [], "US", out);
+    cutoffs(uk?.rows ?? [], "UK", out);
+    return out;
+  },
+  ["card-pay-cutoffs-v1"],
+  { revalidate: 3600 },
+);
 
 const PAGES = allSalaryPages();
 /** "Enterprise AEs", "SDRs and BDRs" */
@@ -48,15 +72,7 @@ const plural = (role: string, segment: string | null) => PAGES.find((p) => p.rol
 export async function cardExtrasFor(jobs: JobView[]): Promise<Map<string, CardExtras>> {
   const out = new Map<string, CardExtras>();
   if (!jobs.length) return out;
-  const [us, uk, companies] = await Promise.all([
-    getPayRows("US").catch(() => null),
-    getPayRows("UK").catch(() => null),
-    listCompanies().catch(() => []),
-  ]);
-  const groups = new Map<string, Groups>([
-    ["US", group(us?.rows ?? [], "US")],
-    ["UK", group(uk?.rows ?? [], "UK")],
-  ]);
+  const [cuts, companies] = await Promise.all([cachedCutoffs().catch(() => ({}) as Cutoffs), listCompanies().catch(() => [])]);
   const byCompany = new Map(companies.map((c) => [c.id, c]));
 
   for (const j of jobs) {
@@ -64,22 +80,21 @@ export async function cardExtrasFor(jobs: JobView[]): Promise<Map<string, CardEx
 
     // Pay, compared with the same role (and segment, when there are enough to compare).
     const market = (j.currency ?? "USD") === "USD" && (j.markets ?? ["US"]).includes("US") ? "US" : j.currency === "GBP" && (j.markets ?? []).includes("UK") ? "UK" : null;
-    const g = market ? groups.get(market) : undefined;
-    if (g) {
+    if (market) {
       const row = j as unknown as PayRow;
       const useOte = j.ote_min != null;
       const value = useOte ? oteMid(row) : j.salary_min != null ? baseMid(row) : null;
       const pick = (seg: string) => {
-        const e = g.get(`${market}|${j.role_family}|${seg}`);
-        const vals = e ? (useOte ? e.ote : e.base) : [];
-        return vals.length >= MIN_COMPARE ? { vals, seg } : null;
+        const e = cuts[`${market}|${j.role_family}|${seg}`];
+        const c = e ? (useOte ? e.ote : e.base) : undefined;
+        return c ? { c, seg } : null;
       };
       const cmp = value != null ? (j.sales_segment !== "Unknown" ? pick(j.sales_segment) : null) ?? pick("") : null;
       const who = cmp ? plural(j.role_family, cmp.seg) : null;
       if (cmp && who && value != null) {
         const what = useOte ? "OTE" : "base";
-        if (value >= percentile(cmp.vals, 0.75)) extras.pay = { dir: "up", text: `Top 25% ${what} for ${who}` };
-        else if (value <= percentile(cmp.vals, 0.25)) extras.pay = { dir: "down", text: `Bottom 25% ${what} for ${who}` };
+        if (value >= cmp.c.p75) extras.pay = { dir: "up", text: `Top 25% ${what} for ${who}` };
+        else if (value <= cmp.c.p25) extras.pay = { dir: "down", text: `Bottom 25% ${what} for ${who}` };
       }
     }
 
