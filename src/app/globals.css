@@ -38,11 +38,24 @@
   --font-sans: ui-sans-serif, -apple-system, "Segoe UI", "Inter", Helvetica, Arial, sans-serif;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  /* Long words, links and emails wrap instead of running off a phone screen. */
+  overflow-wrap: break-word;
+}
+
+/* Belt and braces: nothing can push the page sideways on a phone or iPad. clip (not hidden) keeps the sticky header working. */
+html,
+body {
+  overflow-x: clip;
 }
 
 /* The Braun Board owl (components/PeekerOwl.tsx): reads, blinks, tilts, taps. */

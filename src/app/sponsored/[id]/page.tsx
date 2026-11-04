@@ -82,17 +82,28 @@ export default async function SponsoredJobPage({ params }: Props) {
       )}
       <span className="rounded-full bg-amber-soft px-2.5 py-0.5 text-xs font-semibold text-amber">Sponsored</span>
 
-      <div className="mt-4 flex items-start gap-4">
+      {/* Phones: logo on top, so the title gets the full width. */}
+      <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:gap-4">
         <CompanyLogo name={s.company} logoUrl={logoUrl(s.logo_path)} domain={null} size={56} />
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{s.job_title}</h1>
+          <h1 className="text-[26px] font-bold leading-tight tracking-tight [overflow-wrap:anywhere] sm:text-3xl">{s.job_title}</h1>
           <p className="mt-1 text-ink-2">
             {s.company} · {sponsorWhere(s)}
           </p>
         </div>
       </div>
 
-      <p className="mt-5 text-lg font-semibold text-accent">{payLine(s)}</p>
+      {/* Wraps between base and OTE, never inside a range. */}
+      <p className="mt-5 text-lg font-semibold text-accent">
+        {payLine(s)
+          .split(" · ")
+          .map((part, i) => (
+            <span key={part}>
+              {i > 0 && " · "}
+              <span className="whitespace-nowrap">{part}</span>
+            </span>
+          ))}
+      </p>
       {(s.ote_attainment_pct != null || s.first_sales_hire) && (
         <p className="mt-2">
           <OteBadge s={s} />
@@ -126,7 +137,7 @@ export default async function SponsoredJobPage({ params }: Props) {
           href={`/sponsored/${s.id}/apply`}
           rel="nofollow noopener"
           target="_blank"
-          className="mt-0 inline-flex min-h-11 items-center rounded-lg bg-ink px-5 text-sm font-semibold text-white hover:opacity-90"
+          className="mt-0 flex min-h-12 w-full items-center justify-center rounded-lg bg-ink px-5 py-2 text-center text-[15px] font-semibold text-white hover:opacity-90 sm:inline-flex sm:min-h-11 sm:w-auto sm:text-sm"
         >
           {ended ? `Check if it's still open on ${s.company}'s site ↗` : `Apply on ${s.company}'s site ↗`}
         </a>

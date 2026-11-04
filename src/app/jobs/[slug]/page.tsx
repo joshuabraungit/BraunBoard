@@ -97,10 +97,11 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
     <div className="mx-auto max-w-3xl">
       {/* Lets Google show this job in its jobs search. */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(jobPostingSchema(job, process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.braunboard.com")) }} />
-      <div className="flex items-center gap-3">
+      {/* Phones: logo on top, so the title gets the full width. */}
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
         <CompanyLogo name={job.company_name} logoUrl={job.company_logo_url} domain={job.company_domain} size={44} />
-        <div>
-          <h1 className="text-2xl font-bold leading-tight tracking-tight">{job.title_raw}</h1>
+        <div className="min-w-0">
+          <h1 className="text-[22px] font-bold leading-tight tracking-tight [overflow-wrap:anywhere] sm:text-2xl">{job.title_raw}</h1>
           <p className="text-ink-2">
             <Link href={`/company/${job.company_slug}`} className="font-medium text-ink hover:underline">{job.company_name}</Link> · {formatLocation(job)}
           </p>
