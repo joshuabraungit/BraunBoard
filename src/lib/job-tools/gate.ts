@@ -4,5 +4,7 @@ import "server-only";
 import type { User } from "@supabase/supabase-js";
 import { isAdmin } from "../admin";
 
-export const toolsPublic = () => process.env.JOB_TOOLS_PUBLIC === "1";
+// Vercel preview builds (not braunboard.com) show them too, so Josh can try them without
+// signing in there. Preview links sit behind Vercel's own login by default.
+export const toolsPublic = () => process.env.JOB_TOOLS_PUBLIC === "1" || process.env.VERCEL_ENV === "preview";
 export const canUseTools = (user: Pick<User, "email"> | null) => toolsPublic() || isAdmin(user);
