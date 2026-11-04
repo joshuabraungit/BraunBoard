@@ -7,7 +7,7 @@ export const jobUrl = "https://www.braunboard.com/sponsored/cc74e6c6-a268-47c5-9
 export const blocks: string[] = [
   "Most sales jobs hand you a territory, a script, and a number.",
   "This one hands you a market.",
-  "Embold Research is hiring a Director of Growth to bring in new customers. Here's what's in it for you.",
+  "Embold Research is hiring a Director of Growth to bring in new customers. It's their first sales hire dedicated just to Embold. Here's what's in it for you.",
   "## You'd know what you'd make.",
   "$92K to $106K base. $133.9K to $148.9K OTE. Plus stock options.",
   "Upfront. No \"competitive compensation\" mystery box.",
