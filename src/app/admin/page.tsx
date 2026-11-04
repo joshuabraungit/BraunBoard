@@ -35,7 +35,7 @@ interface Audience {
   picks_subscribers: number;
 }
 
-const COUNTRY_NAMES: Record<string, string> = { US: "United States", CA: "Canada", UK: "United Kingdom", DE: "Germany" };
+const COUNTRY_NAMES: Record<string, string> = { US: "United States", CA: "Canada", UK: "United Kingdom", DE: "Germany", EU: "Remote across Europe" };
 
 /** Simple horizontal bars: label, bar, count. Shares are of `base` people. */
 function Bars({ title, note, rows, base }: { title: string; note: string; rows: { label: string; n: number }[]; base: number }) {

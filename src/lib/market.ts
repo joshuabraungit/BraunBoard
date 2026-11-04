@@ -2,7 +2,7 @@
 import { headers } from "next/headers";
 import { EUR_TO_USD, GBP_TO_USD } from "./ingest/compensation";
 
-export type MarketChoice = "NA" | "US" | "CA" | "UK" | "DE" | "all";
+export type MarketChoice = "NA" | "US" | "CA" | "UK" | "DE" | "EU" | "all";
 
 export const MARKET_CHOICES: Record<MarketChoice, { label: string; markets: string[] | null }> = {
   NA: { label: "US + Canada", markets: ["US", "CA"] },
@@ -10,21 +10,28 @@ export const MARKET_CHOICES: Record<MarketChoice, { label: string; markets: stri
   CA: { label: "Canada", markets: ["CA"] },
   UK: { label: "United Kingdom", markets: ["UK"] },
   DE: { label: "Germany", markets: ["DE"] },
+  // Remote roles open to anyone living in Europe (EU / Europe / EMEA). Tagged "EU" at ingest.
+  EU: { label: "Remote across Europe", markets: ["EU"] },
   all: { label: "All countries", markets: null },
 };
 
 export const isMarketChoice = (v: unknown): v is MarketChoice => typeof v === "string" && v in MARKET_CHOICES;
 
+// Elsewhere in Europe: default to remote roles open across Europe, since most UK and Germany
+// roles require living there.
+const EUROPE = new Set(["FR", "ES", "IT", "NL", "BE", "LU", "PT", "PL", "CZ", "SK", "HU", "RO", "BG", "GR", "HR", "SI", "EE", "LV", "LT", "SE", "DK", "FI", "NO", "IS", "MT", "CY"]);
+
 /**
  * Default for this visitor, from the country Vercel sees their request coming from.
- * UK and Ireland see UK jobs, Germany, Austria and Switzerland see Germany, the US and Canada see
- * US + Canada, everyone else sees everything.
+ * UK and Ireland see UK jobs, Germany, Austria and Switzerland see Germany, the rest of Europe sees
+ * remote roles open across Europe, the US and Canada see US + Canada, everyone else sees everything.
  */
 export async function visitorMarket(): Promise<MarketChoice> {
   const c = (await headers()).get("x-vercel-ip-country")?.toUpperCase();
   if (!c || c === "US" || c === "CA") return "NA";
   if (c === "GB" || c === "IE") return "UK";
   if (c === "DE" || c === "AT" || c === "CH") return "DE";
+  if (EUROPE.has(c)) return "EU";
   return "all";
 }
 
@@ -37,7 +44,7 @@ export function payPresets(choice: MarketChoice, kind: "base" | "ote"): { value:
     const gbp = kind === "base" ? [50, 60, 75, 90, 110] : [80, 100, 125, 150, 200];
     return gbp.map((k) => ({ value: Math.round(k * 1000 * GBP_TO_USD), label: `£${k}K+ ${kind === "base" ? "base" : "OTE"}` }));
   }
-  if (choice === "DE") {
+  if (choice === "DE" || choice === "EU") {
     const eur = kind === "base" ? [60, 75, 90, 110, 130] : [100, 130, 160, 200, 250];
     return eur.map((k) => ({ value: Math.round(k * 1000 * EUR_TO_USD), label: `€${k}K+ ${kind === "base" ? "base" : "OTE"}` }));
   }

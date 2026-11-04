@@ -29,7 +29,9 @@ const MARKET_NAME: Record<string, string> = { US: "US", CA: "Canada", UK: "UK", 
 export function formatLocation(j: { remote_type: string; city: string | null; state: string | null; location_raw?: string | null; markets?: string[] | null }): string {
   // Trim stray commas so a stored "San Luis Obispo," never renders as "San Luis Obispo,, CA".
   const place = [j.city, j.state].map((x) => x?.trim().replace(/^[,\s]+|[,\s]+$/g, "")).filter(Boolean).join(", ");
-  const m = j.markets?.length ? j.markets : ["US"];
+  // "EU" is a filter tag on remote roles open across Europe, not a place to show.
+  const tagged = j.markets?.filter((x) => x !== "EU");
+  const m = tagged?.length ? tagged : ["US"];
   const names = m.map((x) => MARKET_NAME[x] ?? x);
   // "US", "US & Canada", "US, Canada & UK"
   const where = names.length > 2 ? `${names.slice(0, -1).join(", ")} & ${names.at(-1)}` : names.join(" & ");

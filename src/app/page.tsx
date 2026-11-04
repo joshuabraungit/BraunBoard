@@ -29,7 +29,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   const markets = marketsFor(market);
   const uk = market === "UK";
   // High OTE: $250K+ in USD terms, which is £200K+ for UK jobs. German pay runs lower, so €165K+ there.
-  const highOteMin = market === "DE" ? 175_000 : 250_000;
+  const highOteMin = market === "DE" || market === "EU" ? 175_000 : 250_000;
   // Everything loads at once. The For You box waits on the watch, so it starts as soon as that's known.
   const watchP = getActiveWatch();
   const stateP = getUserState();

@@ -20,7 +20,7 @@ Return ONLY JSON with these keys:
 - "roles": the roles this person would most likely take next, from this list only: ${Object.keys(ROLE_CHOICES).join(", ")}.
   (${Object.entries(ROLE_CHOICES).map(([k, v]) => `${k} = ${v.label}`).join("; ")}.) Base it on their most recent role and level.
   A step up is fine (an SDR with a year or more might also take "ae"). One to three choices.
-- "country": where they're based, one of ${Object.keys(COUNTRY_CHOICES).filter((c) => c !== "both").join(", ")}, or null.
+- "country": where they're based, one of ${Object.keys(COUNTRY_CHOICES).filter((c) => c !== "both").join(", ")}, or null. Use EU for someone based in Europe outside the UK, Ireland, Germany, Austria and Switzerland.
 - "location": their city or state/province as written on the résumé (max 40 chars), or null.
 - "work": "remote" only if their recent roles were clearly remote, otherwise null.
 - "motion": "new" if their recent roles were mainly hunting new business, "expansion" if mainly growing existing accounts, or null.
@@ -39,7 +39,7 @@ export function cleanPrefill(raw: Record<string, unknown>): ResumePrefill {
   const answers: ResumePrefill["answers"] = {};
   const roles = Array.isArray(raw.roles) ? raw.roles.filter((r): r is RoleChoice => typeof r === "string" && r in ROLE_CHOICES) : [];
   if (roles.length) answers.roles = [...new Set(roles)].slice(0, 3);
-  if (raw.country === "US" || raw.country === "CA" || raw.country === "UK" || raw.country === "DE") answers.country = raw.country;
+  if (raw.country === "US" || raw.country === "CA" || raw.country === "UK" || raw.country === "DE" || raw.country === "EU") answers.country = raw.country;
   const loc = short(raw.location, 40);
   if (loc) answers.location = loc;
   if (typeof raw.work === "string" && raw.work in WORK_CHOICES && raw.work !== "any") answers.work = raw.work as OnboardingAnswers["work"];

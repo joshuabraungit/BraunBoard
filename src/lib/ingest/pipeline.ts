@@ -19,6 +19,7 @@ import type { AtsProvider, CompanyRef, RawJob } from "./types";
 import { ENABLED_PROVIDERS } from "./providers";
 import { jobSlug } from "../slug";
 import { matchNewJobs } from "../alerts/match-new-jobs";
+import { withEuMarket } from "../eu-remote";
 
 /** A job has to be missing from this many consecutive crawls before we call it removed. */
 export const MISSES_BEFORE_REMOVAL = 2;
@@ -117,7 +118,7 @@ export async function ingestCompany(db: SupabaseClient, company: CompanyRow, opt
             await db.from("pay_audit").insert({ job_id: prior.id, company: company.name, title: prior.title_raw, before: pick(prior), after: pick(comp) });
           }
           Object.assign(refresh, comp, {
-            markets: loc.markets,
+            markets: withEuMarket(loc.markets, loc.remote_type, job.location),
             role_family: cls.role_family,
             seniority: cls.seniority,
             title_normalized: cls.title_normalized,
@@ -319,7 +320,7 @@ async function insertNewJob(
     const me = {
       title: job.title,
       title_normalized: cls.title_normalized,
-      markets: loc.markets,
+      markets: withEuMarket(loc.markets, loc.remote_type, job.location),
       remote_type: loc.remote_type,
       posted_at: job.posted_at ?? new Date().toISOString(),
       description: job.description,
@@ -360,7 +361,7 @@ async function insertNewJob(
       city: loc.city,
       state: loc.state,
       country: loc.country,
-      markets: loc.markets,
+      markets: withEuMarket(loc.markets, loc.remote_type, job.location),
       remote_type: loc.remote_type,
       employment_type: job.employment_type ?? null,
       ...comp,

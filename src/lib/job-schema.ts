@@ -74,7 +74,7 @@ export function jobPostingSchema(job: JobView & { employment_type?: string | nul
 
   if (job.remote_type === "Remote") {
     schema.jobLocationType = "TELECOMMUTE";
-    schema.applicantLocationRequirements = markets.map((m) => ({ "@type": "Country", name: (COUNTRY[m] ?? COUNTRY.US).name }));
+    schema.applicantLocationRequirements = markets.filter((m) => m !== "EU").map((m) => ({ "@type": "Country", name: (COUNTRY[m] ?? COUNTRY.US).name }));
   } else {
     schema.jobLocation = {
       "@type": "Place",
