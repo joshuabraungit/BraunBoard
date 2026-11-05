@@ -6,6 +6,7 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { serverClient } from "@/lib/supabase/server";
 import { decodeWatchCookie, ONBOARDING_COOKIE } from "@/lib/watch-prefs";
 import { upsertPrimaryWatch } from "@/lib/watches-db";
+import { subscribeOnSignIn } from "@/lib/picks-subscribe";
 
 function safeNext(n: string | null): string {
   return n && n.startsWith("/") && !n.startsWith("//") && !n.startsWith("/\\") ? n : "/for-you";
@@ -27,6 +28,8 @@ export async function GET(request: Request) {
   if (error) return NextResponse.redirect(`${url.origin}/login?error=link`);
 
   const { data } = await db.auth.getUser();
+  // Signing in puts them on Braun's Picks (the login page says so). A hiccup here never blocks sign-in.
+  await subscribeOnSignIn(data.user?.email).catch((e) => console.error("[signin] picks subscribe failed:", e instanceof Error ? e.message : e));
   const jar = await cookies();
   const pending = decodeWatchCookie(jar.get(ONBOARDING_COOKIE)?.value);
   if (data.user && pending) {

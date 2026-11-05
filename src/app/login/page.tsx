@@ -18,7 +18,10 @@ export default async function Login({ searchParams }: { searchParams: Promise<Re
       <p className="mt-2 text-ink-2">{reason}</p>
       {sp.error && <p className="mt-4 rounded-md bg-fresh-soft px-3 py-2 text-sm text-fresh">That link didn&apos;t work or expired. Try again.</p>}
       {isSupabaseConfigured() ? (
-        <LoginForm next={next} />
+        <>
+          <LoginForm next={next} />
+          <p className="mt-4 text-xs text-ink-3">Signing in also gets you Braun&apos;s Picks, my short list of sales jobs worth a look. One click to unsubscribe.</p>
+        </>
       ) : (
         <p className="mt-6 rounded-lg border border-dashed border-line p-4 text-sm text-ink-3">
           Sign-in turns on once Supabase keys are in <code>.env.local</code>.
