@@ -15,12 +15,21 @@ const REPLY_TO = process.env.PICKS_REPLY_TO ?? adminEmails()[0];
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
+// Tag the job link so clicks from this email show up as "Email" (not "Direct") in visit counts.
+function tagged(url: string) {
+  const u = new URL(url);
+  u.searchParams.set("utm_source", "newsletter");
+  u.searchParams.set("utm_campaign", CAMPAIGN);
+  return u.toString();
+}
+
 function render(unsubscribe: string) {
   const address = postalAddress();
+  const jobUrl = tagged(email.jobUrl);
   const body = email.blocks
     .map((b) => {
       if (b === "[[LINK]]")
-        return `<p style="margin:22px 0"><a href="${email.jobUrl}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;font-weight:600;padding:12px 18px;border-radius:8px">See the full job &rarr;</a></p>`;
+        return `<p style="margin:22px 0"><a href="${jobUrl}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;font-weight:600;padding:12px 18px;border-radius:8px">See the full job &rarr;</a></p>`;
       if (b.startsWith("## ")) return `<p style="margin:24px 0 6px;font-size:16px;font-weight:700;color:#111">${esc(b.slice(3))}</p>`;
       return `<p style="margin:0 0 12px;font-size:16px;line-height:1.55;color:#222">${esc(b)}</p>`;
     })
@@ -34,7 +43,7 @@ function render(unsubscribe: string) {
     ${address ? `<br>${esc(address)}` : ""}
   </td></tr></table></body></html>`;
   const text = [
-    ...email.blocks.map((b) => (b === "[[LINK]]" ? `See the full job: ${email.jobUrl}` : b.replace(/^## /, ""))).flatMap((l) => [l, ""]),
+    ...email.blocks.map((b) => (b === "[[LINK]]" ? `See the full job: ${jobUrl}` : b.replace(/^## /, ""))).flatMap((l) => [l, ""]),
     `Unsubscribe: ${unsubscribe}`,
     address,
   ].join("\n");
