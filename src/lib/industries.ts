@@ -13,7 +13,7 @@ export const INDUSTRIES = {
   healthcare: {
     label: "Healthcare & life sciences",
     sectors: ["Health IT", "Medical Devices"],
-    words: /\b(health|hospital|medical|clinic|life science|pharma|biotech|patient|dental|physician)/,
+    words: /\b(health|hospitals?\b|medical|clinic|life science|pharma|biotech|patient|dental|physician)/,
   },
   security: {
     label: "Cybersecurity",
@@ -42,7 +42,8 @@ export const INDUSTRIES = {
   },
   hr: {
     label: "HR & work tech",
-    sectors: ["HR & Work", "HR Tech", "HR Software", "Productivity & Collab", "Productivity", "Design", "EdTech", "Procurement Software"],
+    // "Productivity & Collab" is a mixed bag (Klaviyo, Five9, Zapier...), so those lean on who they sell to.
+    sectors: ["HR & Work", "HR Tech", "HR Software", "Productivity", "Design"],
     words: /\b(hr |human resource|recruit|talent|payroll|people team)/,
   },
   retail: {
@@ -52,7 +53,7 @@ export const INDUSTRIES = {
   },
   government: {
     label: "Government & education",
-    sectors: [],
+    sectors: ["EdTech"],
     words: /\b(government|public sector|federal|state and local|municipal|k-12|school|higher education|universit|education)/,
   },
   industrial: {

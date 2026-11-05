@@ -14,6 +14,10 @@ describe("jobIndustries", () => {
     expect(jobIndustries({ industry: "K-12 education" })).toEqual(["government"]);
     expect(jobIndustries({ industry: "Healthcare" })).toEqual(["healthcare"]);
   });
+  it("doesn't read hospitality as a hospital", () => {
+    expect(jobIndustries({ industry: "Hospitality" })).toEqual(["retail"]);
+    expect(jobIndustries({ industry: "Hospitals and clinics" })).toEqual(["healthcare"]);
+  });
   it("places a job in more than one industry when it fits", () => {
     expect(jobIndustries({ company_sector: "Vertical SaaS", industry: "Retail, government and healthcare" }).sort()).toEqual(["government", "healthcare", "retail"]);
   });
