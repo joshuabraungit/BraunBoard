@@ -6,7 +6,7 @@ import { CopyButton } from "@/components/CopyButton";
 import { canRefund, orderLines, reviewFields, reviewLink, videoUrl, type SponsoredJobRow } from "@/lib/sponsor";
 import { formatPrice, isRunning } from "@/lib/sponsor-form";
 import { reviewSummary, type AssetReview } from "@/lib/sponsor-review";
-import { cancelOrder, editCopy, goLive, removeVideo, sendReceiptAgain, setSponsoredStatus } from "./actions";
+import { cancelOrder, editCopy, goLive, removeVideo, saveLinkedInPost, sendReceiptAgain, setSponsoredStatus } from "./actions";
 import { VideoUpload } from "./VideoUpload";
 
 const REVIEW_BADGE: Record<AssetReview["status"], [string, string]> = {
@@ -20,7 +20,7 @@ function ReviewRow({ label, a }: { label: string; a: AssetReview }) {
   const [text, cls] = REVIEW_BADGE[a.status];
   return (
     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-      <span className="w-16 shrink-0 text-ink-3">{label}</span>
+      <span className="w-24 shrink-0 text-ink-3">{label}</span>
       <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>{text}</span>
       {a.note && (a.status === "down" || a.status === "changed") && <span className="min-w-0 flex-1 text-ink-2">&ldquo;{a.note}&rdquo;</span>}
     </div>
@@ -133,8 +133,9 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                         </span>
                       </div>
                       <div className="space-y-1.5">
-                        {rev.video ? <ReviewRow label="Video" a={rev.video} /> : <div className="flex gap-3"><span className="w-16 shrink-0 text-ink-3">Video</span><span className="text-ink-3">None yet. Upload one to add it to the review.</span></div>}
+                        {rev.video ? <ReviewRow label="Video" a={rev.video} /> : <div className="flex gap-3"><span className="w-24 shrink-0 text-ink-3">Video</span><span className="text-ink-3">None yet. Upload one to add it to the review.</span></div>}
                         <ReviewRow label="Job ad" a={rev.ad} />
+                        {rev.post ? <ReviewRow label="LinkedIn post" a={rev.post} /> : <div className="flex gap-3"><span className="w-24 shrink-0 text-ink-3">LinkedIn post</span><span className="text-ink-3">None yet. Paste one below to add it to the review.</span></div>}
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <CopyButton text={link} label="Copy review link" className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90" />
@@ -154,6 +155,22 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                           </>
                         )}
                       </div>
+                      <details className="border-t border-line pt-3" open={!r.linkedin_post}>
+                        <summary className="cursor-pointer text-sm font-semibold">{r.linkedin_post ? "Edit LinkedIn post" : "Add LinkedIn post"}</summary>
+                        <form action={saveLinkedInPost} className="mt-2 space-y-2">
+                          <input type="hidden" name="id" value={r.id} />
+                          <textarea
+                            name="linkedin_post"
+                            defaultValue={r.linkedin_post ?? ""}
+                            rows={10}
+                            maxLength={5000}
+                            placeholder="Paste the post exactly as it'll go on LinkedIn, link included."
+                            className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm"
+                          />
+                          <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">Save post</button>
+                          <p className="text-xs text-ink-3">Shows on the review link for a thumbs up or down. Change the words and it goes back up for another look. It doesn&apos;t hold up Mark live.</p>
+                        </form>
+                      </details>
                       <p className="text-xs text-ink-3">
                         The video shows on the job page once she approves it. Edit the copy or swap the video and the review link asks them to look again. Going live is still your button.
                       </p>

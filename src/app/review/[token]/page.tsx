@@ -7,7 +7,7 @@ import { sponsorWhere, SellLines } from "@/components/SponsoredCard";
 import { getOrderByReviewToken, logoUrl, markReviewOpened, reviewFields, videoUrl } from "@/lib/sponsor";
 import { adPlainText } from "@/lib/ad-text";
 import { payLine } from "@/lib/sponsor-form";
-import { adHash, adReview, videoReview } from "@/lib/sponsor-review";
+import { adHash, adReview, postHash, postReview, videoReview } from "@/lib/sponsor-review";
 import { getUser } from "@/lib/session";
 import { isAdmin } from "@/lib/admin";
 import { ReviewClient } from "./ReviewClient";
@@ -33,6 +33,7 @@ export default async function ReviewPage({ params }: Props) {
   const f = reviewFields(o);
   const first = o.contact_name.trim().split(/\s+/)[0];
   const vid = videoReview(f);
+  const post = postReview(f);
 
   const card = (
     <div className="rounded-xl border-[1.5px] border-amber/40 bg-surface p-4">
@@ -79,6 +80,7 @@ export default async function ReviewPage({ params }: Props) {
             : null
         }
         ad={{ hash: adHash(f), ...adReview(f) }}
+        post={o.linkedin_post && post ? { text: o.linkedin_post, hash: postHash(o.linkedin_post), status: post.status, note: post.note } : null}
         adCard={card}
         adBody={<AdText text={o.description} />}
       />

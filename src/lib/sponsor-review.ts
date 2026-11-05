@@ -18,6 +18,11 @@ export interface ReviewFields {
   ad_review: Verdict | null;
   ad_note: string | null;
   ad_reviewed_hash: string | null;
+  /** The LinkedIn post Josh writes for the job. Optional so rows from before it existed still work. */
+  linkedin_post?: string | null;
+  linkedin_review?: Verdict | null;
+  linkedin_note?: string | null;
+  linkedin_reviewed_hash?: string | null;
 }
 
 export interface AssetReview {
@@ -50,12 +55,26 @@ export function videoReview(o: ReviewFields): AssetReview | null {
   return { status: o.video_review, note: o.video_note };
 }
 
+/** A fingerprint of the LinkedIn post's words, so editing it puts it back up for review. */
+export function postHash(text: string): string {
+  return createHash("sha256").update(text.trim()).digest("hex").slice(0, 32);
+}
+
+/** Null when Josh hasn't written the post yet. */
+export function postReview(o: ReviewFields): AssetReview | null {
+  if (!o.linkedin_post?.trim()) return null;
+  if (!o.linkedin_review) return { status: "waiting", note: null };
+  if (o.linkedin_reviewed_hash !== postHash(o.linkedin_post)) return { status: "changed", note: o.linkedin_note ?? null };
+  return { status: o.linkedin_review, note: o.linkedin_note ?? null };
+}
+
 /** The video only shows on the public job page once the client has approved that exact file. */
 export const videoApproved = (o: ReviewFields) => videoReview(o)?.status === "up";
 
 export interface ReviewSummary {
   video: AssetReview | null;
   ad: AssetReview;
+  post: AssetReview | null;
   /** Everything there is to review has a current thumbs up. */
   allApproved: boolean;
   /** Something is waiting on the client (never reviewed, or changed since). */
@@ -67,10 +86,12 @@ export interface ReviewSummary {
 export function reviewSummary(o: ReviewFields): ReviewSummary {
   const ad = adReview(o);
   const video = videoReview(o);
-  const all = [ad, ...(video ? [video] : [])];
+  const post = postReview(o);
+  const all = [ad, ...(video ? [video] : []), ...(post ? [post] : [])];
   return {
     ad,
     video,
+    post,
     allApproved: all.every((a) => a.status === "up"),
     waitingOnClient: all.some((a) => a.status === "waiting" || a.status === "changed"),
     changesRequested: all.some((a) => a.status === "down"),

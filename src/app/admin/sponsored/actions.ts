@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { adminClient } from "@/lib/supabase/admin";
-import { attachVideo, cancelAndRefund, createVideoUpload, getOrder, markLive, resendReceipt, reviewFields, updateSponsorCopy } from "@/lib/sponsor";
-import { adReview } from "@/lib/sponsor-review";
+import { attachVideo, cancelAndRefund, createVideoUpload, getOrder, markLive, resendReceipt, reviewFields, updateLinkedInPost, updateSponsorCopy } from "@/lib/sponsor";
+import { adReview, postReview } from "@/lib/sponsor-review";
 import { formatPrice, parseSponsorEdit } from "@/lib/sponsor-form";
 
 // Canceling goes through cancelOrder so it always refunds.
@@ -132,4 +132,30 @@ export async function removeVideo(formData: FormData) {
   }
   revalidatePath(`/sponsored/${id}`);
   back(true, "Video removed.");
+}
+
+/** Josh pastes the LinkedIn post. It goes on the client's review link for a thumbs up or down. */
+export async function saveLinkedInPost(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  const text = String(formData.get("linkedin_post") ?? "");
+  let msg: string;
+  try {
+    const before = await getOrder(id);
+    await updateLinkedInPost(id, text);
+    const after = await getOrder(id);
+    const was = before ? postReview(reviewFields(before))?.status : undefined;
+    const now = after ? postReview(reviewFields(after))?.status : undefined;
+    const first = after?.contact_name.split(" ")[0] ?? "The client";
+    msg = !now
+      ? "LinkedIn post cleared. It's off the review link."
+      : (was === "up" || was === "down") && now === "changed"
+        ? `Post saved. ${first}'s review link shows the new version for another look.`
+        : `Post saved. It's on ${first}'s review link now. Copy the link and send it over.`;
+  } catch (e) {
+    back(false, e instanceof Error ? e.message : "Couldn't save the post.");
+    return;
+  }
+  revalidatePath("/admin/sponsored");
+  back(true, msg);
 }

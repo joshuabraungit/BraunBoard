@@ -8,6 +8,7 @@ const verdict = z.enum(["up", "down"]);
 const schema = z.object({
   ad: z.object({ verdict, note: z.string().max(REVIEW_NOTE_MAX), hash: z.string().min(8).max(64) }).optional(),
   video: z.object({ verdict, note: z.string().max(REVIEW_NOTE_MAX), path: z.string().min(3).max(300) }).optional(),
+  post: z.object({ verdict, note: z.string().max(REVIEW_NOTE_MAX), hash: z.string().min(8).max(64) }).optional(),
 });
 
 export type SendResult = { ok: true; line: string } | { ok: false; error: string; stale?: boolean };

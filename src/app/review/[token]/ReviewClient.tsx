@@ -3,9 +3,10 @@
 import { useEffect, useState, useTransition, type ReactNode } from "react";
 import type { ReviewStatus, Verdict } from "@/lib/sponsor-review";
 import { sendReview } from "./actions";
+import Image from "next/image";
 import { ExplainerVideo } from "@/components/ExplainerVideo";
 
-type Key = "video" | "ad";
+type Key = "video" | "ad" | "post";
 interface Asset {
   status: ReviewStatus;
   note: string | null;
@@ -43,11 +44,39 @@ function Check({ className = "" }: { className?: string }) {
   );
 }
 
+/** The post as it'll look on LinkedIn: Josh's name and photo up top, the words below, links clickable. */
+function LinkedInPost({ text }: { text: string }) {
+  const parts = text.split(/(https?:\/\/[^\s]+)/g);
+  return (
+    <div className="rounded-xl border border-line bg-bg px-4 py-4 sm:px-5">
+      <div className="mb-3 flex items-center gap-3">
+        <Image src="/josh-braun.png" alt="" width={48} height={48} className="h-12 w-12 rounded-full" />
+        <div className="min-w-0">
+          <p className="text-[15px] font-semibold leading-tight">Josh Braun</p>
+          <p className="text-xs text-ink-3">Sales trainer · on LinkedIn</p>
+        </div>
+      </div>
+      <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">
+        {parts.map((p, i) =>
+          /^https?:\/\//.test(p) ? (
+            <a key={i} href={p} target="_blank" rel="noopener" className="font-medium text-accent underline underline-offset-2">
+              {p}
+            </a>
+          ) : (
+            p
+          ),
+        )}
+      </p>
+    </div>
+  );
+}
+
 export function ReviewClient({
   token,
   firstName,
   video,
   ad,
+  post,
   adCard,
   adBody,
 }: {
@@ -55,16 +84,17 @@ export function ReviewClient({
   firstName: string;
   video: ({ src: string; path: string } & Asset) | null;
   ad: { hash: string } & Asset;
+  post: ({ text: string; hash: string } & Asset) | null;
   adCard: ReactNode;
   adBody: ReactNode;
 }) {
-  const keys: Key[] = video ? ["video", "ad"] : ["ad"];
-  const asset = (k: Key): Asset => (k === "video" ? video! : ad);
-  const version = (k: Key) => (k === "video" ? video!.path : ad.hash);
+  const keys: Key[] = [...(video ? (["video"] as const) : []), "ad", ...(post ? (["post"] as const) : [])];
+  const asset = (k: Key): Asset => (k === "video" ? video! : k === "post" ? post! : ad);
+  const version = (k: Key) => (k === "video" ? video!.path : k === "post" ? post!.hash : ad.hash);
   const storeKey = `bb-review:${token}`;
 
-  const [open, setOpen] = useState<Record<Key, boolean>>({ video: !!video && needsLook(video.status), ad: needsLook(ad.status) });
-  const [drafts, setDrafts] = useState<Record<Key, Draft>>({ video: fresh(), ad: fresh() });
+  const [open, setOpen] = useState<Record<Key, boolean>>({ video: !!video && needsLook(video.status), ad: needsLook(ad.status), post: !!post && needsLook(post.status) });
+  const [drafts, setDrafts] = useState<Record<Key, Draft>>({ video: fresh(), ad: fresh(), post: fresh() });
   const [sent, setSent] = useState<string | null>(null);
   const [err, setErr] = useState<{ msg: string; stale?: boolean } | null>(null);
   const [pending, start] = useTransition();
@@ -111,7 +141,7 @@ export function ReviewClient({
   function send() {
     setErr(null);
     const payload: Record<string, unknown> = {};
-    for (const k of toSend) payload[k] = { verdict: drafts[k].verdict, note: drafts[k].note, ...(k === "video" ? { path: video!.path } : { hash: ad.hash }) };
+    for (const k of toSend) payload[k] = { verdict: drafts[k].verdict, note: drafts[k].note, ...(k === "video" ? { path: video!.path } : { hash: version(k) }) };
     start(async () => {
       const r = await sendReview(token, payload);
       if (r.ok) {
@@ -141,7 +171,15 @@ export function ReviewClient({
   const pct = Math.round((doneCount / keys.length) * 100);
 
   const cards: { k: Key; n: number; title: string; blurb: string; body: ReactNode }[] = keys.map((k, i) =>
-    k === "video"
+    k === "post"
+      ? {
+          k,
+          n: i + 1,
+          title: "The LinkedIn post",
+          blurb: "What I'll share with my LinkedIn followers to send sellers your way.",
+          body: <LinkedInPost text={post!.text} />,
+        }
+      : k === "video"
       ? {
           k,
           n: i + 1,
@@ -261,7 +299,7 @@ export function ReviewClient({
                   autoFocus
                   value={d.note}
                   onChange={(e) => set(k, { note: e.target.value })}
-                  placeholder={k === "video" ? "e.g. Can we end on our real logo?" : "e.g. Our buyers are mostly counties, not cities."}
+                  placeholder={k === "video" ? "e.g. Can we end on our real logo?" : k === "post" ? "e.g. Can we skip the line about other brands?" : "e.g. Our buyers are mostly counties, not cities."}
                   className="w-full resize-y rounded-lg border border-amber/30 bg-surface px-3 py-2.5 text-[15px] leading-relaxed"
                 />
                 <div className="flex flex-wrap justify-end gap-2">
@@ -318,7 +356,7 @@ export function ReviewClient({
               Send to Josh
             </button>
             <p id="send-hint" className="text-center text-sm text-ink-2">
-              {keys.length === 2 ? "Review both pieces first" : "Review it first"} ({doneCount} of {keys.length} done)
+              {keys.length === 1 ? "Review it first" : keys.length === 2 ? "Review both pieces first" : `Review all ${keys.length} pieces first`} ({doneCount} of {keys.length} done)
             </p>
           </div>
         )

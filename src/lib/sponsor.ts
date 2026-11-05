@@ -6,7 +6,7 @@ import { adminEmails } from "./admin-emails";
 import { sendEmail } from "./alerts/email";
 import { formatPrice, liveWindow, MAX_LIVE_SPONSORS, payLine, SPONSOR_DAYS, type SponsorEdit, type SponsorOrder } from "./sponsor-form";
 import { getCheckoutSession, getInvoiceLinks, isSettled, refundPayment, type CheckoutSession, type Invoice } from "./stripe";
-import { adHash, adReview, REVIEW_NOTE_MAX, reviewSummary, verdictLine, type AssetReview, type ReviewFields, type Verdict } from "./sponsor-review";
+import { adHash, adReview, postHash, REVIEW_NOTE_MAX, reviewSummary, verdictLine, type AssetReview, type ReviewFields, type Verdict } from "./sponsor-review";
 
 export const LOGO_BUCKET = "sponsor-logos";
 export const VIDEO_BUCKET = "sponsor-videos";
@@ -50,7 +50,18 @@ export const reviewFields = (o: SponsoredJobRow): ReviewFields => ({
   ad_review: o.ad_review ?? null,
   ad_note: o.ad_note ?? null,
   ad_reviewed_hash: o.ad_reviewed_hash ?? null,
+  linkedin_post: o.linkedin_post ?? null,
+  linkedin_review: o.linkedin_review ?? null,
+  linkedin_note: o.linkedin_note ?? null,
+  linkedin_reviewed_hash: o.linkedin_reviewed_hash ?? null,
 });
+
+/** Josh's LinkedIn post for the job. Blank clears it. Changing the words puts it back up for the client's OK. */
+export async function updateLinkedInPost(id: string, text: string) {
+  const post = text.replace(/\r\n/g, "\n").trim().slice(0, 5000) || null;
+  const { error } = await adminClient().from("sponsored_jobs").update({ linkedin_post: post }).eq("id", id);
+  if (error) throw error;
+}
 
 /** Josh's edits from Admin. Only the words sellers read; pay and dates stay as the buyer sent them. */
 export async function updateSponsorCopy(id: string, edit: SponsorEdit) {
@@ -515,6 +526,7 @@ export async function markReviewOpened(id: string) {
 export interface ReviewInput {
   ad?: { verdict: Verdict; note: string; hash: string };
   video?: { verdict: Verdict; note: string; path: string };
+  post?: { verdict: Verdict; note: string; hash: string };
 }
 
 export class StaleReviewError extends Error {}
@@ -527,9 +539,11 @@ export class StaleReviewError extends Error {}
 export async function submitClientReview(token: string, input: ReviewInput): Promise<{ row: SponsoredJobRow; line: string }> {
   const o = await getOrderByReviewToken(token);
   if (!o) throw new Error("This review link isn't active anymore.");
-  if (!input.ad && !input.video) throw new Error("Nothing to send yet.");
+  if (!input.ad && !input.video && !input.post) throw new Error("Nothing to send yet.");
   if (input.ad && input.ad.hash !== adHash(reviewFields(o))) throw new StaleReviewError("Josh just updated the job ad. Reload to see the latest version.");
   if (input.video && input.video.path !== o.video_path) throw new StaleReviewError("Josh just swapped in a new video. Reload to see it.");
+  if (input.post && (!o.linkedin_post || input.post.hash !== postHash(o.linkedin_post)))
+    throw new StaleReviewError("Josh just updated the LinkedIn post. Reload to see the latest version.");
   const note = (s: string) => s.trim().slice(0, REVIEW_NOTE_MAX) || null;
 
   const now = new Date().toISOString();
@@ -537,11 +551,13 @@ export async function submitClientReview(token: string, input: ReviewInput): Pro
   if (input.ad) Object.assign(update, { ad_review: input.ad.verdict, ad_note: input.ad.verdict === "down" ? note(input.ad.note) : null, ad_reviewed_hash: input.ad.hash });
   if (input.video)
     Object.assign(update, { video_review: input.video.verdict, video_note: input.video.verdict === "down" ? note(input.video.note) : null, video_reviewed_path: input.video.path });
+  if (input.post)
+    Object.assign(update, { linkedin_review: input.post.verdict, linkedin_note: input.post.verdict === "down" ? note(input.post.note) : null, linkedin_reviewed_hash: input.post.hash });
 
   const { data, error } = await adminClient().from("sponsored_jobs").update(update).eq("id", o.id).select("*").single();
   if (error) throw error;
   const row = data as SponsoredJobRow;
-  const line = verdictLine([input.video?.verdict, input.ad?.verdict].filter((v): v is Verdict => !!v));
+  const line = verdictLine([input.video?.verdict, input.ad?.verdict, input.post?.verdict].filter((v): v is Verdict => !!v));
 
   const owner = adminEmails()[0];
   if (owner) {
@@ -566,7 +582,7 @@ const verdictText = (a: AssetReview | null, who: string) =>
 export function renderReviewNotice(o: SponsoredJobRow, input: ReviewInput, siteUrl: string) {
   const first = o.contact_name.trim().split(/\s+/)[0];
   const sum = reviewSummary(reviewFields(o));
-  const sent = [input.video?.verdict, input.ad?.verdict].filter(Boolean) as Verdict[];
+  const sent = [input.video?.verdict, input.ad?.verdict, input.post?.verdict].filter(Boolean) as Verdict[];
   const ups = sent.filter((v) => v === "up").length;
   const subject = sum.allApproved
     ? `${first} approved everything for ${o.company}`
@@ -576,6 +592,7 @@ export function renderReviewNotice(o: SponsoredJobRow, input: ReviewInput, siteU
   const rows: [string, string][] = [
     ...(sum.video ? [["Video", verdictText(sum.video, first)!] as [string, string]] : []),
     ["Job ad", verdictText(sum.ad, first)!],
+    ...(sum.post ? [["LinkedIn post", verdictText(sum.post, first)!] as [string, string]] : []),
   ];
   const next = sum.allApproved
     ? "Everything's approved. Mark it live in Admin when you're ready."

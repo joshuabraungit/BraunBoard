@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { adPlainText, parseAdText, parseInline } from "../src/lib/ad-text";
-import { adHash, adReview, reviewSummary, verdictLine, videoApproved, videoReview, type ReviewFields } from "../src/lib/sponsor-review";
+import { adHash, adReview, postHash, postReview, reviewSummary, verdictLine, videoApproved, videoReview, type ReviewFields } from "../src/lib/sponsor-review";
 
 const base: ReviewFields = {
   job_title: "Director of Growth",
@@ -75,5 +75,26 @@ describe("client review", () => {
     expect(verdictLine(["up", "down"])).toBe("1 approved, 1 needs changes");
     expect(verdictLine(["down", "down"])).toBe("2 need changes");
     expect(verdictLine(["up"])).toBe("Approved");
+  });
+});
+
+describe("LinkedIn post review", () => {
+  const post = "My favorite sales job had no playbook.\n\nhttps://braunboard.com/sponsored/x";
+  it("is null until Josh writes one", () => {
+    expect(postReview(base)).toBeNull();
+    expect(reviewSummary(base).post).toBeNull();
+  });
+  it("waits, approves, and goes back up when the words change", () => {
+    const w = { ...base, linkedin_post: post };
+    expect(postReview(w)?.status).toBe("waiting");
+    const up = { ...w, linkedin_review: "up" as const, linkedin_reviewed_hash: postHash(post) };
+    expect(postReview(up)?.status).toBe("up");
+    expect(postReview({ ...up, linkedin_post: post + " Edited." })?.status).toBe("changed");
+  });
+  it("counts toward all approved", () => {
+    const ad = { ...base, ad_review: "up" as const, ad_reviewed_hash: adHash(base), linkedin_post: post };
+    expect(reviewSummary(ad).allApproved).toBe(false);
+    expect(reviewSummary({ ...ad, linkedin_review: "up", linkedin_reviewed_hash: postHash(post) }).allApproved).toBe(true);
+    expect(verdictLine(["up", "up", "up"])).toBe("All approved");
   });
 });
