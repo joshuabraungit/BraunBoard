@@ -5,6 +5,7 @@ const REASONS: Record<string, string> = {
   watch: "Sign in to watch companies and searches.",
   save: "Sign in to save jobs.",
   alerts: "Sign in to get email alerts when matching jobs show up.",
+  resume: "Sign in and I'll read your résumé, find jobs in the industries you know, and email you when new ones show up.",
 };
 
 export default async function Login({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {

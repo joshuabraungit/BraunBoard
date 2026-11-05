@@ -3,13 +3,14 @@
 
 import { firstJsonObject } from "./ingest/buyer";
 import { SIZE_BUCKETS, type SizeBucket } from "./ingest/size";
+import { INDUSTRIES, INDUSTRY_KEYS, isIndustry } from "./industries";
 import { COUNTRY_CHOICES, MOTION_CHOICES, ROLE_CHOICES, WORK_CHOICES, type OnboardingAnswers, type RoleChoice } from "./watch-prefs";
 
 export const RESUME_MAX_BYTES = 4 * 1024 * 1024; // Vercel caps a request at about 4.5MB
 
 /** What the form gets back: only the answers we could read, plus a plain summary to show the rep. */
 export interface ResumePrefill {
-  answers: Partial<Pick<OnboardingAnswers, "roles" | "country" | "work" | "location" | "motion" | "sizes">>;
+  answers: Partial<Pick<OnboardingAnswers, "roles" | "country" | "work" | "location" | "motion" | "sizes" | "industries">>;
   saw: { current_role: string | null; years_selling: number | null; sold_to: string | null; industries: string | null };
 }
 
@@ -25,6 +26,10 @@ Return ONLY JSON with these keys:
 - "work": "remote" only if their recent roles were clearly remote, otherwise null.
 - "motion": "new" if their recent roles were mainly hunting new business, "expansion" if mainly growing existing accounts, or null.
 - "sizes": the company sizes they've sold at recently, from: ${SIZE_BUCKETS.join(", ")}. Empty list if unclear.
+- "industry_keys": the industries this person has real experience in, from this list only: ${INDUSTRY_KEYS.join(", ")}.
+  (${INDUSTRY_KEYS.map((k) => `${k} = ${INDUSTRIES[k].label}`).join("; ")}.)
+  Count an industry if they worked at a company in it (a payments or banking-software company is fintech) or sold mainly to customers in it
+  (selling software to hospitals is healthcare). Weigh their last two or three roles most. One to three choices. Empty list if unclear.
 - "current_role": their most recent job title and company, like "SDR at Acme" (max 60 chars), or null.
 - "years_selling": total years in sales roles as a whole number, or null.
 - "sold_to": who they sold to, like "operations leaders" or "restaurant owners" (max 60 chars), or null.
@@ -46,6 +51,8 @@ export function cleanPrefill(raw: Record<string, unknown>): ResumePrefill {
   if (typeof raw.motion === "string" && raw.motion in MOTION_CHOICES && raw.motion !== "either") answers.motion = raw.motion as OnboardingAnswers["motion"];
   const sizes = Array.isArray(raw.sizes) ? raw.sizes.filter((s): s is SizeBucket => typeof s === "string" && (SIZE_BUCKETS as readonly string[]).includes(s)) : [];
   if (sizes.length) answers.sizes = [...new Set(sizes)];
+  const inds = Array.isArray(raw.industry_keys) ? raw.industry_keys.filter(isIndustry) : [];
+  if (inds.length) answers.industries = [...new Set(inds)].slice(0, 3);
   const years = typeof raw.years_selling === "number" && raw.years_selling >= 0 && raw.years_selling < 60 ? Math.round(raw.years_selling) : null;
   return {
     answers,

@@ -59,6 +59,8 @@ export interface JobView {
   company_domain: string | null;
   /** Size bucket of the company ("startup"...), when known. */
   company_size?: string | null;
+  /** The company's sector, like "Fintech". Used to match a watch's industries. */
+  company_sector?: string | null;
   /** Set on a copy of a role posted in several cities: the id of the role's first posting. */
   role_group?: string | null;
   /** The company's plain-English "what they sell" headline, when one's been written. */
@@ -104,7 +106,7 @@ export interface JobFilters {
 const JOB_CACHE_SECONDS = 300;
 
 const CARD_COLUMNS =
-  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags, currency, markets, attainment, company_size, buyer, industry, role_group, company_sells, deal_size, buyer_short";
+  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags, currency, markets, attainment, company_size, buyer, industry, role_group, company_sells, deal_size, buyer_short, company_sector";
 
 function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
   const since = f.postedWithinDays ? Date.now() - f.postedWithinDays * 86_400_000 : 0;
@@ -232,7 +234,7 @@ const cachedWatchJobRows = unstable_cache(
     const { jobs } = await fetchJobs({ markets, postedWithinDays: STALE_DAYS }, 1000, {});
     return jobs.map((j) => CARD_KEYS.map((key) => j[key] ?? null));
   },
-  ["watch-job-rows-v1"],
+  ["watch-job-rows-v2"],
   { revalidate: JOB_CACHE_SECONDS, tags: ["jobs"] },
 );
 

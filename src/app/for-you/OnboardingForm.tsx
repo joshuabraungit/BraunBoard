@@ -5,6 +5,8 @@ import { saveOnboarding } from "@/app/actions";
 import { prefillFromResume } from "./resume-action";
 import type { ResumePrefill } from "@/lib/resume-read";
 import { DEALBREAKER_LABELS, DEALBREAKERS } from "@/lib/match";
+import { INDUSTRIES, INDUSTRY_KEYS, type Industry } from "@/lib/industries";
+import Link from "next/link";
 import { SIZE_BUCKETS, SIZE_LABELS, type SizeBucket } from "@/lib/ingest/size";
 import { COUNTRY_CHOICES, MOTION_CHOICES, payCurrencyFor, ROLE_CHOICES, WORK_CHOICES, type OnboardingAnswers, type RoleChoice } from "@/lib/watch-prefs";
 
@@ -44,7 +46,7 @@ function Money({ name, label, presets, value, setValue, sym }: { name: string; l
   );
 }
 
-export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null }) {
+export function OnboardingForm({ initial, signedIn }: { initial?: OnboardingAnswers | null; signedIn: boolean }) {
   const [step, setStep] = useState(0);
   // Review mode: every answer on one page, each with its own Change. Used when editing a saved watch
   // and right after a résumé fills things in. First-timers without a résumé get one question at a time.
@@ -60,6 +62,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
   const [breakers, setBreakers] = useState<string[]>(initial?.dealbreakers ?? []);
   const [sizes, setSizes] = useState<SizeBucket[]>(initial?.sizes ?? []);
   const [soldTo, setSoldTo] = useState(initial?.sold_to ?? "");
+  const [industries, setIndustries] = useState<Industry[]>(initial?.industries ?? []);
   const [pending, setPending] = useState(false);
   const [reading, setReading] = useState(false);
   const [resumeError, setResumeError] = useState("");
@@ -87,6 +90,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
       if (a.work) setWork(a.work);
       if (a.motion) setMotion(a.motion);
       if (a.sizes) setSizes(a.sizes);
+      if (a.industries) setIndustries(a.industries);
       const s = r.prefill.saw;
       const exp = [s.sold_to, s.industries].filter(Boolean).join("; ");
       if (exp) setSoldTo(exp.slice(0, 160));
@@ -201,6 +205,21 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
       summary: soldTo.trim(),
     },
     {
+      q: "What industries?",
+      hint: "Pick any you'd stay in, or skip it for any industry. Only jobs in these industries show up.",
+      body: (
+        <div className="flex flex-wrap gap-2">
+          {INDUSTRY_KEYS.map((k) => (
+            <Chip key={k} name="industries" value={k} type="checkbox" checked={industries.includes(k)} onChange={(on) => setIndustries(on ? [...industries, k] : industries.filter((x) => x !== k))}>
+              {INDUSTRIES[k].label}
+            </Chip>
+          ))}
+        </div>
+      ),
+      ok: true,
+      summary: industries.length ? industries.map((k) => INDUSTRIES[k].label).join(", ") : "Any industry",
+    },
+    {
       q: "What size company?",
       hint: "Pick any you'd join, or skip it for any size. Companies I can't size still show up, so you don't miss anything.",
       body: (
@@ -252,6 +271,7 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
             <>
               <p className="font-semibold">Have a résumé handy? I&apos;ll fill this in for you.</p>
               <p className="mt-1 text-sm text-ink-2">I read it once to fill in your answers, then it&apos;s gone. It&apos;s never saved.</p>
+              {signedIn ? (
               <label className={`mt-4 inline-flex min-h-11 cursor-pointer items-center rounded-lg border border-line-strong bg-bg px-4 text-sm font-semibold hover:border-ink ${reading ? "pointer-events-none opacity-60" : ""}`}>
                 <input
                   type="file"
@@ -265,6 +285,14 @@ export function OnboardingForm({ initial }: { initial?: OnboardingAnswers | null
                 />
                 {reading ? "Reading your résumé…" : "Upload résumé (PDF)"}
               </label>
+              ) : (
+                <Link
+                  href="/login?why=resume&next=%2Ffor-you%3Fedit"
+                  className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-ink px-4 text-sm font-semibold text-white"
+                >
+                  Sign in to upload your résumé →
+                </Link>
+              )}
               <p className="mt-2 text-xs text-ink-3">Using Word? Save it as a PDF first. Or skip this and answer below.</p>
             </>
           )}

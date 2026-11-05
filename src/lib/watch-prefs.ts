@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import { EUR_TO_USD, GBP_TO_USD } from "./ingest/compensation";
+import { INDUSTRIES, INDUSTRY_KEYS, type Industry } from "./industries";
 import { DEALBREAKERS, experienceTerms, type WatchPrefs } from "./match";
 import { SIZE_BUCKETS, SIZE_LABELS } from "./ingest/size";
 import { REMOTE_TYPES, ROLE_FAMILIES, SALES_MOTIONS, SALES_SEGMENTS, type RoleFamily, type SalesSegment } from "./ingest/types";
@@ -38,6 +39,8 @@ export const OnboardingAnswers = z.object({
   sizes: z.array(z.enum(SIZE_BUCKETS)).default([]),
   /** Who they've sold to and in what industries, in their words. */
   sold_to: z.string().max(160).default(""),
+  /** Industries they want. Empty = any. Usually filled in from their résumé. */
+  industries: z.array(z.enum(INDUSTRY_KEYS as [Industry, ...Industry[]])).default([]),
 });
 export type OnboardingAnswers = z.infer<typeof OnboardingAnswers>;
 
@@ -58,6 +61,7 @@ export const StoredWatch = z.object({
     countries: z.array(z.enum(["US", "CA", "UK", "DE", "EU"])).optional(),
     company_sizes: z.array(z.enum(SIZE_BUCKETS)).optional(),
     experience: z.array(z.string()).optional(),
+    industries: z.array(z.string()).optional(),
   }),
 });
 export type StoredWatch = z.infer<typeof StoredWatch>;
@@ -93,6 +97,7 @@ export function answersToPrefs(a: OnboardingAnswers): WatchPrefs {
     countries: a.country === "both" ? ["US", "CA"] : [a.country],
     company_sizes: a.sizes,
     experience: experienceTerms(a.sold_to ?? ""),
+    industries: a.industries ?? [],
   };
 }
 
@@ -104,6 +109,7 @@ export function defaultWatchName(a: OnboardingAnswers): string {
   if (a.country === "UK") parts.push("UK");
   if (a.country === "DE") parts.push("Germany");
   if (a.country === "EU") parts.push("Remote Europe");
+  if (a.industries?.length === 1) parts.push(INDUSTRIES[a.industries[0]].label);
   if (a.sizes?.length && a.sizes.length < 4) parts.push(a.sizes.map((b) => SIZE_LABELS[b].label).join(" / "));
   if (a.min_ote) parts.push(`${paySymbol(a)}${Math.round(a.min_ote / 1000)}K+ OTE`);
   else if (a.min_base) parts.push(`${paySymbol(a)}${Math.round(a.min_base / 1000)}K+ base`);
@@ -138,5 +144,6 @@ export function rowToPrefs(r: Record<string, unknown>): WatchPrefs {
     countries: (r.countries as string[] | undefined)?.length ? r.countries : ["US"],
     company_sizes: ((r.company_sizes as string[] | undefined) ?? []).filter((s) => (SIZE_BUCKETS as readonly string[]).includes(s)),
     experience: ((r.experience as string[] | undefined) ?? []).filter((s) => typeof s === "string"),
+    industries: ((r.industries as string[] | undefined) ?? []).filter((s) => s in INDUSTRIES),
   });
 }

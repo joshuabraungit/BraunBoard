@@ -5,10 +5,13 @@
 import { headers } from "next/headers";
 import { RESUME_MAX_BYTES, readResume, type ResumePrefill } from "@/lib/resume-read";
 import { claimResumeRead } from "@/lib/resume-limit";
+import { getUser } from "@/lib/session";
 
 export type ResumeResult = { ok: true; prefill: ResumePrefill } | { ok: false; error: string };
 
 export async function prefillFromResume(formData: FormData): Promise<ResumeResult> {
+  // Résumé matching is for signed-in people, so I know who they are and can send alerts.
+  if (!(await getUser())) return { ok: false, error: "Sign in first and I'll read your résumé." };
   const file = formData.get("resume");
   if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Pick a file first." };
   if (file.size > RESUME_MAX_BYTES) return { ok: false, error: "That file is over 4MB. Try a smaller PDF." };

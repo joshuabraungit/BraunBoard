@@ -23,6 +23,8 @@ export interface WatchPrefs {
   company_sizes?: SizeBucket[];
   /** Words for who they've sold to, like ["restaurant", "logistic"]. Only ever boosts a match. */
   experience?: string[];
+  /** Industries they want (see industries.ts). Empty or missing = any industry. */
+  industries?: string[];
 }
 
 // Role words say nothing about the market ("operations leaders" vs "finance leaders"), so they never match.
@@ -90,6 +92,8 @@ export interface MatchableJob {
   /** Who the job sells to and in what industry, when we know. */
   buyer?: string | null;
   industry?: string | null;
+  /** The company's sector, like "Fintech", when we know. */
+  company_sector?: string | null;
   /**
    * Text checks already run in the database (see job_text_hits), so the full
    * description doesn't have to be downloaded. When set, these win over description_raw.

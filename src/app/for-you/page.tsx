@@ -23,7 +23,7 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<R
       <div className="py-4">
         <PageTabs tabs={JOB_TABS} active="/for-you" />
         <h1 className="mx-auto mb-8 max-w-2xl text-3xl font-bold tracking-tight">What sales job would you actually take?</h1>
-        <OnboardingForm initial={watch?.answers} />
+        <OnboardingForm initial={watch?.answers} signedIn={(await getUserState()).signedIn} />
       </div>
     );
   }
