@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import citywide from "./fixtures/citywide-tampa.json";
 import { baseLooksLikeOte, duplicateListings, germanPostings, missingMarkets, quietMarkets, type QaJob } from "../src/lib/data-qa";
 
 const NOW = Date.parse("2026-11-02T12:00:00Z");
@@ -68,6 +69,10 @@ describe("duplicateListings", () => {
   });
   it("leaves different jobs with the same title alone (a holding company's businesses)", () => {
     expect(duplicateListings([job({ description_raw: "Sadie is building technology for hospitality. Win new restaurant customers across the United States." }), job({ description_raw: "Variphy is the preferred reporting and analytics platform for unified communications." })], NOW)).toBeNull();
+  });
+  it("leaves two different roles alone when only the boilerplate matches (City Wide Tampa, Nov 5)", () => {
+    const { janitorial, cbs } = citywide;
+    expect(duplicateListings([job({ first_seen_at: lastMonth, description_raw: janitorial }), job({ description_raw: cbs })], NOW)).toBeNull();
   });
   it("ignores old duplicates and grouped city copies", () => {
     expect(duplicateListings([job({ first_seen_at: lastMonth }), job({ first_seen_at: lastMonth })], NOW)).toBeNull();

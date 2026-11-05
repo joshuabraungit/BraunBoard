@@ -106,6 +106,16 @@ export function germanPostings(jobs: QaJob[], now = Date.now()): QaIssue | null 
  */
 // Lower than the crawler's own duplicate bar: a repost often changes a paragraph or adds the pay.
 const REPOST_SIMILARITY = 0.5;
+/**
+ * The opening lines say which job it is. A repost keeps them; two different openings under one
+ * title can share every bit of boilerplate after that (City Wide's Tampa "Sales Executive" and
+ * its "CBS Sales Executive", posted under the same title, share the requirements, benefits and
+ * About section), so the opening has to match too.
+ */
+const OPENING_WORDS = 80;
+const opening = (text: string) => text.split(/\s+/).filter(Boolean).slice(0, OPENING_WORDS).join(" ");
+const looksLikeRepost = (a: string, b: string) =>
+  descriptionSimilarity(a, b) >= REPOST_SIMILARITY && descriptionSimilarity(opening(a), opening(b)) >= REPOST_SIMILARITY;
 
 export function duplicateListings(jobs: QaJob[], now = Date.now()): QaIssue | null {
   const seen = new Map<string, QaJob>();
@@ -115,7 +125,7 @@ export function duplicateListings(jobs: QaJob[], now = Date.now()): QaIssue | nu
     const k = `${j.company_name}|${j.title_raw.trim().toLowerCase()}|${(j.city ?? j.location_raw ?? "").toLowerCase()}`;
     const first = seen.get(k);
     if (!first) seen.set(k, j);
-    else if ((isNew(j, now) || isNew(first, now)) && first.description_raw && j.description_raw && descriptionSimilarity(first.description_raw, j.description_raw) >= REPOST_SIMILARITY)
+    else if ((isNew(j, now) || isNew(first, now)) && first.description_raw && j.description_raw && looksLikeRepost(first.description_raw, j.description_raw))
       bad.push(isNew(j, now) ? j : first);
   }
   if (!bad.length) return null;
