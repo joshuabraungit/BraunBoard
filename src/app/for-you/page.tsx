@@ -47,9 +47,20 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<R
   const editHref = `/for-you?edit${watch.id ? `&watch=${watch.id}` : ""}`;
   const shown = Math.min(ranked.jobs.length, Math.max(BATCH, Math.floor(Number(sp.show)) || BATCH));
   const moreHref = `/for-you?${new URLSearchParams({ ...base, ...(anyIndustry ? { industries: "any" } : {}), show: String(shown + BATCH) })}`;
-  const emptyText = filtered
-    ? `Nothing in ${industryNames} matches yet. ${state.signedIn ? "I'll email you when one shows up." : "When one shows up, it lands here."}`
-    : "Nothing matches yet. That's the point: I'll tell you when it shows up. Loosen a preference if you want to browse in the meantime.";
+  const emptyText = filtered ? (
+    <>
+      Nothing in {industryNames} right now. I could pad this page with jobs you&apos;d never take. I won&apos;t.{" "}
+      {state.signedIn ? "I'll email you when a real one shows up." : "When a real one shows up, it lands here."}
+      <span className="mt-3 block">
+        While you wait: the best sales jobs often never get posted. Pick 5 companies you&apos;d love to sell for and reach out cold.{" "}
+        <Link href="/outreach" className="font-semibold text-ink underline underline-offset-2">
+          Here&apos;s how →
+        </Link>
+      </span>
+    </>
+  ) : (
+    "Nothing matches yet. That's the point: I'll tell you when it shows up. Loosen a preference if you want to browse in the meantime."
+  );
 
   return (
     <>

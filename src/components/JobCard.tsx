@@ -199,7 +199,7 @@ export function JobCard({ job, ctx, openings = 1, locations = 1, extras }: { job
   );
 }
 
-export async function JobGrid({ jobs, ctx, empty = "Nothing here yet." }: { jobs: JobView[]; ctx: CardContext; empty?: string }) {
+export async function JobGrid({ jobs, ctx, empty = "Nothing here yet." }: { jobs: JobView[]; ctx: CardContext; empty?: React.ReactNode }) {
   if (!jobs.length) return empty ? <p className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-ink-3">{empty}</p> : null;
   const cards = collapseOpenings(jobs);
   const extras = await cardExtrasFor(cards.map((c) => c.job)).catch(() => new Map<string, CardExtras>());
