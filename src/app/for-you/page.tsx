@@ -7,6 +7,7 @@ import { getActiveWatch, getUserState, listWatches } from "@/lib/session";
 import { rankForWatch } from "@/lib/matching";
 import { JobGrid } from "@/components/JobCard";
 import { OnboardingForm } from "./OnboardingForm";
+import { INDUSTRIES, isIndustry } from "@/lib/industries";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { alternates: { canonical: "/for-you" } };
@@ -29,9 +30,26 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<R
   }
 
   const [state, jobs, watches] = await Promise.all([getUserState(), listJobsForWatch(watch.prefs.countries ?? ["US"], watch.prefs.keywords), listWatches()]);
-  const ranked = rankForWatch(jobs, watch.prefs, state.hiddenJobIds);
+  // Their industries, if the watch has any. "?industries=any" shows every industry for a look,
+  // without changing the watch (alerts still stick to their industries).
+  const picked = (watch.prefs.industries ?? []).filter(isIndustry);
+  const anyIndustry = picked.length > 0 && sp.industries === "any";
+  const prefs = anyIndustry ? { ...watch.prefs, industries: [] } : watch.prefs;
+  const ranked = rankForWatch(jobs, prefs, state.hiddenJobIds);
+  // Few or no matches with an industry filter on: how many there'd be in any industry.
+  const THIN = 5;
+  const filtered = picked.length > 0 && !anyIndustry;
+  const wide = filtered && ranked.jobs.length < THIN ? rankForWatch(jobs, { ...watch.prefs, industries: [] }, state.hiddenJobIds).jobs.length : 0;
+  const industryNames = picked.map((k) => INDUSTRIES[k].label).join(" or ");
+  const base = { ...(sp.watch ? { watch: sp.watch } : {}) };
+  const anyHref = `/for-you?${new URLSearchParams({ ...base, industries: "any" })}`;
+  const backHref = `/for-you?${new URLSearchParams(base)}`;
+  const editHref = `/for-you?edit${watch.id ? `&watch=${watch.id}` : ""}`;
   const shown = Math.min(ranked.jobs.length, Math.max(BATCH, Math.floor(Number(sp.show)) || BATCH));
-  const moreHref = `/for-you?${new URLSearchParams({ ...(sp.watch ? { watch: sp.watch } : {}), show: String(shown + BATCH) })}`;
+  const moreHref = `/for-you?${new URLSearchParams({ ...base, ...(anyIndustry ? { industries: "any" } : {}), show: String(shown + BATCH) })}`;
+  const emptyText = filtered
+    ? `Nothing in ${industryNames} matches yet. ${state.signedIn ? "I'll email you when one shows up." : "When one shows up, it lands here."}`
+    : "Nothing matches yet. That's the point: I'll tell you when it shows up. Loosen a preference if you want to browse in the meantime.";
 
   return (
     <>
@@ -83,11 +101,54 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<R
         </div>
       )}
 
+      {anyIndustry && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3">
+          <p className="text-sm">
+            <span className="font-semibold">Showing every industry.</span> Your watch still sticks to {industryNames}.
+          </p>
+          <Link href={backHref} className="rounded-lg border border-line-strong bg-bg px-3.5 py-2 text-sm font-semibold">
+            Back to {industryNames}
+          </Link>
+        </div>
+      )}
+
+      {filtered && ranked.jobs.length > 0 && ranked.jobs.length < THIN && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3">
+          <p className="text-sm">
+            <span className="font-semibold">
+              Only {ranked.jobs.length} so far in {industryNames}.
+            </span>{" "}
+            Add another industry to see more.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Link href={editHref} className="rounded-lg border border-line-strong bg-bg px-3.5 py-2 text-sm font-semibold">
+              Add an industry
+            </Link>
+            {wide > ranked.jobs.length && (
+              <Link href={anyHref} className="rounded-lg bg-ink px-3.5 py-2 text-sm font-semibold text-white">
+                See any industry ({wide})
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
+      {filtered && ranked.jobs.length === 0 && wide > 0 && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3">
+          <p className="text-sm">
+            <span className="font-semibold">Want to look around in the meantime?</span> {wide} sales job{wide === 1 ? "" : "s"} fit everything else you picked.
+          </p>
+          <Link href={anyHref} className="rounded-lg bg-ink px-3.5 py-2 text-sm font-semibold text-white">
+            See any industry →
+          </Link>
+        </div>
+      )}
+
       <LightsKey className="mb-3" />
       <JobGrid
         jobs={ranked.jobs.slice(0, shown)}
         ctx={{ savedJobIds: state.savedJobIds, matches: ranked.matches, back: "/for-you", allowHide: state.signedIn }}
-        empty="Nothing matches yet. That's the point: I'll tell you when it shows up. Loosen a preference if you want to browse in the meantime."
+        empty={emptyText}
       />
       {ranked.jobs.length > shown && (
         <div className="mt-8 text-center">
