@@ -1,0 +1,25 @@
+name: Résumé reader test (temporary)
+on:
+  push:
+    branches: [resume-test]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/oneoff/resume-test/run.ts
+      - run: |
+          git config user.name "resume-test" && git config user.email "actions@github.com"
+          git add scripts/oneoff/resume-test/results.md && git commit -m "Résumé test results [skip ci]" && git push
