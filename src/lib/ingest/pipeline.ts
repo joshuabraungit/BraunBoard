@@ -14,7 +14,7 @@ import { extractAttributes } from "./extract";
 import { plainRole } from "./role-plain";
 import { dealSize } from "./deal-size";
 import { resolveCountry } from "./country";
-import { dedupeKey, descriptionSimilarity, DUPLICATE_THRESHOLD, normalizeLocationKey, sameRole } from "./dedupe";
+import { dedupeKey, descriptionSimilarity, DUPLICATE_THRESHOLD, looksLikeRepost, normalizeLocationKey, sameRole, sameTitle } from "./dedupe";
 import type { AtsProvider, CompanyRef, RawJob } from "./types";
 import { ENABLED_PROVIDERS } from "./providers";
 import { jobSlug } from "../slug";
@@ -289,16 +289,20 @@ async function insertNewJob(
   const key = dedupeKey(company.id, cls.title_normalized, locKey);
 
   // Same company + title + location already live under another source id? Compare descriptions.
+  // Exact same title + city only needs to look like a repost (the daily check's bar), since
+  // companies repost with a paragraph changed or pay added.
   let duplicateOf: string | null = null;
   const { data: twins } = await db
     .from("jobs")
-    .select("id, description_raw")
+    .select("id, title_raw, description_raw")
     .eq("dedupe_key", key)
     .eq("is_active", true)
     .is("duplicate_of", null)
     .limit(5);
   for (const t of twins ?? []) {
-    if (descriptionSimilarity(t.description_raw ?? "", job.description) >= DUPLICATE_THRESHOLD) {
+    const theirs = (t.description_raw as string) ?? "";
+    const repost = sameTitle((t.title_raw as string) ?? "", job.title) && looksLikeRepost(theirs, job.description);
+    if (repost || descriptionSimilarity(theirs, job.description) >= DUPLICATE_THRESHOLD) {
       duplicateOf = t.id as string;
       break;
     }
