@@ -13,6 +13,8 @@ export function visitorCode(ip: string, ua: string, secret: string, day = new Da
   return createHash("sha256").update(`${secret}|${day}|${ip}|${ua}`).digest("base64url").slice(0, 16);
 }
 
+export { KEPT_PARAMS, cleanPath, cleanReferrer } from "./visit-clean";
+
 const SITES: [RegExp, string][] = [
   [/(^|\.)linkedin\.com$|^lnkd\.in$/, "LinkedIn"],
   [/(^|\.)google\.[a-z.]+$/, "Google"],

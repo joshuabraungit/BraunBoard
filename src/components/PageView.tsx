@@ -6,6 +6,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { cleanPath, cleanReferrer } from "@/lib/visit-clean";
 
 export function PageView() {
   const pathname = usePathname();
@@ -14,7 +15,11 @@ export function PageView() {
   useEffect(() => {
     if (pathname.startsWith("/admin")) return;
     const q = search.toString();
-    const body = JSON.stringify({ p: pathname + (q ? `?${q}` : ""), r: first.current ? document.referrer : "" });
+    // Only link tags and the referring site leave the browser. The server cleans again anyway.
+    const body = JSON.stringify({
+      p: cleanPath(pathname + (q ? `?${q}` : "")),
+      r: first.current ? cleanReferrer(document.referrer) : "",
+    });
     first.current = false;
     try {
       if (!navigator.sendBeacon?.("/api/v", new Blob([body], { type: "application/json" }))) {
