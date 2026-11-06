@@ -6,7 +6,7 @@
 import { parseLocation } from "./ingest/location";
 import { writtenInGerman } from "./ingest/classify";
 import { payTypeUnclear } from "./pay-unclear";
-import { descriptionSimilarity } from "./ingest/dedupe";
+import { looksLikeRepost } from "./ingest/dedupe";
 import type { Market } from "./ingest/location";
 
 export interface QaJob {
@@ -104,19 +104,6 @@ export function germanPostings(jobs: QaJob[], now = Date.now()): QaIssue | null 
  * (one "Account Executive" title for five different businesses) post different jobs under one name,
  * so the text has to match too. Needs both descriptions.
  */
-// Lower than the crawler's own duplicate bar: a repost often changes a paragraph or adds the pay.
-const REPOST_SIMILARITY = 0.5;
-/**
- * The opening lines say which job it is. A repost keeps them; two different openings under one
- * title can share every bit of boilerplate after that (City Wide's Tampa "Sales Executive" and
- * its "CBS Sales Executive", posted under the same title, share the requirements, benefits and
- * About section), so the opening has to match too.
- */
-const OPENING_WORDS = 80;
-const opening = (text: string) => text.split(/\s+/).filter(Boolean).slice(0, OPENING_WORDS).join(" ");
-const looksLikeRepost = (a: string, b: string) =>
-  descriptionSimilarity(a, b) >= REPOST_SIMILARITY && descriptionSimilarity(opening(a), opening(b)) >= REPOST_SIMILARITY;
-
 export function duplicateListings(jobs: QaJob[], now = Date.now()): QaIssue | null {
   const seen = new Map<string, QaJob>();
   const bad: QaJob[] = [];

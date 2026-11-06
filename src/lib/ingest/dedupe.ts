@@ -29,6 +29,33 @@ export function descriptionSimilarity(a: string, b: string): number {
 
 export const DUPLICATE_THRESHOLD = 0.85;
 
+// Lower than DUPLICATE_THRESHOLD: a repost often changes a paragraph or adds the pay.
+export const REPOST_SIMILARITY = 0.5;
+/**
+ * The opening lines say which job it is. A repost keeps them; two different openings under one
+ * title can share every bit of boilerplate after that (City Wide's Tampa "Sales Executive" and
+ * its "CBS Sales Executive", posted under the same title, share the requirements, benefits and
+ * About section), so the opening has to match too.
+ */
+const OPENING_WORDS = 80;
+const opening = (text: string) => text.split(/\s+/).filter(Boolean).slice(0, OPENING_WORDS).join(" ");
+
+/**
+ * A company reposting the same job under a new id (Stripe's Chicago "Account Executive, Platforms -
+ * Hunter" came back as a second posting with edited text). Only meant for two postings that already
+ * share the exact title and city; the crawler and the daily check both use this, so anything the
+ * check would call "listed twice" gets caught at crawl time instead.
+ */
+export function looksLikeRepost(a: string, b: string): boolean {
+  return descriptionSimilarity(a, b) >= REPOST_SIMILARITY && descriptionSimilarity(opening(a), opening(b)) >= REPOST_SIMILARITY;
+}
+
+/** Same title once case and spacing are evened out. */
+export const sameTitle = (a: string, b: string) => {
+  const t = (x: string) => x.trim().toLowerCase().replace(/\s+/g, " ");
+  return t(a) === t(b);
+};
+
 /**
  * Same role, different city: one company posting one job once per location. Same exact title,
  * same countries, same remote setup, posted within a week of each other, and the
