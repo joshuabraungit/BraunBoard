@@ -86,3 +86,7 @@ Company → detect ATS → adapter → raw jobs → sales classifier → normali
 - Never scrape LinkedIn or anything behind auth. Every adapter hits a documented public endpoint.
 - `data/seed-companies.csv` is a starter list of 40. Rows without a `careers_url` get their ATS detected by probing.
 - Sample data in `src/lib/sample-data.ts` uses made-up companies and only shows when Supabase isn't configured.
+
+## Error alerts
+
+If anything breaks, visitors see a plain "something went wrong" page (`src/app/error.tsx`) with no details, and Josh gets an email ("[Braun Board error] ...", from alerts@braunboard.com to josh@braunboard.com) with what broke and the stack trace. Wired up in `src/instrumentation.ts` and `src/lib/error-alert.ts`. Emails, tokens and query strings are scrubbed out; the same error sends at most one email per hour. Optional env vars: `ERROR_ALERT_TO`, `ERROR_ALERT_FROM`.

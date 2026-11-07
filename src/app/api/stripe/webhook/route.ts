@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { getCheckoutSession, verifyWebhook, type CheckoutSession } from "@/lib/stripe";
 import { markPaid } from "@/lib/sponsor";
+import { reportError } from "@/lib/error-alert";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
         // Re-read the session from Stripe rather than trusting the payload's shape.
         await markPaid(await getCheckoutSession(session.id));
       } catch (e) {
-        console.error("[stripe] markPaid failed", e);
+        await reportError(e, { where: "stripe webhook markPaid", method: "POST", path: "/api/stripe/webhook", requestId: req.headers.get("x-vercel-id") ?? "" });
         return NextResponse.json({ error: "retry" }, { status: 500 }); // Stripe retries
       }
     }
