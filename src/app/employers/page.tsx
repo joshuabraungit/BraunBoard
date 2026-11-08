@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { ResultsStats, SourcesTable } from "@/components/SponsorResults";
+import type { SourceRow } from "@/lib/sponsor-results";
 import Link from "next/link";
 import { formatPrice, sponsorPriceCents, SPONSOR_DAYS } from "@/lib/sponsor-form";
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/contact";
@@ -19,6 +21,7 @@ const GET = [
   ["One LinkedIn post.", "I share your job with my 289,000 followers."],
   ["One newsletter send.", "Your job goes out in my newsletter."],
   ["Your own job page.", "Pay, what you sell, and an Apply button that goes to your application."],
+  ["A live results page.", "Views, apply clicks, and where people came from. Check it anytime."],
   ["An optional OTE badge.", "More on that below."],
 ] as const;
 
@@ -57,6 +60,14 @@ const AFTER = [
       "It's a quota-carrying role on a small, fully remote team.",
     ],
   },
+];
+
+// Real numbers from a recent sponsor, 6 days into their run (Nov 8, 2026). Name and role removed.
+const SAMPLE = { views: 115, clicks: 16, rate: "14%" };
+const SAMPLE_SOURCES: SourceRow[] = [
+  { label: "Braun Board home page and direct", views: 89, pct: 86, clicks: 0 },
+  { label: "LinkedIn", views: 11, pct: 11, clicks: 0 },
+  { label: "Google", views: 4, pct: 4, clicks: 0 },
 ];
 
 function H2({ children }: { children: React.ReactNode }) {
@@ -134,6 +145,28 @@ export default function EmployersPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Results page */}
+      <section className="mt-16">
+        <H2>How you&apos;ll know it worked</H2>
+        <div className="mt-4 space-y-4 text-[17px] leading-relaxed text-ink-2">
+          <p>Most job boards take your money and go quiet. You get a private results page instead. It updates on its own, so you never have to ask me how it&apos;s going.</p>
+        </div>
+        <div className="mt-5 rounded-2xl border border-line bg-bg p-4 sm:p-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-lg font-bold tracking-tight">Acme · Sales role</p>
+            <p className="text-sm font-semibold text-accent">Day 6 of 30</p>
+          </div>
+          <div className="mt-4">
+            <ResultsStats views={SAMPLE.views} clicks={SAMPLE.clicks} rate={SAMPLE.rate} />
+          </div>
+          <div className="mt-4 rounded-xl border border-line bg-surface p-4">
+            <p className="font-bold">Where people came from</p>
+            <SourcesTable rows={SAMPLE_SOURCES} showClicks={false} />
+          </div>
+        </div>
+        <p className="mt-3 text-[15px] text-ink-3">Real numbers from a recent sponsor, six days in, before the LinkedIn post and newsletter went out. Name changed.</p>
       </section>
 
       {/* OTE badge */}

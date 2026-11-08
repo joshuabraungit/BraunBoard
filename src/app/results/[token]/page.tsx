@@ -5,6 +5,7 @@ import { getOrderByResultsToken, getResultsCounts, paidRenewalOf } from "@/lib/s
 import { applyRate, runLine, sourceRows } from "@/lib/sponsor-results";
 import { formatPrice, isRunning, sponsorPriceCents } from "@/lib/sponsor-form";
 import { renewUrl } from "@/lib/sponsor-renew";
+import { ResultsStats, SourcesTable } from "@/components/SponsorResults";
 import { sendResults } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -24,16 +25,6 @@ const ERRORS: Record<string, string> = {
   empty: "Fill in at least one box before sending.",
   save: "That didn't go through. Try again, or just email me.",
 };
-
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div className="rounded-xl border border-line bg-surface px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-ink-3">{label}</p>
-      <p className="mt-1 text-3xl font-bold tracking-tight">{value}</p>
-      {sub && <p className="mt-0.5 text-xs text-ink-3">{sub}</p>}
-    </div>
-  );
-}
 
 export default async function ResultsPage({ params, searchParams }: Props) {
   const { token } = await params;
@@ -78,39 +69,12 @@ export default async function ResultsPage({ params, searchParams }: Props) {
         <p className="mt-2 text-sm font-semibold text-accent">{runLine(o.live_at, o.ends_at)}</p>
       </div>
 
-      <section className="grid gap-3 sm:grid-cols-3">
-        <Stat label="Job page views" value={n(o.views)} />
-        <Stat label="Apply clicks" value={n(o.apply_clicks)} sub="Clicks through to your application" />
-        <Stat label="Apply rate" value={rate ?? "–"} sub="Apply clicks per view" />
-      </section>
+      <ResultsStats views={o.views} clicks={o.apply_clicks} rate={rate} />
 
       <section className="rounded-2xl border border-line bg-surface p-5">
         <h2 className="text-lg font-bold tracking-tight">Where people came from</h2>
         <p className="mt-1 text-sm text-ink-2">Based on how each person first landed on Braun Board that day.</p>
-        {rows.length ? (
-          <table className="mt-3 w-full text-[15px]">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-ink-3">
-                <th className="py-1.5 font-semibold">Source</th>
-                <th className="py-1.5 text-right font-semibold">Visits</th>
-                <th className="py-1.5 text-right font-semibold">Apply clicks</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.label} className="border-t border-line">
-                  <td className="py-2 pr-3">{r.label}</td>
-                  <td className="py-2 text-right tabular-nums">
-                    {n(r.views)} <span className="text-ink-3">({r.pct}%)</span>
-                  </td>
-                  <td className="py-2 text-right tabular-nums">{n(r.clicks)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className="mt-3 text-sm text-ink-3">Nothing to show yet.</p>
-        )}
+        <SourcesTable rows={rows} />
         {earlierClicks > 0 && (
           <p className="mt-3 text-xs text-ink-3">
             {n(earlierClicks)} earlier apply {earlierClicks === 1 ? "click came" : "clicks came"} in before I started tracking sources, so {earlierClicks === 1 ? "it isn't" : "they aren't"} in this table.
