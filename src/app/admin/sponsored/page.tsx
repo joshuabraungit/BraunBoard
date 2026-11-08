@@ -3,7 +3,7 @@ import { adminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin";
 import { AdminNotice } from "@/components/AdminNotice";
 import { CopyButton } from "@/components/CopyButton";
-import { canRefund, orderLines, reviewFields, reviewLink, videoUrl, type SponsoredJobRow } from "@/lib/sponsor";
+import { canRefund, orderLines, resultsLink, reviewFields, reviewLink, videoUrl, type SponsoredJobRow } from "@/lib/sponsor";
 import { formatPrice, isRunning } from "@/lib/sponsor-form";
 import { reviewSummary, type AssetReview } from "@/lib/sponsor-review";
 import { cancelOrder, editCopy, goLive, removeVideo, saveLinkedInPost, sendReceiptAgain, setSponsoredStatus } from "./actions";
@@ -74,6 +74,7 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
           const reviewable = r.status === "paid" || r.status === "live";
           const rev = reviewSummary(reviewFields(r));
           const link = reviewLink(r);
+          const results = r.live_at && (r.status === "live" || r.status === "done") ? resultsLink(r) : null;
           const vid = videoUrl(r.video_path);
           return (
             <li key={r.id} className="rounded-xl border border-line bg-surface">
@@ -124,6 +125,15 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                     </tbody>
                   </table>
                   <p className="mt-3 whitespace-pre-wrap text-ink-2">{r.description}</p>
+                  {results && (
+                    <section className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-line px-3 py-3">
+                      <h2 className="mr-auto text-sm font-semibold">Results page</h2>
+                      <CopyButton text={results} label="Copy results link" className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90" />
+                      <a href={results} target="_blank" rel="noopener" className="rounded-md border border-line-strong bg-surface px-3 py-1.5 text-sm font-semibold">
+                        See it ↗
+                      </a>
+                    </section>
+                  )}
                   {reviewable && link && (
                     <section className="mt-4 space-y-3 rounded-lg border border-line px-3 py-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">

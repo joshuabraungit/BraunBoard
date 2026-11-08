@@ -6,6 +6,7 @@ import { adminEmails } from "./admin-emails";
 import { sendEmail } from "./alerts/email";
 import { formatPrice, liveWindow, MAX_LIVE_SPONSORS, payLine, SPONSOR_DAYS, type SponsorEdit, type SponsorOrder } from "./sponsor-form";
 import { getCheckoutSession, getInvoiceLinks, isSettled, refundPayment, type CheckoutSession, type Invoice } from "./stripe";
+import type { ResultsCounts } from "./sponsor-results";
 import { adHash, adReview, postHash, REVIEW_NOTE_MAX, reviewSummary, verdictLine, type AssetReview, type ReviewFields, type Verdict } from "./sponsor-review";
 
 export const LOGO_BUCKET = "sponsor-logos";
@@ -632,4 +633,75 @@ export async function attachVideo(id: string, path: string | null) {
   if (old?.video_path && old.video_path !== path) {
     await adminClient().storage.from(VIDEO_BUCKET).remove([old.video_path]).catch(() => undefined);
   }
+}
+
+// ---------------------------------------------------------------- results page (/results/<review token>)
+
+export interface ResultsRow extends SponsoredJobRow {
+  report_linkedin_impressions?: number | null;
+  report_linkedin_clicks?: number | null;
+  report_newsletter_sent?: number | null;
+  client_applications?: number | null;
+  client_interviews?: number | null;
+  client_results_note?: string | null;
+  client_results_at?: string | null;
+}
+
+export function resultsLink(o: Pick<SponsoredJobRow, "review_token">) {
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://braunboard.com";
+  return o.review_token ? `${site.replace(/\/$/, "")}/results/${o.review_token}` : null;
+}
+
+/** The order behind a results link. Live or finished runs only. */
+export async function getOrderByResultsToken(token: string): Promise<ResultsRow | null> {
+  if (!isReviewToken(token)) return null;
+  const { data } = await adminClient().from("sponsored_jobs").select("*").eq("review_token", token).maybeSingle();
+  const row = (data as ResultsRow) ?? null;
+  return row && ["live", "done"].includes(row.status) && row.live_at ? row : null;
+}
+
+export async function getResultsCounts(id: string): Promise<ResultsCounts> {
+  const { data, error } = await adminClient().rpc("sponsor_results", { sid: id });
+  if (error) throw new Error(`sponsor results: ${error.message}`);
+  const d = (data ?? {}) as Partial<ResultsCounts>;
+  return { views_by_source: d.views_by_source ?? {}, clicks_by_source: d.clicks_by_source ?? {}, tracked_clicks: d.tracked_clicks ?? 0 };
+}
+
+export interface ClientResults {
+  applications: number | null;
+  interviews: number | null;
+  note: string;
+}
+
+/** The sponsor tells Josh how hiring went. Emails Josh. */
+export async function saveClientResults(token: string, r: ClientResults): Promise<ResultsRow> {
+  const o = await getOrderByResultsToken(token);
+  if (!o) throw new Error("This link isn't active anymore.");
+  const note = r.note.trim().slice(0, 2000) || null;
+  const { data, error } = await adminClient()
+    .from("sponsored_jobs")
+    .update({ client_applications: r.applications, client_interviews: r.interviews, client_results_note: note, client_results_at: new Date().toISOString() })
+    .eq("id", o.id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  const row = data as ResultsRow;
+  const owner = adminEmails()[0];
+  if (owner) {
+    const first = row.contact_name.trim().split(/\s+/)[0];
+    const subject = `${first} shared hiring results for ${row.company}`;
+    const lines: [string, string][] = [
+      ["Applications", r.applications == null ? "Left blank" : String(r.applications)],
+      ["Interviews", r.interviews == null ? "Left blank" : String(r.interviews)],
+      ...(note ? [["Note", note] as [string, string]] : []),
+      ["Apply clicks so far", String(row.apply_clicks)],
+    ];
+    const html = wrap(
+      subject,
+      `<table style="font-size:15px">${lines.map(([k, v]) => `<tr><td style="padding:4px 14px 4px 0;color:#888;vertical-align:top">${k}</td><td style="padding:4px 0">${esc(v)}</td></tr>`).join("")}</table>`,
+    );
+    const text = [subject, ...lines.map(([k, v]) => `${k}: ${v}`)].join("\n");
+    await sendEmail(owner, { subject, html, text }, { replyTo: row.email }).catch((e) => console.error("[sponsor] results email failed", e));
+  }
+  return row;
 }
