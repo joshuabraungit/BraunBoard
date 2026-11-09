@@ -105,6 +105,11 @@ describe("remote across Europe", () => {
     expect(euRemoteScope("Remote - Spain")).toBeNull();
     expect(show("Remote, Germany, EMEA")).toBe("Remote · Germany");
   });
+  it("a UK job tagged EMEA stays a UK job", () => {
+    // Fivetran "UKI Enterprise Sales AE": the daily check wanted it on the Germany board.
+    expect(parseLocation("Remote, United Kingdom, EMEA").markets).toEqual(["UK"]);
+    expect(parseLocation("Remote - UK, EMEA").markets).toEqual(["UK"]);
+  });
   it("leaves US remote alone", () => {
     expect(parseLocation("Remote - US").markets).toEqual(["US"]);
     expect(parseLocation("Remote").markets).toEqual(["US"]);
