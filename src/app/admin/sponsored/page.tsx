@@ -8,6 +8,7 @@ import { formatPrice, isRunning } from "@/lib/sponsor-form";
 import { reviewSummary, type AssetReview } from "@/lib/sponsor-review";
 import { cancelOrder, editCopy, goLive, removeVideo, saveLinkedInPost, sendReceiptAgain, setSponsoredStatus } from "./actions";
 import { VideoUpload } from "./VideoUpload";
+import { FastTrackAdmin } from "./FastTrackAdmin";
 
 const REVIEW_BADGE: Record<AssetReview["status"], [string, string]> = {
   waiting: ["Waiting on client", "bg-bg text-ink-2 ring-1 ring-line"],
@@ -186,6 +187,7 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                       </p>
                     </section>
                   )}
+                  {(r.status === "paid" || r.status === "live") && <FastTrackAdmin id={r.id} cfg={r} />}
                   {r.status !== "canceled" && r.status !== "pending" && (
                     <details className="mt-3 rounded-lg border border-line px-3 py-2">
                       <summary className="cursor-pointer text-sm font-semibold">Edit copy</summary>

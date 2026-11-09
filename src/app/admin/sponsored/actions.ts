@@ -6,6 +6,7 @@ import { adminClient } from "@/lib/supabase/admin";
 import { attachVideo, cancelAndRefund, createVideoUpload, getOrder, markLive, resendReceipt, reviewFields, updateLinkedInPost, updateSponsorCopy } from "@/lib/sponsor";
 import { adReview, postReview } from "@/lib/sponsor-review";
 import { formatPrice, parseSponsorEdit } from "@/lib/sponsor-form";
+import { loadCodes } from "@/lib/fast-track";
 
 // Canceling goes through cancelOrder so it always refunds.
 const STATUSES = ["done"] as const;
@@ -158,4 +159,36 @@ export async function saveLinkedInPost(formData: FormData) {
   }
   revalidatePath("/admin/sponsored");
   back(true, msg);
+}
+
+/** Turns a sponsor's Fast Track box on or off and sets its details. Blank number of codes = off. */
+export async function saveFastTrack(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  const totalRaw = String(formData.get("fast_track_total") ?? "").trim();
+  const total = totalRaw ? Math.round(Number(totalRaw)) : null;
+  if (total != null && !(total >= 1 && total <= 50)) back(false, "Number of codes has to be 1 to 50 (or blank to turn it off).");
+  const url = String(formData.get("fast_track_url") ?? "").trim() || null;
+  if (url && !/^https?:\/\//i.test(url)) back(false, "The application form link has to start with https://");
+  const minsRaw = String(formData.get("fast_track_minutes") ?? "").trim();
+  const minutes = minsRaw ? Math.round(Number(minsRaw)) : null;
+  if (minutes != null && !(minutes >= 5 && minutes <= 120)) back(false, "Call length has to be 5 to 120 minutes.");
+  const where = String(formData.get("fast_track_where") ?? "").trim().slice(0, 500) || null;
+  const { error } = await adminClient()
+    .from("sponsored_jobs")
+    .update({ fast_track_total: total, fast_track_url: url, fast_track_minutes: minutes, fast_track_where: where })
+    .eq("id", id);
+  if (error) back(false, error.message);
+  if (total) {
+    try {
+      await loadCodes(id, total);
+    } catch (e) {
+      back(false, e instanceof Error ? e.message : "Couldn't load the codes.");
+    }
+  }
+  revalidatePath("/admin/sponsored");
+  revalidatePath(`/sponsored/${id}`);
+  revalidatePath("/");
+  revalidateTag("sponsors");
+  back(true, total ? `Fast Track is on with ${total} codes.` : "Fast Track is off.");
 }

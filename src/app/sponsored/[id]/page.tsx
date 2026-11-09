@@ -13,6 +13,8 @@ import { isUuid } from "@/lib/picks-subscribe";
 import { isBot } from "@/lib/visits";
 import { getUser } from "@/lib/session";
 import { isAdmin } from "@/lib/admin";
+import { FastTrackBox } from "@/components/FastTrackBox";
+import { fastTrackState, fastTrackWhere, type FastTrackConfig } from "@/lib/fast-track";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +50,8 @@ export default async function SponsoredJobPage({ params }: Props) {
 
   const ended = hasRun && !!s.live_at && !!s.ends_at;
   const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" });
+
+  const ft = running || admin ? await fastTrackState(s as typeof s & FastTrackConfig) : null;
 
   const ua = (await headers()).get("user-agent") ?? "";
   if (running && !admin && !isBot(ua)) await bump(s.id, "view");
@@ -114,6 +118,18 @@ export default async function SponsoredJobPage({ params }: Props) {
           <span className="text-ink-3">Who you&apos;d sell to: </span>
           <span className="font-semibold">{s.buyer_short}</span>
         </p>
+      )}
+
+      {ft && ft.total > 0 && (
+        <FastTrackBox
+          id={s.id}
+          company={s.company}
+          total={ft.total}
+          left={ft.left}
+          minutes={(s as FastTrackConfig).fast_track_minutes ?? 25}
+          where={fastTrackWhere(s as FastTrackConfig)}
+          lastClaimed={ft.lastClaimedAt}
+        />
       )}
 
       {/* The video waits in a lightbox, right under the ad's "what you'll sell" part (or up top if the ad has no such part). */}

@@ -26,6 +26,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         .insert({ sponsor_id: s.id, visitor: visitorCode(ip, ua, secret) })
         .then(({ error }) => error && console.error("[sponsor] apply click log failed", error.message));
     }
+    // Fast Track applicants go straight to the sponsor's application form when there is one.
+    const ftUrl = (s as { fast_track_url?: string | null }).fast_track_url;
+    if (new URL(req.url).searchParams.has("ft") && ftUrl && /^https?:\/\//i.test(ftUrl)) return NextResponse.redirect(ftUrl);
     return NextResponse.redirect(s.job_url);
   } catch {
     return NextResponse.redirect(`${site}/`);

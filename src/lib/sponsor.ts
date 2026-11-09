@@ -33,6 +33,11 @@ export interface SponsoredJobRow extends SponsorOrder, Partial<Omit<ReviewFields
   first_sales_hire?: boolean;
   /** Josh's plain-English "Who you'd sell to" line. */
   buyer_short?: string | null;
+  /** Fast Track: number of guaranteed-call codes (null = off), their form, call length, where the code goes. */
+  fast_track_total?: number | null;
+  fast_track_url?: string | null;
+  fast_track_minutes?: number | null;
+  fast_track_where?: string | null;
   review_token?: string;
   review_opened_at?: string | null;
   review_sent_at?: string | null;
