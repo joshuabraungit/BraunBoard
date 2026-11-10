@@ -32,7 +32,7 @@ async function main() {
     .eq("status", "scheduled")
     .lte("send_at", now.toISOString())
     .gte("send_at", new Date(now.getTime() - 36 * 3_600_000).toISOString())
-    .select("id, subject, intro, opener, stat_line, issue_date");
+    .select("id, subject, intro, opener, stat_line, spotlight, issue_date");
   if (!due?.length) return notice("Picks: nothing due to send.");
 
   for (const issue of due) {

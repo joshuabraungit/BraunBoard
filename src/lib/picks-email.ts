@@ -8,6 +8,15 @@ export interface IssueContent {
   opener?: string | null;
   stat_line: string | null;
   issue_date: string;
+  /** An optional callout right under the intro, e.g. a Fast Track offer. */
+  spotlight?: Spotlight | null;
+}
+export interface Spotlight {
+  label: string;
+  title: string;
+  text: string;
+  url: string;
+  cta: string;
 }
 export interface ItemContent {
   id: string;
@@ -83,6 +92,7 @@ export function renderPicks(
   const address = postalAddress();
   const intro = honestIntro(issue.intro, !!skip);
   const opener = issue.opener?.trim() || null;
+  const spot = issue.spotlight && issue.spotlight.title && /^https?:\/\//.test(issue.spotlight.url) ? issue.spotlight : null;
 
   const label = "color:#888";
   const pickHtml = picks
@@ -125,6 +135,18 @@ export function renderPicks(
       <span style="display:inline-block;width:8px;height:8px;border-radius:4px;background:${DOT.red}"></span> watch out
     </p>
   </td></tr>
+  ${
+    spot
+      ? `<tr><td style="padding:18px 0 4px">
+      <div style="border:2px solid #111;border-radius:10px;padding:16px 18px">
+        <div style="font-size:12px;color:#1f5c3a;font-weight:700;letter-spacing:.04em;text-transform:uppercase">${esc(spot.label)}</div>
+        <div style="margin-top:6px;font-size:17px;font-weight:700;line-height:1.35;color:#111">${esc(spot.title)}</div>
+        <p style="margin:8px 0 0;font-size:15px;line-height:1.55;color:#222">${esc(spot.text)}</p>
+        <a href="${esc(spot.url)}" style="display:inline-block;margin-top:12px;background:#111;color:#fff;text-decoration:none;font-size:15px;font-weight:600;padding:10px 16px;border-radius:8px">${esc(spot.cta)}</a>
+      </div>
+    </td></tr>`
+      : ""
+  }
   ${pickHtml}
   ${
     skip
@@ -162,6 +184,7 @@ export function renderPicks(
     intro,
     ...(opener ? ["", opener] : []),
     "",
+    ...(spot ? [spot.label.toUpperCase(), spot.title, spot.text, `${spot.cta.replace(/\s*→\s*$/, "")}: ${spot.url}`, ""] : []),
     ...picks.flatMap((p, i) => {
       const x = extras.get(p.id) ?? {};
       const d = daysOpen(x.postedAt, issue.issue_date);

@@ -23,7 +23,7 @@ async function main() {
   if (lastTakeError) warn(`Some takes used the plain template because the AI call failed: ${lastTakeError}`);
   if (r.picks < 3) warn(`Only ${r.picks} jobs qualified for Picks this week.`);
 
-  const { data: issue } = await db.from("picks_issues").select("subject, intro, opener, stat_line, issue_date, send_at").eq("id", r.issueId).single();
+  const { data: issue } = await db.from("picks_issues").select("subject, intro, opener, stat_line, spotlight, issue_date, send_at").eq("id", r.issueId).single();
   const { data: items } = await db.from("picks_items").select("id, kind, job_id, title, company, pay, meta, take").eq("issue_id", r.issueId).order("kind").order("position");
   const extras = await loadItemExtras(db, items ?? []);
   const email = renderPicks(issue!, (items ?? []) as ItemContent[], { siteUrl: site, subscriberId: "preview", extras });
