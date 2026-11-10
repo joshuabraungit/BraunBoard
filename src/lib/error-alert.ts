@@ -1,4 +1,5 @@
-// Error alerts: when something breaks on Braun Board, Josh gets an email with what broke, where,
+// Error alerts: when something breaks on Braun Board, it is logged to error_events (and, only if
+// ERROR_ALERT_EMAIL=on, emailed to Josh) with what broke, where,
 // and the stack trace, so he can forward it to Claude and say "fix this". Visitors only ever see
 // the plain error page (src/app/error.tsx), never the details.
 //
@@ -38,7 +39,6 @@ export async function reportError(err: unknown, info: ErrorWhere): Promise<void>
   try {
     console.error("[error-alert]", info.where, err);
     const key = process.env.RESEND_API_KEY;
-    if (!key) return;
     const e = err as { message?: string; stack?: string; digest?: string } | null;
     const message = scrub(e?.message ?? err ?? "Unknown error").slice(0, 300);
     const stack = scrub(String(e?.stack ?? "").split("\n").slice(1, 16).join("\n"));
@@ -69,6 +69,23 @@ export async function reportError(err: unknown, info: ErrorWhere): Promise<void>
 <pre style="background:#F4F4F2;padding:12px;border-radius:6px;font-size:12px;white-space:pre-wrap">${esc(stack || "n/a")}</pre>
 <p style="color:#5C5C57">Repeats of this same error are bundled: at most one of these per hour. Check Vercel logs for how many times it happened.</p>
 <p>To fix it: forward this to Claude and say "fix this".</p></div>`;
+
+    // Logged for the hourly auto-fix run, which fixes it and tells Josh what it did.
+    const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (sbUrl && sbKey) {
+      await fetch(`${sbUrl}/rest/v1/rpc/log_error_event`, {
+        method: "POST",
+        headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          p_fingerprint: fp, p_hour: hour, p_where: info.where, p_method: info.method ?? null, p_path: path,
+          p_message: message, p_stack: stack, p_digest: info.digest ?? e?.digest ?? null, p_request_id: info.requestId || null,
+        }),
+        signal: AbortSignal.timeout(4000),
+      }).catch((err) => console.error("[error-alert] could not log error", err));
+    }
+    // Josh asked not to get these by email anymore (Nov 10, 2026). Set ERROR_ALERT_EMAIL=on to bring them back.
+    if (process.env.ERROR_ALERT_EMAIL !== "on" || !key) return;
 
     await fetch("https://api.resend.com/emails", {
       method: "POST",
