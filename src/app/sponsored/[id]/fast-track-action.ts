@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { getOrder } from "@/lib/sponsor";
 import { isRunning } from "@/lib/sponsor-form";
 import { isEmail, isUuid, subscribeOnSignIn } from "@/lib/picks-subscribe";
-import { claimCode, fastTrackOn, sendCodeEmail, type FastTrackConfig } from "@/lib/fast-track";
+import { claimCode, fastTrackOn, sendClaimNotice, sendCodeEmail, type FastTrackConfig } from "@/lib/fast-track";
 
 export type ClaimResult = { ok: true; code: string } | { ok: false; error: string; gone?: boolean };
 
@@ -33,6 +33,7 @@ export async function claimFastTrack(_prev: ClaimResult | null, fd: FormData): P
   await Promise.all([
     sendCodeEmail(s, email, name, code, `${site}/sponsored/${s.id}/apply?ft=1`).catch((e) => console.error("[fast-track] email failed", e)),
     subscribeOnSignIn(email).catch(() => {}),
+    sendClaimNotice(s, name, email, code).catch((e) => console.error("[fast-track] notice failed", e)),
   ]);
   revalidatePath(`/sponsored/${s.id}`);
   revalidatePath("/");

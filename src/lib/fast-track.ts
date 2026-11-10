@@ -102,3 +102,18 @@ export async function sendCodeEmail(s: SponsoredJobRow & FastTrackConfig, to: st
 </div>`;
   await sendEmail(to, { subject: `Your Fast Track code: ${code}`, html, text }, { replyTo: adminEmails()[0] });
 }
+
+/** Tells Josh someone claimed a code, with how many are left. */
+export async function sendClaimNotice(s: SponsoredJobRow, name: string, email: string, code: string) {
+  const { data } = await adminClient().from("fast_track_codes").select("claimed_at").eq("sponsor_id", s.id);
+  const rows = data ?? [];
+  const left = rows.filter((r) => !r.claimed_at).length;
+  const leftLine = left === 0 ? `That was the last one. All ${rows.length} are claimed.` : `${left} of ${rows.length} left.`;
+  const text = [`${name} (${email}) just claimed ${code} for ${s.job_title} at ${s.company}.`, "", leftLine].join("\n");
+  const html = `<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.5;color:#111">
+<p><b>${esc(name)}</b> (${esc(email)}) just claimed <b>${esc(code)}</b> for ${esc(s.job_title)} at ${esc(s.company)}.</p>
+<p>${esc(leftLine)}</p></div>`;
+  for (const to of adminEmails()) {
+    await sendEmail(to, { subject: `Fast Track: ${code} claimed (${left} left)`, html, text }, { replyTo: email });
+  }
+}
