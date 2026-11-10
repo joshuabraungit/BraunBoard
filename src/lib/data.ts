@@ -182,18 +182,27 @@ async function fetchJobs(
   }
 
   const db = publicClient();
-  const q = withFilters(
-    db
-      .from("visible_jobs")
-      .select(opts.withDescription ? `${CARD_COLUMNS}, description_raw` : CARD_COLUMNS, { count: "exact" })
-      .order("posted_at", { ascending: false })
-      .order("id")
-      .range(offset, offset + limit - 1),
-    f,
-  );
-  // Distinct roles: a role posted in six cities counts once.
-  const rq = withFilters(db.from("visible_jobs").select("id", { count: "exact", head: true }).is("role_group", null), f);
-  const [{ data, error, count }, { count: roles }] = await Promise.all([q, rq]);
+  const run = () => {
+    const q = withFilters(
+      db
+        .from("visible_jobs")
+        .select(opts.withDescription ? `${CARD_COLUMNS}, description_raw` : CARD_COLUMNS, { count: "exact" })
+        .order("posted_at", { ascending: false })
+        .order("id")
+        .range(offset, offset + limit - 1),
+      f,
+    );
+    // Distinct roles: a role posted in six cities counts once.
+    const rq = withFilters(db.from("visible_jobs").select("id", { count: "exact", head: true }).is("role_group", null), f);
+    return Promise.all([q, rq]);
+  };
+  // These queries take ~50ms. A statement timeout means the database was briefly busy (e.g. the
+  // crawler kicking off), so wait a beat and try once more instead of showing an error page.
+  let [{ data, error, count }, { count: roles }] = await run();
+  if (error?.code === "57014") {
+    await new Promise((r) => setTimeout(r, 1500));
+    [{ data, error, count }, { count: roles }] = await run();
+  }
   // Asking for a page past the end is not an error, just an empty page.
   if (error && error.code === "PGRST103") return { jobs: [], total: count ?? 0, roles: roles ?? count ?? 0 };
   if (error) throw error;
