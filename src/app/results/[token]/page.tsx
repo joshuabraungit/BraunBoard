@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getOrderByResultsToken, getResultsCounts, paidRenewalOf } from "@/lib/sponsor";
+import { getOrderByResultsToken, getResultsCounts, newsletterProgress, paidRenewalOf } from "@/lib/sponsor";
 import { applyRate, runLine, sourceRows } from "@/lib/sponsor-results";
 import { formatPrice, isRunning, sponsorPriceCents } from "@/lib/sponsor-form";
 import { renewUrl } from "@/lib/sponsor-renew";
@@ -33,10 +33,11 @@ export default async function ResultsPage({ params, searchParams }: Props) {
   const o = await getOrderByResultsToken(token);
   if (!o) notFound();
 
-  const [counts, renewal, ft] = await Promise.all([
+  const [counts, renewal, ft, nl] = await Promise.all([
     getResultsCounts(o.id),
     paidRenewalOf(o.id),
     fastTrackState(o as typeof o & FastTrackConfig).catch(() => null),
+    newsletterProgress(o.report_newsletter_campaign),
   ]);
   const rows = sourceRows(counts);
   const earlierClicks = Math.max(0, o.apply_clicks - counts.tracked_clicks);
@@ -62,8 +63,20 @@ export default async function ResultsPage({ params, searchParams }: Props) {
             .join(" · ")
         : "Numbers show up here after it runs",
     ],
-    ["My newsletter", o.report_newsletter_sent != null ? `Sent to ${n(o.report_newsletter_sent)} subscribers` : "Numbers show up here after it goes out"],
+    [
+      "My newsletter",
+      nl
+        ? nl.finished || nl.sent >= nl.total
+          ? `Sent to ${n(nl.total)} subscribers`
+          : `Going out to ${n(nl.total)} subscribers · ${n(nl.sent)} sent so far`
+        : o.report_newsletter_sent != null
+          ? `Sent to ${n(o.report_newsletter_sent)} subscribers`
+          : "Numbers show up here after it goes out",
+    ],
   ];
+  if (o.report_braunboard_email_sent != null) {
+    channels.push(["Braun Board email", `Sent to ${n(o.report_braunboard_email_sent)} subscribers`]);
+  }
   if (ft) {
     const claimed = ft.total - ft.left;
     channels.push([

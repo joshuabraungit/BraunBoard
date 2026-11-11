@@ -648,10 +648,25 @@ export interface ResultsRow extends SponsoredJobRow {
   report_linkedin_reactions?: number | null;
   report_linkedin_comments?: number | null;
   report_newsletter_sent?: number | null;
+  report_newsletter_campaign?: number | null;
+  report_braunboard_email_sent?: number | null;
   client_applications?: number | null;
   client_interviews?: number | null;
   client_results_note?: string | null;
   client_results_at?: string | null;
+}
+
+/** Live progress of a newsletter send on joshbraun.com. Null when it can't be read. */
+export async function newsletterProgress(campaign: number | null | undefined): Promise<{ total: number; sent: number; finished: boolean } | null> {
+  if (!campaign) return null;
+  try {
+    const r = await fetch(`https://joshbraun.com/api/nl-progress/?campaign=${campaign}`, { next: { revalidate: 600 } });
+    if (!r.ok) return null;
+    const d = (await r.json()) as { ok?: boolean; total?: number; sent?: number; finished?: boolean };
+    return d.ok && typeof d.total === "number" && typeof d.sent === "number" ? { total: d.total, sent: d.sent, finished: !!d.finished } : null;
+  } catch {
+    return null;
+  }
 }
 
 export function resultsLink(o: Pick<SponsoredJobRow, "review_token">) {
