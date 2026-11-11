@@ -47,3 +47,26 @@ export function SourcesTable({ rows, showClicks = true }: { rows: SourceRow[]; s
     </table>
   );
 }
+
+/**
+ * The run's life meter: the same video-game health bar the job cards use, one bar for every three days
+ * of the run, draining as it goes. Green, then yellow in the last week, red in the last few days.
+ */
+export function RunMeter({ day, total, left, over }: { day: number; total: number; left: number; over: boolean }) {
+  const bars = 10;
+  const full = over ? 0 : Math.max(1, Math.ceil((left / total) * bars));
+  const tone = over || left <= 3 ? "bg-[#d1503f]" : left <= 7 ? "bg-[#d9a23a]" : "bg-[#4cae73]";
+  const label = over ? "All done" : left === 0 ? "Last day" : `${left} ${left === 1 ? "day" : "days"} left`;
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1" role="img" aria-label={`Day ${day} of ${total}. ${label}.`}>
+      <span className="inline-flex items-center gap-[3px]" aria-hidden>
+        {Array.from({ length: bars }, (_, i) => (
+          <span key={i} className={`h-3.5 w-[9px] rounded-[2px] ${i < full ? tone : "bg-line-strong"}`} />
+        ))}
+      </span>
+      <span className="text-sm font-semibold text-ink-2" aria-hidden>
+        {over ? `Ran all ${total} days` : `Day ${day} of ${total} · ${label}`}
+      </span>
+    </div>
+  );
+}

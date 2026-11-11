@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getOrderByResultsToken, getResultsCounts, newsletterProgress, paidRenewalOf } from "@/lib/sponsor";
-import { daysBetween, runLine, shortDay, sourceRows } from "@/lib/sponsor-results";
+import { daysBetween, phaseNote, runLine, runState, shortDay, sourceRows } from "@/lib/sponsor-results";
 import { formatPrice, isRunning, sponsorPriceCents } from "@/lib/sponsor-form";
 import { renewUrl } from "@/lib/sponsor-renew";
-import { ResultsStats, SourcesTable } from "@/components/SponsorResults";
+import { ResultsStats, RunMeter, SourcesTable } from "@/components/SponsorResults";
+import { RewriteOwl } from "@/components/RewriteOwl";
 import { fastTrackState, type FastTrackConfig } from "@/lib/fast-track";
 import { sendResults } from "./actions";
 
@@ -87,11 +88,14 @@ export default async function ResultsPage({ params, searchParams }: Props) {
     `${n(o.apply_clicks)} ${o.apply_clicks === 1 ? "person" : "people"} clicked Apply`,
     ft && ftClaimed > 0 && (ftClaimed >= ft.total ? `all ${ft.total} Fast Track codes are claimed` : `${ftClaimed} of ${ft.total} Fast Track codes are claimed`),
   ].filter(Boolean) as string[];
+  const run = runState(o.live_at, o.ends_at);
+  const note = phaseNote(run, !!nl && !nl.finished && nl.sent < nl.total);
   const summaryText = summary.length > 1 ? `${summary.slice(0, -1).join(", ")}, and ${summary.at(-1)}` : summary[0];
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <div className="rounded-2xl border border-line bg-surface p-5 sm:p-7">
+      <div className="relative mt-16 rounded-2xl border border-line bg-surface p-5 sm:p-7">
+        <RewriteOwl className="absolute -top-[60px] right-6 h-[64px] w-[96px]" />
         <div className="flex items-center gap-3">
           <Image src="/josh-braun.png" alt="Josh Braun" width={56} height={56} className="h-14 w-14 rounded-full" priority />
           <div>
@@ -99,13 +103,12 @@ export default async function ResultsPage({ params, searchParams }: Props) {
             <p className="text-sm text-ink-2">From Josh Braun</p>
           </div>
         </div>
-        <p className="mt-4 text-sm font-semibold text-accent">
-          {o.job_title} · {runLine(o.live_at, o.ends_at)}
-        </p>
+        <p className="mt-4 text-sm font-semibold text-accent">{o.job_title}</p>
         <p className="mt-2 text-xl font-bold leading-snug tracking-tight">
           {days > 0 ? `In ${days} ${days === 1 ? "day" : "days"}, ` : ""}
           {summaryText}.
         </p>
+        <div className="mt-4">{run ? <RunMeter {...run} /> : <p className="text-sm font-semibold text-ink-2">{runLine(o.live_at, o.ends_at)}</p>}</div>
         <p className="mt-3 text-[15px] leading-relaxed text-ink-2">These numbers update on their own, so check back anytime.</p>
       </div>
 
@@ -140,6 +143,12 @@ export default async function ResultsPage({ params, searchParams }: Props) {
         <h2 className="text-lg font-bold tracking-tight">Where people came from</h2>
         <p className="mt-1 text-sm text-ink-2">How people found your job page.</p>
         <SourcesTable rows={rows} showClicks={false} />
+      </section>
+
+      <section className="rounded-2xl border border-line bg-surface p-5 sm:p-6">
+        <p className="text-xs font-bold uppercase tracking-wide text-ink-3">A note from me</p>
+        <p className="mt-2 text-[17px] leading-relaxed text-ink">{note}</p>
+        <Image src="/josh-signature.png" alt="Josh" width={640} height={320} className="-ml-1 mt-1 h-auto w-[130px]" />
       </section>
 
       <section id="yours" className="scroll-mt-20 rounded-2xl border border-amber/40 bg-surface p-5">

@@ -81,3 +81,27 @@ export function parseCount(raw: FormDataEntryValue | null): number | null | "bad
   const n = Number(s);
   return n <= 100000 ? n : "bad";
 }
+
+/** Where a sponsored run is: the day, the total, days left, and whether it's over. Null before it goes live. */
+export function runState(liveAt: string | null, endsAt: string | null, now = new Date()) {
+  if (!liveAt || !endsAt) return null;
+  const start = new Date(liveAt);
+  const end = new Date(endsAt);
+  if (now < start) return null;
+  const total = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000));
+  const over = now >= end;
+  const day = over ? total : Math.min(total, daysBetween(start, now) + 1);
+  return { day, total, left: over ? 0 : Math.max(0, total - day), over };
+}
+
+/** Josh's note on the results page. It changes with where the run is. */
+export function phaseNote(r: { day: number; total: number; left: number; over: boolean } | null, newsletterStillSending: boolean): string {
+  if (!r) return "Your job isn't live yet. As soon as it is, this page starts filling in.";
+  if (r.over) return "That's a wrap. Thanks for trusting me with this one. If you hire someone who found you on Braun Board, I'd really like to hear about it.";
+  if (r.left <= 7) return "Final stretch. If the role's still open, you can run it another 30 days. The renew button is at the bottom of this page.";
+  if (r.day <= 10)
+    return newsletterStillSending
+      ? "Early days. My newsletter is still going out, so more people will see your job over the next few days."
+      : "Early days. Your job is pinned to the top of the home page, so sellers who stop by see it first.";
+  return "Past the halfway mark. Your job is still pinned to the top of the home page, so sellers who stop by every day keep seeing it.";
+}

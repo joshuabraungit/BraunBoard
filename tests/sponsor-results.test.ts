@@ -57,3 +57,28 @@ describe("parseCount", () => {
     expect(parseCount("999999")).toBe("bad");
   });
 });
+
+import { phaseNote, runState } from "../src/lib/sponsor-results";
+
+describe("runState and phaseNote", () => {
+  const live = "2026-11-03T13:00:00Z";
+  const ends = "2026-12-03T13:00:00Z";
+  it("counts days left", () => {
+    expect(runState(live, ends, new Date("2026-11-11T20:00:00Z"))).toMatchObject({ day: 9, total: 30, left: 21, over: false });
+  });
+  it("is over after the end", () => {
+    expect(runState(live, ends, new Date("2026-12-04T00:00:00Z"))).toMatchObject({ left: 0, over: true });
+    expect(phaseNote(runState(live, ends, new Date("2026-12-04T00:00:00Z")), false)).toMatch(/^That's a wrap/);
+  });
+  it("mentions the newsletter only while it's still going out", () => {
+    const r = runState(live, ends, new Date("2026-11-05T00:00:00Z"));
+    expect(phaseNote(r, true)).toMatch(/newsletter is still going out/);
+    expect(phaseNote(r, false)).not.toMatch(/newsletter/);
+  });
+  it("offers renewal in the final week", () => {
+    expect(phaseNote(runState(live, ends, new Date("2026-11-28T00:00:00Z")), false)).toMatch(/^Final stretch/);
+  });
+  it("has nothing before it goes live", () => {
+    expect(runState(null, null)).toBeNull();
+  });
+});
