@@ -13,12 +13,11 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   );
 }
 
-export function ResultsStats({ views, clicks, rate }: { views: number; clicks: number; rate: string | null }) {
+export function ResultsStats({ views, clicks }: { views: number; clicks: number }) {
   return (
-    <section className="grid gap-3 sm:grid-cols-3">
-      <Stat label="Job page views" value={n(views)} />
-      <Stat label="Apply clicks" value={n(clicks)} sub="Clicks through to your application" />
-      <Stat label="Apply rate" value={rate ?? "–"} sub="Apply clicks per view" />
+    <section className="grid grid-cols-2 gap-3">
+      <Stat label="Job page views" value={n(views)} sub="People who opened your job" />
+      <Stat label="Apply clicks" value={n(clicks)} sub="Went on to your application" />
     </section>
   );
 }

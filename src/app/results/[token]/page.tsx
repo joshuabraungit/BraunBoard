@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getOrderByResultsToken, getResultsCounts, newsletterProgress, paidRenewalOf } from "@/lib/sponsor";
-import { applyRate, runLine, sourceRows } from "@/lib/sponsor-results";
+import { daysBetween, runLine, shortDay, sourceRows } from "@/lib/sponsor-results";
 import { formatPrice, isRunning, sponsorPriceCents } from "@/lib/sponsor-form";
 import { renewUrl } from "@/lib/sponsor-renew";
 import { ResultsStats, SourcesTable } from "@/components/SponsorResults";
@@ -40,8 +40,6 @@ export default async function ResultsPage({ params, searchParams }: Props) {
     newsletterProgress(o.report_newsletter_campaign),
   ]);
   const rows = sourceRows(counts);
-  const earlierClicks = Math.max(0, o.apply_clicks - counts.tracked_clicks);
-  const rate = applyRate(o.views, o.apply_clicks);
   const first = o.contact_name.trim().split(/\s+/)[0];
   const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://braunboard.com").replace(/\/$/, "");
   const running = isRunning(o);
@@ -49,7 +47,7 @@ export default async function ResultsPage({ params, searchParams }: Props) {
   const answered = o.client_results_at != null;
 
   const channels: [string, string][] = [
-    ["Featured card on the Braun Board home page", runLine(o.live_at, o.ends_at)],
+    ["Featured on the Braun Board home page", running && o.ends_at ? `Live until ${shortDay(new Date(o.ends_at))}` : runLine(o.live_at, o.ends_at)],
     [
       "LinkedIn post",
       o.report_linkedin_impressions != null
@@ -77,13 +75,19 @@ export default async function ResultsPage({ params, searchParams }: Props) {
   if (o.report_braunboard_email_sent != null) {
     channels.push(["Braun Board email", `Sent to ${n(o.report_braunboard_email_sent)} subscribers`]);
   }
-  if (ft) {
-    const claimed = ft.total - ft.left;
-    channels.push([
-      "Fast Track codes",
-      claimed >= ft.total ? `All ${ft.total} claimed` : `${claimed} of ${ft.total} claimed`,
-    ]);
-  }
+
+  const nlSent = nl ? nl.sent : (o.report_newsletter_sent ?? 0);
+  const reach = o.views + (o.report_linkedin_impressions ?? 0) + nlSent + (o.report_braunboard_email_sent ?? 0);
+  const reachText = reach >= 1000 ? `about ${n(Math.round(reach / 100) * 100)}` : n(reach);
+  const days = o.live_at ? daysBetween(new Date(o.live_at), o.ends_at && !running ? new Date(o.ends_at) : new Date()) + 1 : 0;
+  const ftClaimed = ft ? ft.total - ft.left : 0;
+  const ftMinutes = (o as FastTrackConfig).fast_track_minutes ?? 25;
+  const summary = [
+    `your job has shown up ${reachText} times`,
+    `${n(o.apply_clicks)} ${o.apply_clicks === 1 ? "person" : "people"} clicked Apply`,
+    ft && ftClaimed > 0 && (ftClaimed >= ft.total ? `all ${ft.total} Fast Track codes are claimed` : `${ftClaimed} of ${ft.total} Fast Track codes are claimed`),
+  ].filter(Boolean) as string[];
+  const summaryText = summary.length > 1 ? `${summary.slice(0, -1).join(", ")}, and ${summary.at(-1)}` : summary[0];
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -95,28 +99,32 @@ export default async function ResultsPage({ params, searchParams }: Props) {
             <p className="text-sm text-ink-2">From Josh Braun</p>
           </div>
         </div>
-        <p className="mt-4 text-[16px] leading-relaxed">
-          Here&apos;s how your {o.job_title} post for {o.company} is doing. These numbers update on their own, so check back anytime.
+        <p className="mt-4 text-sm font-semibold text-accent">
+          {o.job_title} · {runLine(o.live_at, o.ends_at)}
         </p>
-        <p className="mt-2 text-sm font-semibold text-accent">{runLine(o.live_at, o.ends_at)}</p>
+        <p className="mt-2 text-xl font-bold leading-snug tracking-tight">
+          {days > 0 ? `In ${days} ${days === 1 ? "day" : "days"}, ` : ""}
+          {summaryText}.
+        </p>
+        <p className="mt-3 text-[15px] leading-relaxed text-ink-2">These numbers update on their own, so check back anytime.</p>
       </div>
 
-      <ResultsStats views={o.views} clicks={o.apply_clicks} rate={rate} />
-
-      <section className="rounded-2xl border border-line bg-surface p-5">
-        <h2 className="text-lg font-bold tracking-tight">Where people came from</h2>
-        <p className="mt-1 text-sm text-ink-2">Based on how each person first landed on Braun Board that day.</p>
-        <SourcesTable rows={rows} />
-        {earlierClicks > 0 && (
-          <p className="mt-3 text-xs text-ink-3">
-            {n(earlierClicks)} earlier apply {earlierClicks === 1 ? "click came" : "clicks came"} in before I started tracking sources, so {earlierClicks === 1 ? "it isn't" : "they aren't"} in this table.
+      {ft && ftClaimed > 0 && (
+        <section className="rounded-2xl border-2 border-accent bg-accent-soft p-5">
+          <p className="text-xs font-bold uppercase tracking-wide text-accent">Fast Track</p>
+          <p className="mt-1 text-lg font-bold leading-snug">
+            {ftClaimed} {ftClaimed === 1 ? "person is" : "people are"} getting a guaranteed {ftMinutes}-minute screening call with you.
           </p>
-        )}
-      </section>
+          <p className="mt-2 text-[15px] leading-relaxed text-ink-2">
+            Look for codes BB-FT1 to BB-FT{ft.total} on applications.
+            {ftClaimed >= ft.total ? ` All ${ft.total} are claimed.` : ` ${ft.left} still open.`}
+          </p>
+        </section>
+      )}
 
       <section className="rounded-2xl border border-line bg-surface p-5">
-        <h2 className="text-lg font-bold tracking-tight">What your package included</h2>
-        <ul className="mt-3 space-y-2.5">
+        <h2 className="text-lg font-bold tracking-tight">Where your job has been</h2>
+        <ul className="mt-3 space-y-3">
           {channels.map(([k, v]) => (
             <li key={k} className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-4">
               <span className="font-semibold">{k}</span>
@@ -124,11 +132,14 @@ export default async function ResultsPage({ params, searchParams }: Props) {
             </li>
           ))}
         </ul>
-        {ft && ft.total > ft.left && (
-          <p className="mt-3 text-sm text-ink-3">
-            Fast Track applicants put their code (BB-FT1 to BB-FT{ft.total}) on your application. Each one gets a {(o as FastTrackConfig).fast_track_minutes ?? 25}-minute screening call.
-          </p>
-        )}
+      </section>
+
+      <ResultsStats views={o.views} clicks={o.apply_clicks} />
+
+      <section className="rounded-2xl border border-line bg-surface p-5">
+        <h2 className="text-lg font-bold tracking-tight">Where people came from</h2>
+        <p className="mt-1 text-sm text-ink-2">How people found your job page.</p>
+        <SourcesTable rows={rows} showClicks={false} />
       </section>
 
       <section id="yours" className="scroll-mt-20 rounded-2xl border border-amber/40 bg-surface p-5">

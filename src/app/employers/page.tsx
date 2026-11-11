@@ -65,7 +65,7 @@ const AFTER = [
 ];
 
 // Real numbers from a recent sponsor, 6 days into their run (Nov 8, 2026). Name and role removed.
-const SAMPLE = { views: 115, clicks: 16, rate: "14%" };
+const SAMPLE = { views: 115, clicks: 16 };
 const SAMPLE_SOURCES: SourceRow[] = [
   { label: "Braun Board home page and direct", views: 89, pct: 86, clicks: 0 },
   { label: "LinkedIn", views: 11, pct: 11, clicks: 0 },
@@ -234,7 +234,7 @@ export default function EmployersPage() {
             <p className="text-sm font-semibold text-accent">Day 6 of 30</p>
           </div>
           <div className="mt-4">
-            <ResultsStats views={SAMPLE.views} clicks={SAMPLE.clicks} rate={SAMPLE.rate} />
+            <ResultsStats views={SAMPLE.views} clicks={SAMPLE.clicks} />
           </div>
           <div className="mt-4 rounded-xl border border-line bg-surface p-4">
             <p className="font-bold">Where people came from</p>

@@ -22,7 +22,7 @@ const LABELS: Record<string, string> = {
 };
 const labelOf = (source: string) => LABELS[source] ?? source;
 
-/** Rows by source, biggest first. Small sources (under 2% of visits, no clicks) fold into "Other". */
+/** Rows by source, biggest first. Small sources (under 2% of visits) fold into "Other", clicks and all. */
 export function sourceRows(c: ResultsCounts): SourceRow[] {
   const merged = new Map<string, { views: number; clicks: number }>();
   const add = (src: string, k: "views" | "clicks", n: number) => {
@@ -38,13 +38,14 @@ export function sourceRows(c: ResultsCounts): SourceRow[] {
   const rows: SourceRow[] = [];
   const other = { views: 0, clicks: 0 };
   for (const [label, r] of merged) {
-    if (total && r.views / total < 0.02 && r.clicks === 0) {
+    if (total && r.views / total < 0.02) {
       other.views += r.views;
+      other.clicks += r.clicks;
       continue;
     }
     rows.push({ label, views: r.views, clicks: r.clicks, pct: 0 });
   }
-  if (other.views) rows.push({ label: "Other", views: other.views, clicks: 0, pct: 0 });
+  if (other.views) rows.push({ label: "Other", views: other.views, clicks: other.clicks, pct: 0 });
   for (const r of rows) r.pct = total ? Math.round((r.views / total) * 100) : 0;
   return rows.sort((a, b) => (a.label === "Other" ? 1 : b.label === "Other" ? -1 : b.views - a.views || b.clicks - a.clicks));
 }

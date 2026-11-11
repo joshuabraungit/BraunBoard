@@ -17,9 +17,10 @@ describe("sourceRows", () => {
     expect(rows.at(-1)).toMatchObject({ label: "Other", views: 2 });
   });
 
-  it("keeps a tiny source that sent an apply click", () => {
+  it("folds a tiny source into Other and keeps its apply clicks", () => {
     const rows = sourceRows({ views_by_source: { Direct: 99, Bing: 1 }, clicks_by_source: { Bing: 1 }, tracked_clicks: 1 });
-    expect(rows.find((r) => r.label === "Bing")).toBeTruthy();
+    expect(rows.find((r) => r.label === "Bing")).toBeFalsy();
+    expect(rows.at(-1)).toMatchObject({ label: "Other", views: 1, clicks: 1 });
   });
 
   it("handles nothing yet", () => {
