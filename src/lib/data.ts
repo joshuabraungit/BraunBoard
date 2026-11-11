@@ -226,7 +226,11 @@ export async function listJobsForWatch(markets: string[], keywords: string[] = [
   const k = [...new Set(keywords.map((w) => w.trim().toLowerCase()).filter(Boolean))].sort();
   const jobs = await cachedWatchJobs(m);
   if (!jobs.length) return jobs;
-  const hitRows = await cachedTextHits(m, k).catch(() => null);
+  // A failed check is usually the database being briefly busy, and the fallback below is the
+  // heaviest query on the site, so wait a beat and try the light one again first.
+  const hitRows =
+    (await cachedTextHits(m, k).catch(() => null)) ??
+    (await new Promise((r) => setTimeout(r, 1500)).then(() => cachedTextHits(m, k)).catch(() => null));
   // If the check fails, fall back to the old way rather than show wrong matches.
   if (!hitRows) return listJobs({ markets, postedWithinDays: STALE_DAYS }, 1000, { withDescription: true });
   const hits = new Map(hitRows.map(([id, c, g, kw]) => [id, { commission_only: c, greenfield: g, keyword: kw }]));

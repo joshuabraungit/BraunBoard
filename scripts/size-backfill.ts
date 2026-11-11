@@ -15,15 +15,13 @@ async function main() {
   const retryUnknown = process.argv.includes("--retry-unknown");
   const db = adminClient();
 
+  // Which companies are hiring. Just the ids and names: the full descriptions (~25 MB for every
+  // live job) are only fetched below for the few companies this run actually sizes.
   const byCo = new Map<string, { name: string; postings: string[] }>();
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await db.from("visible_jobs").select("company_id, company_name, description_raw").range(from, from + 999);
+    const { data, error } = await db.from("visible_jobs").select("company_id, company_name").order("id").range(from, from + 999);
     if (error) throw error;
-    for (const j of data ?? []) {
-      const c = byCo.get(j.company_id) ?? { name: j.company_name as string, postings: [] };
-      if (j.description_raw) c.postings.push(j.description_raw as string);
-      byCo.set(j.company_id, c);
-    }
+    for (const j of data ?? []) if (!byCo.has(j.company_id)) byCo.set(j.company_id, { name: j.company_name as string, postings: [] });
     if ((data ?? []).length < 1000) break;
   }
 
@@ -39,6 +37,7 @@ async function main() {
     }
   }
   const batch = due.slice(0, max);
+  for (const [id, postings] of await postingsFor(db, batch)) byCo.get(id)!.postings.push(...postings);
 
   const tally = { posting: 0, estimate: 0, unknown: 0, errors: 0 };
   let lastError = "";
@@ -73,6 +72,27 @@ async function main() {
 
   notice(`Company size: checked ${batch.length - tally.errors}. From postings ${tally.posting}, estimated ${tally.estimate}, unknown ${tally.unknown}${tally.errors ? `, ${tally.errors} errors (will retry)` : ""}. ${Math.max(0, due.length - batch.length)} still to do.`);
   if (tally.errors) warn(`Last size error: ${lastError}`);
+}
+
+/** The live postings' descriptions for just these companies. */
+async function postingsFor(db: ReturnType<typeof adminClient>, companyIds: string[]): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  for (let i = 0; i < companyIds.length; i += 10) {
+    // Paged: a select returns at most 1,000 rows, and a big hirer can have hundreds of postings.
+    for (let from = 0; ; from += 500) {
+      const { data, error } = await db
+        .from("visible_jobs")
+        .select("company_id, description_raw")
+        .in("company_id", companyIds.slice(i, i + 10))
+        .not("description_raw", "is", null)
+        .order("id")
+        .range(from, from + 499);
+      if (error) throw error;
+      for (const j of data ?? []) out.set(j.company_id, [...(out.get(j.company_id) ?? []), j.description_raw as string]);
+      if ((data ?? []).length < 500) break;
+    }
+  }
+  return out;
 }
 
 main().catch(fail);

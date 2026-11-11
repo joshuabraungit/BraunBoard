@@ -26,18 +26,20 @@ async function main() {
   const max = Number(process.argv[2] ?? 40);
   const db = adminClient();
 
-  // Every live posting, grouped by company. Paged because a select returns at most 1,000 rows.
+  // Every live posting, grouped by company: just dates and counts. The full descriptions (~25 MB for
+  // every live job) are only fetched below for the few companies this run actually writes. Paged
+  // because a select returns at most 1,000 rows.
   const byCo = new Map<string, { name: string; postings: string[]; newest: number; open: number }>();
   for (let from = 0; ; from += 1000) {
     const { data, error } = await db
       .from("visible_jobs")
-      .select("company_id, company_name, description_raw, posted_at")
+      .select("company_id, company_name, posted_at")
       .not("description_raw", "is", null)
+      .order("id")
       .range(from, from + 999);
     if (error) throw error;
     for (const j of data ?? []) {
       const c = byCo.get(j.company_id) ?? { name: j.company_name as string, postings: [], newest: 0, open: 0 };
-      c.postings.push(j.description_raw as string);
       c.newest = Math.max(c.newest, new Date(j.posted_at as string).getTime());
       c.open++;
       byCo.set(j.company_id, c);
@@ -84,6 +86,7 @@ async function main() {
     // Never-checked first, then companies with new jobs, then the oldest stories; bigger hirers first within each.
     .sort((a, b) => a.why! - b.why! || b.c.open - a.c.open)
     .slice(0, max);
+  for (const [id, postings] of await postingsFor(db, due.map((d) => d.id))) byCo.get(id)!.postings.push(...postings);
 
   let stories = 0, changed = 0, errors = 0, fromSite = 0;
   let lastError = "";
@@ -127,6 +130,27 @@ async function main() {
   }
   notice(`What they sell: checked ${due.length - errors} companies, story for ${stories} (${fromSite} from their website), ${changed} new or changed${errors ? `, ${errors} errors (will retry)` : ""}. ${Math.max(0, ids.length - due.length)} others are up to date.`);
   if (errors) warn(`Last product story error: ${lastError}`);
+}
+
+/** The live postings' descriptions for just these companies. */
+async function postingsFor(db: ReturnType<typeof adminClient>, companyIds: string[]): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  for (let i = 0; i < companyIds.length; i += 10) {
+    // Paged: a select returns at most 1,000 rows, and a big hirer can have hundreds of postings.
+    for (let from = 0; ; from += 500) {
+      const { data, error } = await db
+        .from("visible_jobs")
+        .select("company_id, description_raw")
+        .in("company_id", companyIds.slice(i, i + 10))
+        .not("description_raw", "is", null)
+        .order("id")
+        .range(from, from + 499);
+      if (error) throw error;
+      for (const j of data ?? []) out.set(j.company_id, [...(out.get(j.company_id) ?? []), j.description_raw as string]);
+      if ((data ?? []).length < 500) break;
+    }
+  }
+  return out;
 }
 
 main().catch(fail);
