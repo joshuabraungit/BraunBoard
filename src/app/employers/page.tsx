@@ -115,8 +115,8 @@ You get to ask your questions. They get to meet the person behind the résumé.
 Two codes left. Two conversations.
 
 Link in the comments.`;
-// Counts as of Nov 11, 2026, about five hours after it went up.
-const POST_STATS = { impressions: "5,821", comments: 24, when: "in the first five hours" };
+// Counts frozen as of the evening of Nov 11, 2026 (its first day).
+const POST_STATS = { impressions: "6,962", comments: 26, when: "on its first day" };
 // Real comments from the post, names shown, no photos.
 const POST_COMMENTS = [
   {
