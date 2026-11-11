@@ -6,12 +6,13 @@ import Link from "next/link";
 import { formatPrice, sponsorPriceCents, SPONSOR_DAYS } from "@/lib/sponsor-form";
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/contact";
 import { AttainmentBadge } from "@/components/SponsoredCard";
+import { RewriteOwl } from "@/components/RewriteOwl";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/employers" },
   title: "For employers: sponsor a sales job · Braun Board",
   description:
-    "The best sellers already have jobs, but they read Josh Braun's posts. Josh rewrites your sales job ad in plain English, pins it to Braun Board for 30 days, and shares it with his 289,000 LinkedIn followers and his newsletter. $750, one payment.",
+    "The best sellers already have jobs. They read Josh Braun's posts. Josh rewrites your sales job ad in plain English, pins it to Braun Board for 30 days, and shares it with his 289,000 LinkedIn followers and his newsletter. $750, one payment.",
 };
 
 // Josh's voice: plain English, short paragraphs, warm, a little funny. No hype, no em dashes,
@@ -49,7 +50,7 @@ const AFTER = [
       "Hope everyone likes anchovies.",
       "Now picture a town deciding what to build on an empty lot.",
       "Three people at a public meeting want a merry-go-round.",
-      "But what about the thousands who aren't there?",
+      "What about the thousands who aren't there?",
       "You're selling survey software that helps nonprofits and towns reach a representative mix of residents and find out what matters to them.",
       "So the town can decide what to build before pouring the concrete.",
     ],
@@ -169,9 +170,15 @@ export default function EmployersPage() {
       {/* The offer, up front */}
       <p className="text-xs font-bold uppercase tracking-wide text-accent">For employers</p>
       <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Your sales job, in front of sellers who already have one.</h1>
+      <div className="mt-5 flex items-center gap-3">
+        <Image src="/josh-braun.png" alt="Josh Braun" width={52} height={52} className="h-[52px] w-[52px] shrink-0 rounded-full" priority />
+        <p className="text-[15px] leading-snug text-ink-2">
+          Hi, I&apos;m Josh. I used to hire salespeople. I&apos;ve written some pretty bad job ads myself.
+        </p>
+      </div>
       <div className="mt-5 space-y-3 text-lg leading-relaxed text-ink">
         <p>The best sellers aren&apos;t scrolling job boards. They&apos;re busy selling.</p>
-        <p>But they read my posts. I&apos;m in front of sellers all day, and 289,000 people follow me on LinkedIn.</p>
+        <p>They do read my posts. I&apos;m in front of sellers all day, and 289,000 people follow me on LinkedIn.</p>
       </div>
       <p className="mt-4 text-lg leading-relaxed text-ink-2">
         Hiring a salesperson? I&apos;ll rewrite your ad in plain English, pin it to Braun Board for {SPONSOR_DAYS} days, and share it on LinkedIn and in my newsletter.
@@ -203,11 +210,13 @@ export default function EmployersPage() {
       <section className="mt-16">
         <H2>What the rewrite looks like</H2>
         <p className="mt-2 text-[15px] text-ink-3">Illustrative example.</p>
-        <div className="mt-5 rounded-2xl border border-line bg-bg p-6 sm:p-7">
+        <div className="relative mt-14 rounded-2xl border border-line bg-bg p-6 sm:p-7">
+          <RewriteOwl asleep className="absolute -top-[60px] right-6 h-[64px] w-[96px]" />
           <p className="text-xs font-bold uppercase tracking-wide text-ink-3">Before</p>
           <p className="mt-3 text-[16px] leading-relaxed text-ink-3">{BEFORE}</p>
         </div>
-        <div className="mt-4 rounded-2xl border border-line bg-surface p-6 shadow-[0_8px_30px_rgba(22,20,15,0.06)] sm:p-7">
+        <div className="relative mt-16 rounded-2xl border border-line bg-surface p-6 shadow-[0_8px_30px_rgba(22,20,15,0.06)] sm:p-7">
+          <RewriteOwl className="absolute -top-[60px] right-6 h-[64px] w-[96px]" />
           <p className="text-xs font-bold uppercase tracking-wide text-accent">After</p>
           {AFTER.map(({ head, lines }, i) => (
             <div key={head} className={i ? "mt-6" : "mt-3"}>
@@ -444,7 +453,8 @@ export default function EmployersPage() {
       <section className="mt-16 rounded-2xl border border-line bg-surface p-6 text-center sm:p-8">
         <p className="text-2xl font-bold tracking-tight">Have a sales job worth explaining?</p>
         <p className="mt-2 text-[17px] text-ink-2">Paste in your job. I&apos;ll take it from there.</p>
-        <div className="mt-6">
+        <Image src="/josh-signature.png" alt="Josh" width={640} height={320} className="mx-auto mt-2 h-auto w-[150px] sm:w-[170px]" />
+        <div className="mt-4">
           <Cta price={price} big />
         </div>
       </section>
