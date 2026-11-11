@@ -74,52 +74,76 @@ const SAMPLE_SOURCES: SourceRow[] = [
 
 // The real LinkedIn post for Embold Research (shared with their OK, Nov 2026).
 const POST_URL = "https://lnkd.in/p/eKVtZvG7";
-const POST_TOP = `My favorite sales job had no playbook, no territory, and no evidence the comp plan worked.
+const POST_TOP = `This is either your dream sales job or your worst nightmare.
+
+My favorite sales job had no playbook, no territory, and no evidence the comp plan worked.
 
 I was the first sales hire at Jellyvision.
 
-Nobody had hit OTE yet.
-Nobody had been there long enough to miss it either.`;
-const POST_REST = `Someone commented on my last post:
-“Ask how many reps hit full OTE. It’s the only number I’d trust.”
-It’s a question I’d ask, too.
+Nobody had hit OTE yet. Nobody had been there long enough to miss it either.`;
+const POST_REST = `I loved figuring it out.
 
-I’d also want to know what I’d get to build.
-At Jellyvision, I loved figuring things out.
+My first 40 cold emails got zero replies. Then I tried something else and someone wrote back.
 
-You try something. It goes nowhere.
+You try something. Nothing.
 You try something else. Someone buys.
-Then someone else buys for the same reason.
-And you start to think, “We might have something here.”
+Then someone else.
 
-Your fingerprints are on it.
+And one day, the thing you figured out becomes what the next hire gets taught.
 
-A deal you won opened a market. Something you learned became the thing the next hire gets taught.
+Your fingerprints are on the business. That's a pretty cool feeling.
 
-You don’t have to be the first sales hire to get that feeling.
+It's what caught my attention about this opportunity at Embold Research.
 
-That’s what caught my attention about Embold Research.
+Nobody wants to spend years and millions on a project and then find out the town hates it.
 
-They already have people selling Embold, some of whom also sell their other brand. This hire would focus exclusively on Embold and help open new markets for its public opinion research.
+Embold helps organizations understand what communities think about projects like housing, clean energy, and data centers before they pour concrete.
 
-Imagine winning that first customer in a new industry. Learning why they bought. Finding ten more.
+A few reps already sell Embold alongside another brand.
 
-Then watching a market you helped open become a meaningful part of the business.
+They're hiring a remote Director of Growth focused entirely on Embold, opening new markets and figuring out what works.
 
-Of course, excitement doesn’t pay the mortgage. Ask:
+If you want a playbook on day one, this one will drive you nuts.
+If a blank page sounds fun, keep reading.
 
-“How many reps hit OTE?”
-“Where have you already found traction?”
-“What happens if quota turns out to be wrong?”
+Embold gave me five Fast Track codes to share on Braun Board. Three are gone.
 
-You deserve honest answers.
+Grab one of the last two on the job page, include it in your application, and you're guaranteed a 25-minute screening call with their team.
 
-And if helping build what comes next makes you lean forward, take a look.`;
-const POST_COMMENT = {
-  name: "Dmytro Markov",
-  headline: "B2B Marketing & Distribution",
-  text: "What would success look like for the Director of Growth in the first six months, given they’ll be opening new markets and figuring out the playbook?",
-};
+You get to ask your questions. They get to meet the person behind the résumé.
+
+Two codes left. Two conversations.
+
+Link in the comments.`;
+// Counts as of Nov 11, 2026, about five hours after it went up.
+const POST_STATS = { impressions: "5,821", comments: 24, when: "in the first five hours" };
+// Real comments from the post, names shown, no photos.
+const POST_COMMENTS = [
+  {
+    name: "Dmytro Markov",
+    initials: "DM",
+    headline: "B2B Marketing & Distribution",
+    text: "What would success look like for the Director of Growth in the first six months, given they’ll be opening new markets and figuring out the playbook?",
+  },
+  {
+    name: "Sumit Gupta",
+    initials: "SG",
+    headline: "Founder, 10GenPartners",
+    text: "The founder's side of this matters too, Josh. A first sales hire who loves figuring it out only works if the founder can watch 40 cold emails get zero replies without stepping in to take over.",
+  },
+  {
+    name: "Arthur J.",
+    initials: "AJ",
+    headline: "Founder & CEO, Emformance",
+    text: "As a founder, I've learned to be honest with early hires about exactly that, because the right person sees it as the appeal.",
+  },
+  {
+    name: "Jay Johnston",
+    initials: "JJ",
+    headline: "elitetechsales.com",
+    text: "Some sellers want the playbook on day one. Some want the blank page. Knowing which one you are is the whole game.",
+  },
+];
 
 function H2({ children }: { children: React.ReactNode }) {
   return <h2 className="text-2xl font-bold tracking-tight">{children}</h2>;
@@ -241,22 +265,33 @@ export default function EmployersPage() {
             <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-ink">{POST_REST}</p>
           </details>
 
-          {/* A real comment from the post */}
-          <div className="mt-5 border-t border-line pt-4">
-            <div className="flex gap-3">
-              <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-line text-xs font-bold text-ink-2">
-                DM
-              </span>
-              <div className="min-w-0 rounded-xl bg-bg px-4 py-3">
-                <p className="text-sm font-semibold leading-tight">{POST_COMMENT.name}</p>
-                <p className="text-xs text-ink-3">{POST_COMMENT.headline}</p>
-                <p className="mt-2 text-[15px] leading-relaxed text-ink">{POST_COMMENT.text}</p>
+          {/* Real numbers and comments from the post */}
+          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 border-t border-line pt-3 text-sm text-ink-3">
+            <span>
+              <span className="font-semibold text-ink">{POST_STATS.impressions}</span> impressions
+            </span>
+            <span>
+              <span className="font-semibold text-ink">{POST_STATS.comments}</span> comments
+            </span>
+          </div>
+          <div className="mt-4 space-y-3">
+            {POST_COMMENTS.map((c) => (
+              <div key={c.name} className="flex gap-3">
+                <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-line text-xs font-bold text-ink-2">
+                  {c.initials}
+                </span>
+                <div className="min-w-0 rounded-xl bg-bg px-4 py-3">
+                  <p className="text-sm font-semibold leading-tight">{c.name}</p>
+                  <p className="text-xs text-ink-3">{c.headline}</p>
+                  <p className="mt-2 text-[15px] leading-relaxed text-ink">{c.text}</p>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
         <p className="mt-3 text-[15px] text-ink-3">
-          A seller asking the hiring manager a real question, right in the comments. You&apos;re welcome to jump in and answer.{" "}
+          {POST_STATS.impressions} impressions and {POST_STATS.comments} comments {POST_STATS.when}. Sellers ask real questions about the job, and founders weigh in.
+          You&apos;re welcome to jump in and answer.{" "}
           <a href={POST_URL} target="_blank" rel="noopener" className="font-semibold text-ink underline underline-offset-2">
             See the post on LinkedIn ↗
           </a>
