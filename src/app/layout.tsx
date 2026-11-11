@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { PageView } from "@/components/PageView";
+import { DeployCheck } from "@/components/DeployCheck";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
 import { CallJoshBar } from "@/components/CallJosh";
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <Suspense fallback={null}>
           <PageView />
         </Suspense>
+        <DeployCheck />
       </body>
     </html>
   );

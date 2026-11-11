@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 import { securityHeaders } from "./src/lib/security-headers";
 
 const nextConfig: NextConfig = {
+  // Lets an open tab tell when a newer deploy is live (see DeployCheck).
+  env: { NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA ?? "dev" },
   // Résumé uploads on /for-you. Vercel caps a request at about 4.5MB.
   experimental: { serverActions: { bodySizeLimit: "4.5mb" } },
   // The kit PDF is gated, so it lives outside public/ and ships with the download route.
