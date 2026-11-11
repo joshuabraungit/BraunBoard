@@ -6,6 +6,7 @@ import { applyRate, runLine, sourceRows } from "@/lib/sponsor-results";
 import { formatPrice, isRunning, sponsorPriceCents } from "@/lib/sponsor-form";
 import { renewUrl } from "@/lib/sponsor-renew";
 import { ResultsStats, SourcesTable } from "@/components/SponsorResults";
+import { fastTrackState, type FastTrackConfig } from "@/lib/fast-track";
 import { sendResults } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +33,11 @@ export default async function ResultsPage({ params, searchParams }: Props) {
   const o = await getOrderByResultsToken(token);
   if (!o) notFound();
 
-  const [counts, renewal] = await Promise.all([getResultsCounts(o.id), paidRenewalOf(o.id)]);
+  const [counts, renewal, ft] = await Promise.all([
+    getResultsCounts(o.id),
+    paidRenewalOf(o.id),
+    fastTrackState(o as typeof o & FastTrackConfig).catch(() => null),
+  ]);
   const rows = sourceRows(counts);
   const earlierClicks = Math.max(0, o.apply_clicks - counts.tracked_clicks);
   const rate = applyRate(o.views, o.apply_clicks);
@@ -47,11 +52,25 @@ export default async function ResultsPage({ params, searchParams }: Props) {
     [
       "LinkedIn post",
       o.report_linkedin_impressions != null
-        ? `${n(o.report_linkedin_impressions)} impressions${o.report_linkedin_clicks != null ? ` · ${n(o.report_linkedin_clicks)} clicks` : ""}`
+        ? [
+            `${n(o.report_linkedin_impressions)} impressions`,
+            o.report_linkedin_reactions != null && `${n(o.report_linkedin_reactions)} reactions`,
+            o.report_linkedin_comments != null && `${n(o.report_linkedin_comments)} comments`,
+            o.report_linkedin_clicks != null && `${n(o.report_linkedin_clicks)} clicks`,
+          ]
+            .filter(Boolean)
+            .join(" · ")
         : "Numbers show up here after it runs",
     ],
     ["My newsletter", o.report_newsletter_sent != null ? `Sent to ${n(o.report_newsletter_sent)} subscribers` : "Numbers show up here after it goes out"],
   ];
+  if (ft) {
+    const claimed = ft.total - ft.left;
+    channels.push([
+      "Fast Track codes",
+      claimed >= ft.total ? `All ${ft.total} claimed` : `${claimed} of ${ft.total} claimed`,
+    ]);
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -92,6 +111,11 @@ export default async function ResultsPage({ params, searchParams }: Props) {
             </li>
           ))}
         </ul>
+        {ft && ft.total > ft.left && (
+          <p className="mt-3 text-sm text-ink-3">
+            Fast Track applicants put their code (BB-FT1 to BB-FT{ft.total}) on your application. Each one gets a {(o as FastTrackConfig).fast_track_minutes ?? 25}-minute screening call.
+          </p>
+        )}
       </section>
 
       <section id="yours" className="scroll-mt-20 rounded-2xl border border-amber/40 bg-surface p-5">

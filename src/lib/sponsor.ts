@@ -645,6 +645,8 @@ export async function attachVideo(id: string, path: string | null) {
 export interface ResultsRow extends SponsoredJobRow {
   report_linkedin_impressions?: number | null;
   report_linkedin_clicks?: number | null;
+  report_linkedin_reactions?: number | null;
+  report_linkedin_comments?: number | null;
   report_newsletter_sent?: number | null;
   client_applications?: number | null;
   client_interviews?: number | null;
