@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ResultsStats, SourcesTable } from "@/components/SponsorResults";
 import type { SourceRow } from "@/lib/sponsor-results";
+import Image from "next/image";
 import Link from "next/link";
 import { formatPrice, sponsorPriceCents, SPONSOR_DAYS } from "@/lib/sponsor-form";
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/contact";
@@ -22,6 +23,7 @@ const GET = [
   ["One newsletter send.", "Your job goes out in my newsletter."],
   ["Your own job page.", "Pay, what you sell, and an Apply button that goes to your application."],
   ["A live results page.", "Views, apply clicks, and where people came from. Check it anytime."],
+  ["Fast Track, if you want it.", "A few guaranteed screening calls for Braun Board readers. More on that below."],
   ["An optional OTE badge.", "More on that below."],
 ] as const;
 
@@ -69,6 +71,55 @@ const SAMPLE_SOURCES: SourceRow[] = [
   { label: "LinkedIn", views: 11, pct: 11, clicks: 0 },
   { label: "Google", views: 4, pct: 4, clicks: 0 },
 ];
+
+// The real LinkedIn post for Embold Research (shared with their OK, Nov 2026).
+const POST_URL = "https://lnkd.in/p/eKVtZvG7";
+const POST_TOP = `My favorite sales job had no playbook, no territory, and no evidence the comp plan worked.
+
+I was the first sales hire at Jellyvision.
+
+Nobody had hit OTE yet.
+Nobody had been there long enough to miss it either.`;
+const POST_REST = `Someone commented on my last post:
+“Ask how many reps hit full OTE. It’s the only number I’d trust.”
+It’s a question I’d ask, too.
+
+I’d also want to know what I’d get to build.
+At Jellyvision, I loved figuring things out.
+
+You try something. It goes nowhere.
+You try something else. Someone buys.
+Then someone else buys for the same reason.
+And you start to think, “We might have something here.”
+
+Your fingerprints are on it.
+
+A deal you won opened a market. Something you learned became the thing the next hire gets taught.
+
+You don’t have to be the first sales hire to get that feeling.
+
+That’s what caught my attention about Embold Research.
+
+They already have people selling Embold, some of whom also sell their other brand. This hire would focus exclusively on Embold and help open new markets for its public opinion research.
+
+Imagine winning that first customer in a new industry. Learning why they bought. Finding ten more.
+
+Then watching a market you helped open become a meaningful part of the business.
+
+Of course, excitement doesn’t pay the mortgage. Ask:
+
+“How many reps hit OTE?”
+“Where have you already found traction?”
+“What happens if quota turns out to be wrong?”
+
+You deserve honest answers.
+
+And if helping build what comes next makes you lean forward, take a look.`;
+const POST_COMMENT = {
+  name: "Dmytro Markov",
+  headline: "B2B Marketing & Distribution",
+  text: "What would success look like for the Director of Growth in the first six months, given they’ll be opening new markets and figuring out the playbook?",
+};
 
 function H2({ children }: { children: React.ReactNode }) {
   return <h2 className="text-2xl font-bold tracking-tight">{children}</h2>;
@@ -167,6 +218,103 @@ export default function EmployersPage() {
           </div>
         </div>
         <p className="mt-3 text-[15px] text-ink-3">Real numbers from a recent sponsor, six days in, before the LinkedIn post and newsletter went out. Name changed.</p>
+      </section>
+
+      {/* The LinkedIn post */}
+      <section className="mt-16">
+        <H2>What the LinkedIn post looks like</H2>
+        <div className="mt-4 space-y-4 text-[17px] leading-relaxed text-ink-2">
+          <p>I don&apos;t paste your job ad into a post. I write about the job the way I&apos;d talk about it with a friend, and I tell sellers what to ask you.</p>
+          <p>You approve the post before it goes up, same as the rewrite. Here&apos;s a real one, shared with Embold Research&apos;s OK.</p>
+        </div>
+        <div className="mt-5 rounded-2xl border border-line bg-surface p-5 shadow-[0_8px_30px_rgba(22,20,15,0.06)] sm:p-6">
+          <div className="flex items-center gap-3">
+            <Image src="/josh-braun.png" alt="" width={48} height={48} className="h-12 w-12 rounded-full" />
+            <div className="min-w-0">
+              <p className="text-[15px] font-semibold leading-tight">Josh Braun</p>
+              <p className="text-xs text-ink-3">Sales trainer · 289,000 followers</p>
+            </div>
+          </div>
+          <p className="mt-4 whitespace-pre-wrap text-[15px] leading-relaxed text-ink">{POST_TOP}</p>
+          <details className="group mt-3">
+            <summary className="cursor-pointer list-none text-[15px] font-semibold text-ink-3 hover:text-ink group-open:hidden">…see more</summary>
+            <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-ink">{POST_REST}</p>
+          </details>
+
+          {/* A real comment from the post */}
+          <div className="mt-5 border-t border-line pt-4">
+            <div className="flex gap-3">
+              <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-line text-xs font-bold text-ink-2">
+                DM
+              </span>
+              <div className="min-w-0 rounded-xl bg-bg px-4 py-3">
+                <p className="text-sm font-semibold leading-tight">{POST_COMMENT.name}</p>
+                <p className="text-xs text-ink-3">{POST_COMMENT.headline}</p>
+                <p className="mt-2 text-[15px] leading-relaxed text-ink">{POST_COMMENT.text}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p className="mt-3 text-[15px] text-ink-3">
+          A seller asking the hiring manager a real question, right in the comments. You&apos;re welcome to jump in and answer.{" "}
+          <a href={POST_URL} target="_blank" rel="noopener" className="font-semibold text-ink underline underline-offset-2">
+            See the post on LinkedIn ↗
+          </a>
+        </p>
+      </section>
+
+      {/* Fast Track */}
+      <section className="mt-16">
+        <H2>Fast Track</H2>
+        <div className="mt-4 space-y-4 text-[17px] leading-relaxed text-ink-2">
+          <p>Most applications go into a pile. Sellers know it, so a lot of good ones never apply.</p>
+          <p>
+            Fast Track changes that. You pick a small number, like five. Each one is a guaranteed screening call. Braun Board readers claim a code on your job
+            page and put it on your application. Your team sets up the call.
+          </p>
+          <p>It&apos;s optional, and it&apos;s part of the package.</p>
+        </div>
+        <div className="mt-5 rounded-2xl border-2 border-ink bg-surface p-5 sm:p-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-xs font-bold uppercase tracking-wide text-ink">Fast Track</p>
+            <p className="text-sm font-bold text-accent">2 of 5 left</p>
+          </div>
+          <p className="mt-2 text-[17px] font-semibold leading-snug text-ink">5 guaranteed 25-minute screening calls with Acme.</p>
+          <div className="mt-3 flex gap-1.5" aria-hidden>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <span key={i} className={`h-2.5 flex-1 rounded-full ${i < 2 ? "bg-accent" : "bg-line"}`} />
+            ))}
+          </div>
+          <p className="mt-3 text-[15px] text-ink-2">Grab a code, put it on your application, and Acme&apos;s team will set up a call with you. Once they&apos;re gone, they&apos;re gone.</p>
+        </div>
+        <p className="mt-3 text-[15px] text-ink-3">What sellers see on your job page.</p>
+        <div className="mt-6 space-y-4 text-[17px] leading-relaxed text-ink-2">
+          <p className="font-semibold text-ink">Why it matters</p>
+          <ul className="space-y-3">
+            <li className="flex gap-3">
+              <span aria-hidden="true" className="mt-0.5 font-bold text-accent">✓</span>
+              <span>
+                <span className="font-semibold text-ink">It gets sellers off the fence.</span> A real shot at a conversation is a good reason for someone who
+                already has a job to raise their hand.
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <span aria-hidden="true" className="mt-0.5 font-bold text-accent">✓</span>
+              <span>
+                <span className="font-semibold text-ink">You know where they came from.</span> Every code is tied to a name and email, so you can spot Braun Board
+                applicants right away.
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <span aria-hidden="true" className="mt-0.5 font-bold text-accent">✓</span>
+              <span>
+                <span className="font-semibold text-ink">You stay in control.</span> You choose how many calls and how long they are. A screening call is just a
+                conversation. Whether anyone moves forward is still up to you.
+              </span>
+            </li>
+          </ul>
+          <p>Embold Research offered five. All five were claimed.</p>
+        </div>
       </section>
 
       {/* OTE badge */}
