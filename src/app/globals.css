@@ -123,11 +123,3 @@ body {
   .owl-say { animation: none; opacity: 1; }
   .owl-glint { animation: none; display: none; }
 }
-
-/* Résumé copy (app/copy/[id]): print only the sheet, so "Save as PDF" is just the résumé. */
-@media print {
-  body:has(.resume-sheet) > *:not(main) { display: none !important; }
-  body:has(.resume-sheet) main { padding: 0; max-width: none; }
-  body:has(.resume-sheet) { background: #fff; }
-  @page { margin: 0.6in; }
-}

@@ -71,7 +71,7 @@ export function buildCopy(resume: string, swaps: Swap[], adds: Add[]): string {
 
 // ---- The plain template ----
 
-export type Block = { kind: "name" | "heading" | "bullet" | "line"; text: string };
+export type Block = { kind: "name" | "heading" | "role" | "bullet" | "line"; text: string };
 
 const HEADINGS = /^(summary|profile|about|experience|work experience|professional experience|employment|education|skills|certifications?|awards|achievements|accomplishments|more experience|languages|interests|volunteer|projects)$/i;
 
@@ -93,6 +93,8 @@ export function toBlocks(text: string): Block[] {
     if (i === 0) return { kind: "name", text: line };
     if (BULLET.test(line)) return { kind: "bullet", text: line.replace(BULLET, "") };
     if (isHeading(line)) return { kind: "heading", text: line };
+    // A plain line with bullets right under it is a job ("Account Executive, Acme · 2021 – Present").
+    if (lines[i + 1] && BULLET.test(lines[i + 1]!)) return { kind: "role", text: line };
     return { kind: "line", text: line };
   });
 }

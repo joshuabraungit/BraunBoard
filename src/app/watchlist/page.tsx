@@ -105,7 +105,7 @@ export default async function Watchlist({ searchParams }: { searchParams: Promis
                     </span>
                   </Link>
                   <a href={`/copy/${c.id}/docx`} className="text-sm font-semibold underline underline-offset-2">Word</a>
-                  <a href={`/copy/${c.id}`} className="text-sm font-semibold underline underline-offset-2">PDF</a>
+                  <a href={`/copy/${c.id}/pdf`} className="text-sm font-semibold underline underline-offset-2">PDF</a>
                   <form action={removeCopy}>
                     <input type="hidden" name="id" value={c.id} />
                     <button className="text-xs text-ink-3 hover:text-ink">Delete</button>

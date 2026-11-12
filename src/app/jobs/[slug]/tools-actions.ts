@@ -15,7 +15,7 @@ import { RESUME_MAX_BYTES } from "@/lib/resume-read";
 import { canUseTools } from "@/lib/job-tools/gate";
 import { claimToolRun, type ToolName } from "@/lib/job-tools/limit";
 import { jobContext } from "@/lib/job-tools/context";
-import { pdfText } from "@/lib/job-tools/resume-text";
+import { docxText, pdfText } from "@/lib/job-tools/resume-text";
 import { cachedChatter, fetchChatter, type Chatter } from "@/lib/job-tools/chatter";
 import { lineFromAnswer, tuneResume, type FactAdd, type Tune } from "@/lib/job-tools/tune";
 import { addFact, copyForJob, deleteCopy, deleteFact, deleteSavedResume, getSavedResume, listFacts, saveCopy, saveResume, COPY_MAX_CHARS } from "@/lib/job-tools/words-db";
@@ -59,10 +59,12 @@ export async function readResumeText(formData: FormData): Promise<Result<{ text:
   const name = file.name.toLowerCase();
   const isPdf = file.type === "application/pdf" || name.endsWith(".pdf");
   const isText = file.type.startsWith("text/") || name.endsWith(".txt");
-  if (!isPdf && !isText) return fail("Upload a PDF. Using Word? Save it as a PDF first.");
+  const isDocx = name.endsWith(".docx") || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  if (name.endsWith(".doc") && !isDocx) return fail("That's an older Word file. Open it in Word and save as .docx or PDF, then try again.");
+  if (!isPdf && !isText && !isDocx) return fail("Upload a PDF or Word file.");
   try {
     const bytes = Buffer.from(await file.arrayBuffer());
-    const text = isPdf ? await pdfText(bytes) : bytes.toString("utf8");
+    const text = isPdf ? await pdfText(bytes) : isDocx ? await docxText(bytes) : bytes.toString("utf8");
     if (text.trim().length < MIN_RESUME) return fail("I couldn't pull text out of that one. If it's a scan or an image, export a PDF from Word or Google Docs instead.");
     const user = await getUser().catch(() => null);
     if (user) await saveResume(user.id, file.name, text);
