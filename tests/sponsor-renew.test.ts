@@ -15,19 +15,19 @@ describe("renew links", () => {
 });
 
 describe("5 days left email", () => {
-  const o = { id, job_title: "Director of Growth", company: "Embold Research", contact_name: "Abbe Vacek", email: "a@x.com", ends_at: "2026-12-02T13:00:00Z" };
-  it("is low pressure and says what happens either way", () => {
-    const m = renderRenewReminder(o, "https://www.braunboard.com", 75000);
-    expect(m.subject).toBe("Director of Growth has 5 days left on Braun Board");
-    expect(m.text).toContain("another LinkedIn post and another newsletter send");
+  const o = { id, job_title: "Director of Growth", company: "Embold Research", contact_name: "Abbe Vacek", email: "a@x.com", ends_at: "2026-12-03T13:18:00Z", review_token: "abc123" };
+  it("shares results, asks how it went, offers the deck, never asks for money", () => {
+    const m = renderRenewReminder(o);
+    expect(m.subject).toBe("How'd the Director of Growth search go?");
     expect(m.text).toContain("Hi Abbe,");
-    expect(m.text).toContain("Wednesday, December 2");
-    expect(m.text).toContain("If you've found your person, congrats.");
-    expect(m.text).toContain("$750, one payment");
-    expect(m.text).toContain("Nothing renews on its own");
-    expect(m.text).toContain(`https://www.braunboard.com/sponsor/renew?t=${renewToken(id)}`);
-    expect(m.html).toContain("Renew for 30 more days");
-    expect(m.text).not.toMatch(/—/);
+    expect(m.text).toContain("Thursday, December 3");
+    expect(m.text).toContain("/results/abc123");
+    expect(m.text).toContain("Did you find your person?");
+    expect(m.text).toContain("I'd be grateful for your honest take");
+    expect(m.text).toMatch(/Either way, I'd like to send you a deck of Tongue Tied[\s\S]*Josh$/);
+    expect(m.html).toContain("See your results");
+    expect(m.text).not.toMatch(/renew|\$|\bbut\b|\blove\b/i);
+    expect(m.text).not.toMatch(/\u2014/);
   });
 });
 
@@ -37,8 +37,10 @@ describe("end-of-run thanks", () => {
     expect(m.subject).toBe("Thanks for sponsoring Director of Growth");
     expect(m.text).toContain("Hi Abbe,");
     expect(m.text).toContain("Tongue Tied");
-    expect(m.text).toContain("It doesn't matter where you found them.");
-    expect(m.text).not.toMatch(/renew|\$/i);
+    expect(m.text).toContain("Did you find your person?");
+    expect(m.text).toContain("Either way, I'd like to send you a deck of Tongue Tied");
+    expect(m.text).toContain("I'd be grateful for your honest take");
+    expect(m.text).not.toMatch(/renew|\$|\bbut\b/i);
     expect(m.text).not.toMatch(/\u2014/);
   });
 });

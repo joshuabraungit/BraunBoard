@@ -1,10 +1,13 @@
-// Renewals: the "5 days left" email and its signed renew link. No server-only import,
+// Sponsor emails: the "5 days left" results check-in, the end-of-run thank-you, and the signed renew link. No server-only import,
 // so the hourly runner (a plain script) can send the reminders.
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendEmail } from "./alerts/email";
 import { adminEmails } from "./admin-emails";
-import { formatPrice, sponsorPriceCents, SPONSOR_DAYS } from "./sponsor-form";
+
+/** Same as resultsLink in sponsor.ts, which is server-only and can't load in the hourly script. */
+const resultsLink = (o: { review_token: string | null }) =>
+  o.review_token ? `${(process.env.NEXT_PUBLIC_SITE_URL ?? "https://braunboard.com").replace(/\/$/, "")}/results/${o.review_token}` : null;
 
 export const RENEW_REMINDER_DAYS = 5;
 
@@ -28,36 +31,38 @@ export const renewUrl = (siteUrl: string, id: string) => `${siteUrl}/sponsor/ren
 export const renewDay = (iso: string) =>
   new Date(iso).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "America/New_York" });
 
-type ReminderRow = { id: string; job_title: string; company: string; contact_name: string; email: string; ends_at: string };
+type ReminderRow = { id: string; job_title: string; company: string; contact_name: string; email: string; ends_at: string; review_token: string | null };
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
-/** Josh's voice. Low pressure: congrats if they've hired, one link if they haven't, and what happens either way. */
-export function renderRenewReminder(o: ReminderRow, siteUrl: string, priceCents: number | null) {
+/** Josh's voice. The one wrap-up email, 5 days before a run ends: results, how the hire went, feedback, and a free Tongue Tied deck. No ask for money. */
+export function renderRenewReminder(o: ReminderRow) {
   const ends = renewDay(o.ends_at);
-  const link = renewUrl(siteUrl, o.id);
-  const price = priceCents ? formatPrice(priceCents) : null;
-  const subject = `${o.job_title} has ${RENEW_REMINDER_DAYS} days left on Braun Board`;
+  const link = resultsLink(o);
+  const subject = `How'd the ${o.job_title} search go?`;
   const before = [
     `Hi ${o.contact_name.trim().split(/\s+/)[0]},`,
-    `Quick heads up. ${o.job_title} comes off the Braun Board home page on ${ends}.`,
-    `If you've found your person, congrats. You don't need to do anything.`,
-    `Still looking? You can renew it. Same package as before: ${SPONSOR_DAYS} more days at the top of the home page, another LinkedIn post and another newsletter send. It picks up the day the current run ends${price ? `. ${price}, one payment` : ""}.`,
+    `Quick heads up. ${o.job_title} comes off the Braun Board home page on ${ends}. The job page stays up after that, so any links you shared still work. Thanks for trusting me with it.`,
+    link ? `Here's how it did. Views, apply clicks and where people came from:` : `Want to see how it did? Just reply and I'll send you the numbers.`,
   ];
   const after = [
-    `If you don't renew, here's what happens. On ${ends}, it comes off the home page. The job page stays up with a note that the feature ended, so old links still work. Nothing renews on its own, and you won't be charged again.`,
-    `Want to change the ad first? Just reply.`,
+    `So, the big question. Did you find your person? Or at least have a few interviews where you thought, "OK, this one gets it"? I can see clicks on Apply. After that, I'm like a parent waiting up at 2am with no texts.`,
+    `And if you have a minute, I'd be grateful for your honest take. Braun Board is still new, and I'm figuring it out as I go. What worked? What didn't? Anything you'd change? Just reply. Even one line helps.`,
+    `Either way, I'd like to send you a deck of Tongue Tied, my objection flashcards. Each card has an objection sellers hear all the time on one side, and a way to handle it on the other. Keep it, or pass it to someone on your sales team. Just reply with a name and mailing address.`,
     `Josh`,
   ];
   const p = (t: string) => `<p style="font-size:15px;line-height:1.5;color:#222;margin:0 0 14px">${esc(t)}</p>`;
+  const button = link
+    ? `<p style="margin:0 0 18px"><a href="${esc(link)}" style="display:inline-block;background:#16140f;color:#fff;text-decoration:none;font-weight:600;font-size:15px;padding:11px 18px;border-radius:8px">See your results →</a></p>`
+    : "";
   const html = `<!doctype html><html><body style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;background:#faf8f5;padding:24px">
   <table width="100%" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #eee;border-radius:10px;padding:24px"><tr><td>
   <div style="font-size:13px;color:#888">Braun Board</div><h1 style="font-size:20px;margin:6px 0 12px">${esc(subject)}</h1>
   ${before.map(p).join("")}
-  <p style="margin:0 0 18px"><a href="${esc(link)}" style="display:inline-block;background:#16140f;color:#fff;text-decoration:none;font-weight:600;font-size:15px;padding:11px 18px;border-radius:8px">Renew for ${SPONSOR_DAYS} more days →</a></p>
+  ${button}
   ${after.map(p).join("")}
   </td></tr></table></body></html>`;
-  const text = [...before, `Renew for ${SPONSOR_DAYS} more days: ${link}`, ...after].join("\n\n");
+  const text = [...before, ...(link ? [`Your results: ${link}`] : []), ...after].join("\n\n");
   return { subject, html, text };
 }
 
@@ -66,11 +71,10 @@ export function renderRenewReminder(o: ReminderRow, siteUrl: string, priceCents:
  * Skips anyone who has already renewed. Claims the row first so a rerun never double-sends.
  */
 export async function sendRenewalReminders(db: SupabaseClient, now = new Date()): Promise<number> {
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://braunboard.com";
   const soon = new Date(now.getTime() + RENEW_REMINDER_DAYS * 86_400_000).toISOString();
   const { data, error } = await db
     .from("sponsored_jobs")
-    .select("id, job_title, company, contact_name, email, ends_at")
+    .select("id, job_title, company, contact_name, email, ends_at, review_token")
     .eq("status", "live")
     .is("renewal_reminded_at", null)
     .gt("ends_at", now.toISOString())
@@ -86,7 +90,7 @@ export async function sendRenewalReminders(db: SupabaseClient, now = new Date())
       .is("renewal_reminded_at", null)
       .select("id");
     if (!claimed?.length || renewed?.length) continue;
-    await sendEmail(o.email, renderRenewReminder(o, site, sponsorPriceCents()), { replyTo: adminEmails()[0] });
+    await sendEmail(o.email, renderRenewReminder(o), { replyTo: adminEmails()[0] });
     sent++;
   }
   return sent;
@@ -94,16 +98,16 @@ export async function sendRenewalReminders(db: SupabaseClient, now = new Date())
 
 type ThanksRow = { id: string; job_title: string; contact_name: string; email: string };
 
-/** The day a run ends (and they didn't renew): a real thank-you and a gift for whoever they hire. No pitch. */
+/** The day a run ends (and they didn't renew): a real thank-you, a free Tongue Tied deck, and a feedback ask. No pitch. */
 export function renderThanksEmail(o: ThanksRow) {
   const subject = `Thanks for sponsoring ${o.job_title}`;
   const lines = [
     `Hi ${o.contact_name.trim().split(/\s+/)[0]},`,
     `${o.job_title} came off the Braun Board home page today. Thanks for trusting me with it.`,
-    `The job page stays up, so any links you shared still work.`,
-    `One more thing. When you hire someone, send me their name and mailing address. I'll send them a deck of Tongue Tied, my objection flashcards. Each card has an objection sellers hear all the time on one side, and a way to handle it on the other. A little something for their first month.`,
-    `It doesn't matter where you found them. If they're joining your sales team, the deck is theirs.`,
-    `Hope you find someone great.`,
+    `So, the big question. Did you find your person? Or at least have a few interviews where you thought, "OK, this one gets it"? I've been checking your results page like it's a fantasy football score, so I'd really like to know how it ended.`,
+    `Either way, I'd like to send you a deck of Tongue Tied, my objection flashcards. Each card has an objection sellers hear all the time on one side, and a way to handle it on the other. Keep it, or pass it to someone on your sales team. Just reply with a name and mailing address.`,
+    `And if you have a minute, I'd be grateful for your honest take. Braun Board is still new, and I'm figuring it out as I go. What worked? What didn't? Anything you'd change? Just reply. Even one line helps.`,
+    `The job page stays up, so any links you shared still work. Thanks again.`,
     `Josh`,
   ];
   const html = `<!doctype html><html><body style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;background:#faf8f5;padding:24px">
