@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { CopyButton } from "./CopyButton";
 import { LIGHT } from "./lights";
 import { TheirWords } from "./TheirWords";
+import type { GapNote } from "@/lib/job-tools/prep";
 import { forgetResume, letterForJob, myResume, peopleSay, prepForJob, readResumeText, type PrepSheet } from "@/app/jobs/[slug]/tools-actions";
 import type { Chatter } from "@/lib/job-tools/chatter";
 import type { Letter } from "@/lib/job-tools/letter";
@@ -40,9 +41,31 @@ const label = "text-xs font-bold uppercase tracking-wide text-ink-3";
 const Dot = ({ tone }: { tone: "green" | "yellow" | "red" }) => <span aria-hidden className={`mt-1.5 inline-block h-2.5 w-2.5 shrink-0 rounded-full ${LIGHT[tone]}`} />;
 const toneWord = { green: "Green light", yellow: "Yellow light", red: "Red light" } as const;
 
-export function JobTools({ slug, company, title, preview, signedIn }: { slug: string; company: string; title: string; preview: boolean; signedIn: boolean }) {
+export interface Qualify {
+  verdict: string;
+  line: string;
+  reds: string[];
+  yellows: string[];
+}
+
+export function JobTools({
+  slug,
+  company,
+  title,
+  preview,
+  signedIn,
+  qualify,
+}: {
+  slug: string;
+  company: string;
+  title: string;
+  preview: boolean;
+  signedIn: boolean;
+  qualify: Qualify;
+}) {
   const [tab, setTab] = useState<Tab | null>(null);
   const [resume, setResume] = useState<Resume | null>(null);
+  const [gapNotes, setGapNotes] = useState<GapNote[]>([]);
 
   // Signed in: the résumé saved to their account. Signed out: one read earlier in this tab.
   useEffect(() => {
@@ -79,6 +102,8 @@ export function JobTools({ slug, company, title, preview, signedIn }: { slug: st
       </div>
       <p className="mt-1 text-sm text-ink-2">Free while I see if it&apos;s useful. Tell me what you think.</p>
 
+      <WorthIt qualify={qualify} />
+
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {TABS.map((t) => (
           <button
@@ -102,15 +127,50 @@ export function JobTools({ slug, company, title, preview, signedIn }: { slug: st
         <People slug={slug} company={company} />
       </div>
       <div className={tab === "tune" ? "" : "hidden"}>
-        <TheirWords slug={slug} company={company} resume={resume} signedIn={signedIn} />
+        <TheirWords slug={slug} company={company} resume={resume} signedIn={signedIn} onGaps={setGapNotes} />
       </div>
       <div className={tab === "letter" ? "" : "hidden"}>
         {signedIn && <LetterTool slug={slug} resume={resume} company={company} />}
       </div>
       <div className={tab === "prep" ? "" : "hidden"}>
-        {signedIn && <PrepTool slug={slug} resume={resume} company={company} title={title} />}
+        {signedIn && <PrepTool slug={slug} resume={resume} company={company} title={title} gapNotes={gapNotes} />}
       </div>
     </section>
+  );
+}
+
+/** Qualify the job before putting time into it: the same read the page shows, in two lines. */
+function WorthIt({ qualify }: { qualify: Qualify }) {
+  const { verdict, line, reds, yellows } = qualify;
+  return (
+    <div className="mt-4 rounded-xl bg-bg p-4 text-sm">
+      <p className={label}>First, is this one worth your time?</p>
+      <p className="mt-1 text-[15px]">
+        <span className="font-semibold">{verdict}.</span> {line}
+      </p>
+      {reds.length > 0 && (
+        <ul className="mt-2 space-y-1">
+          {reds.slice(0, 3).map((r) => (
+            <li key={r} className="flex gap-2">
+              <Dot tone="red" />
+              <span>{r}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {reds.length > 0 ? (
+        <p className="mt-2 text-ink-2">Might be worth asking about {reds.length === 1 ? "this" : "these"} before you spend an hour on a tailored résumé.</p>
+      ) : yellows.length > 0 ? (
+        <p className="mt-2 text-ink-2">
+          No red lights. {yellows.length} thing{yellows.length === 1 ? "" : "s"} the posting doesn&apos;t say, worth asking on the first call.
+        </p>
+      ) : (
+        <p className="mt-2 text-ink-2">No red lights. If it fits what you want, the tools below help you get ready.</p>
+      )}
+      <a href="#read" className="mt-1 inline-block text-ink-3 underline underline-offset-2 hover:text-ink">
+        See the full Braun Read
+      </a>
+    </div>
   );
 }
 
@@ -289,6 +349,7 @@ function sheetText(s: PrepSheet, company: string, title: string): string {
     for (const st of s.stories) out.push(`- ${st.title} (${st.when})`, ...st.beats.map((b) => `    - ${b}`));
     out.push("");
   }
+  if (s.gap_talk.length) out.push("IF THEY ASK ABOUT SOMETHING YOU HAVEN'T DONE", ...s.gap_talk.map((g) => `- ${g.want}: "${g.say}"`), "");
   if (s.lights.length) out.push("ASK ABOUT", ...s.lights.map((l) => `- [${l.tone}] ${l.text}`), "");
   if (s.chatter?.lines.length) out.push("WHAT PEOPLE SAY", ...s.chatter.lines.map((l) => `- [${l.tone}] ${l.text} (${l.url})`), "");
   out.push("QUESTIONS TO ASK", ...[...s.questions, ...s.asks].map((q) => `- ${q.text}`));
@@ -311,7 +372,7 @@ function printSheet(s: PrepSheet, company: string, title: string) {
   w.document.close();
 }
 
-function PrepTool({ slug, resume, company, title }: { slug: string; resume: Resume | null; company: string; title: string }) {
+function PrepTool({ slug, resume, company, title, gapNotes }: { slug: string; resume: Resume | null; company: string; title: string; gapNotes: GapNote[] }) {
   const { data, busy, error, run } = useRun<PrepSheet>();
   const [stage, setStage] = useState<keyof typeof STAGE_LABELS>("hiring_manager");
   const [bio, setBio] = useState("");
@@ -342,10 +403,15 @@ function PrepTool({ slug, resume, company, title }: { slug: string; resume: Resu
           placeholder="A win and a loss, a few lines each: who it was, what you did, how it ended. Skip it and I'll pull from your résumé."
         />
       </label>
-      <button type="button" className={btn} disabled={busy || (!resume && stories.trim().length < 40)} onClick={() => run(() => prepForJob(slug, { resume: resume?.text ?? "", stage, bio, stories }))}>
+      <button type="button" className={btn} disabled={busy || (!resume && stories.trim().length < 40)} onClick={() => run(() => prepForJob(slug, { resume: resume?.text ?? "", stage, bio, stories, gaps: gapNotes }))}>
         {busy ? "Building your sheet… (about 20 seconds)" : data ? "Build it again" : "Build my prep sheet"}
       </button>
       {!resume && stories.trim().length < 40 && <p className="text-xs text-ink-3">Add your résumé or write a story or two to start.</p>}
+      {gapNotes.length > 0 && (
+        <p className="text-xs text-ink-3">
+          Using your {gapNotes.length} answer{gapNotes.length === 1 ? "" : "s"} from Say it in their words.
+        </p>
+      )}
       {error && <p className="text-sm text-red">{error}</p>}
       {data && (
         <div className="rounded-xl border border-line bg-bg p-4">
@@ -379,6 +445,18 @@ function PrepTool({ slug, resume, company, title }: { slug: string; resume: Resu
                     </ul>
                   </div>
                 ))}
+              </div>
+            )}
+            {data.gap_talk.length > 0 && (
+              <div>
+                <p className={label}>If they ask about something you haven&apos;t done</p>
+                <ul className="mt-1 space-y-2">
+                  {data.gap_talk.map((g) => (
+                    <li key={g.want}>
+                      <span className="font-semibold">{g.want}.</span> &ldquo;{g.say}&rdquo;
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
             {data.lights.length > 0 && (

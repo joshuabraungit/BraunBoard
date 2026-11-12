@@ -79,7 +79,7 @@ export function BraunReadPanel({ read, hide = [] }: { read: Read; hide?: string[
   const headsUps = read.flags.filter(isHeadsUp);
   const greens = read.flags.filter((f) => f.tone === "green");
   return (
-    <section className="mt-6 overflow-hidden rounded-xl border border-line bg-surface">
+    <section id="read" className="mt-6 scroll-mt-24 overflow-hidden rounded-xl border border-line bg-surface">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line px-4 py-3">
         <h2 className="text-sm font-bold uppercase tracking-wide text-ink-2">The Braun Read</h2>
         <span className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${VERDICT_STYLE[read.verdict]}`}>{read.verdict}</span>
