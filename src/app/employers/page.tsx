@@ -39,28 +39,26 @@ const STEPS = [
   [`It ends after ${SPONSOR_DAYS} days.`, "No renewal. No surprise charge."],
 ] as const;
 
-// Illustrative: the "before" is written for this page, not taken from a real posting.
-const BEFORE =
-  "As a mission-driven, insights-led organization, we empower public sector, nonprofit, and enterprise stakeholders to unlock actionable intelligence across diverse audience ecosystems. Leveraging a proprietary blend of quantitative and qualitative methodologies, we deliver end-to-end research solutions that drive evidence-based decision-making at scale.";
+// Embold Research's real job ad (Nov 2026). "Before" is the opening of their own posting;
+// "After" is the start of the rewrite that ran on Braun Board.
+const BEFORE = [
+  "Embold Research is an audience research partner for governments, 501(c)(3)s, public affairs teams, and companies that seek reliable research on the communities they serve. We combine curiosity, rigor, and innovative technology to reach everyone from specific communities to the broader public, so leaders can make decisions with confidence.",
+  "This is a quota-carrying role focused on targeted pipeline and business development, vertical-market specialization, full sales cycle, and consultative relationship ownership that reports to the Head of Growth.",
+];
 const AFTER = [
   {
-    head: "What you'll sell",
+    head: "What will you sell?",
     lines: [
-      "Imagine ordering twenty pizzas after asking one person what they like.",
-      "Hope everyone likes anchovies.",
-      "Now picture a town deciding what to build on an empty lot.",
-      "Three people at a public meeting want a merry-go-round.",
-      "What about the thousands who aren't there?",
-      "You're selling survey software that helps nonprofits and towns reach a representative mix of residents and find out what matters to them.",
-      "So the town can decide what to build before pouring the concrete.",
+      "When a town has to decide something big, like what to build on an empty lot, it usually holds a public meeting. The problem is, only a handful of people show up, and they don't speak for everyone else. Embold runs surveys that reach a real cross-section of the town, so the city knows what most people want before it spends the money.",
+      "More and more organizations want this, which means we need a real, live human to go find them. That's where you come in.",
     ],
   },
   {
-    head: "The job",
+    head: "Fun. But what's the actual job?",
     lines: [
-      "They need someone to bring in new customers. That's you.",
-      "You'll focus on opening and growing new markets. You'll start the conversations, run each deal from first call to signed contract, and stay close after the sale.",
-      "It's a quota-carrying role on a small, fully remote team.",
+      "You bring in new customers. Start the conversations yourself. Nobody's handing you a book of business.",
+      "Run each deal from first call to signed contract, and stay close after the sale, so customers come back next year.",
+      "It's quota-carrying, fully remote (with some travel), and pays $92K to $106K base, with $133.9K to $148.9K OTE.",
     ],
   },
 ];
@@ -215,11 +213,15 @@ export default function EmployersPage() {
       {/* Before and after */}
       <section className="mt-16">
         <H2>What the rewrite looks like</H2>
-        <p className="mt-2 text-[15px] text-ink-3">Illustrative example.</p>
+        <p className="mt-2 text-[15px] text-ink-3">A real one: Embold Research&apos;s Director of Growth job, before and after.</p>
         <div className="relative mt-14 rounded-2xl border border-line bg-bg p-6 sm:p-7">
           <RewriteOwl asleep className="absolute -top-[60px] right-6 h-[64px] w-[96px]" />
           <p className="text-xs font-bold uppercase tracking-wide text-ink-3">Before</p>
-          <p className="mt-3 text-[16px] leading-relaxed text-ink-3">{BEFORE}</p>
+          <div className="mt-3 space-y-3 text-[16px] leading-relaxed text-ink-3">
+            {BEFORE.map((t) => (
+              <p key={t}>{t}</p>
+            ))}
+          </div>
         </div>
         <div className="relative mt-16 rounded-2xl border border-line bg-surface p-6 shadow-[0_8px_30px_rgba(22,20,15,0.06)] sm:p-7">
           <RewriteOwl className="absolute -top-[60px] right-6 h-[64px] w-[96px]" />
