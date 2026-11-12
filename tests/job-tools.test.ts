@@ -253,3 +253,26 @@ describe("fit questions", () => {
   });
 });
 
+
+describe("3-2-1 numbers", () => {
+  it("keeps numbers that are on the résumé and turns made-up ones into 'know this one'", async () => {
+    const { cleanPrep } = await import("../src/lib/job-tools/prep");
+    const p = cleanPrep(
+      {
+        numbers: [
+          { value: "131%", label: "of quota" },
+          { value: "$2.4M", label: "closed" },
+          { value: null, label: "your average deal size" },
+          { value: "9", label: "extra" },
+        ],
+      },
+      "Closed $1.9M in new ARR (131% of quota)",
+      "",
+    );
+    expect(p.numbers).toEqual([
+      { value: "131%", label: "of quota" },
+      { value: null, label: "closed" },
+      { value: null, label: "your average deal size" },
+    ]);
+  });
+});
