@@ -35,7 +35,8 @@ describe("their words copy", () => {
     expect(blocks[0]).toEqual({ kind: "name", text: "Jane Doe" });
     expect(blocks.find((b) => b.text === "EXPERIENCE")?.kind).toBe("heading");
     expect(blocks.find((b) => b.text.startsWith("Hit 120%"))?.kind).toBe("bullet");
-    expect(blocks.find((b) => b.text === "Account Executive, Acme")?.kind).toBe("line");
+    expect(blocks.find((b) => b.text === "Account Executive, Acme")?.kind).toBe("role");
+    expect(blocks.find((b) => b.text === "jane@example.com")?.kind).toBe("line");
   });
 
   it("turns PDF column gaps into a dot", () => {

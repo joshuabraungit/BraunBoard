@@ -5,8 +5,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { answerGap, saveWordsCopy, tuneForJob, type WordsRun } from "@/app/jobs/[slug]/tools-actions";
-import { keywordScore } from "@/lib/job-tools/guard";
-import { buildCopy, toBlocks, type Add } from "@/lib/job-tools/words-text";
+import { buildCopy, type Add } from "@/lib/job-tools/words-text";
 import type { FactAdd } from "@/lib/job-tools/tune";
 
 type Choice = "yes" | "no";
@@ -51,6 +50,8 @@ export function TheirWords({ slug, company, resume, signedIn }: { slug: string; 
   const [saved, setSaved] = useState<{ id: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [showCopy, setShowCopy] = useState(false);
+  // The copy as they last edited it. Set when they hit "Make my copy".
+  const [draft, setDraft] = useState("");
 
   async function run() {
     setBusy(true);
@@ -98,7 +99,6 @@ export function TheirWords({ slug, company, resume, signedIn }: { slug: string; 
   );
   const chosenAdds: Add[] = useMemo(() => adds.filter((_, i) => addPick[i] === "yes").map((a) => ({ text: a.text, after: a.after })), [adds, addPick]);
   const copy = useMemo(() => (resume ? buildCopy(resume.text, swaps, chosenAdds) : ""), [resume, swaps, chosenAdds]);
-  const scoreNow = data ? keywordScore(data.keywords, copy) : 0;
   const undecided = data ? data.edits.filter((_, i) => !pick[i]).length + adds.filter((_, i) => !addPick[i]).length : 0;
   const changes = swaps.length + chosenAdds.length;
 
@@ -106,7 +106,7 @@ export function TheirWords({ slug, company, resume, signedIn }: { slug: string; 
     setSaving(true);
     setError("");
     try {
-      const r = await saveWordsCopy(slug, copy);
+      const r = await saveWordsCopy(slug, draft);
       if (!r.ok) return setError(r.error);
       setSaved(r.data);
     } catch {
@@ -119,7 +119,8 @@ export function TheirWords({ slug, company, resume, signedIn }: { slug: string; 
   if (!signedIn) {
     return (
       <div className="mt-3 rounded-xl bg-bg p-4 text-[15px]">
-        <p>Sign in and add your résumé once. Then any job on Braun Board is one tap away from a copy in its own words.</p>
+        <p className="font-semibold">Upload once, tailor for any job.</p>
+        <p className="mt-1 text-ink-2">Sign in and add your résumé. On any job here, you&apos;ll see your lines in their words, approve what fits, and download a copy for that job.</p>
         <Link href={`/login?next=/jobs/${slug}%23get-ready`} className={`${btn} mt-3 inline-block`}>
           Sign in →
         </Link>
@@ -147,9 +148,6 @@ export function TheirWords({ slug, company, resume, signedIn }: { slug: string; 
                   </span>
                 ))}
               </div>
-              <p className="mt-2 text-sm text-ink-2">
-                Your copy uses <span className="font-semibold text-ink">{scoreNow}%</span> of these (your résumé: {data.score_before}%).
-              </p>
             </div>
           )}
 
@@ -246,7 +244,16 @@ export function TheirWords({ slug, company, resume, signedIn }: { slug: string; 
               <span className="font-semibold">The test:</span> could you talk about every line for two minutes in an interview?
             </p>
             {undecided > 0 && <p className="mt-1 text-sm text-ink-2">{undecided} still to decide. Anything you don&apos;t pick stays the way it is.</p>}
-            <button type="button" className={`${btn} mt-3`} disabled={changes === 0} onClick={() => setShowCopy(true)}>
+            <button
+              type="button"
+              className={`${btn} mt-3`}
+              disabled={changes === 0}
+              onClick={() => {
+                setDraft(copy);
+                setSaved(null);
+                setShowCopy(true);
+              }}
+            >
               {changes === 0 ? "Pick at least one change" : `Make my copy (${changes} change${changes === 1 ? "" : "s"})`}
             </button>
           </div>
@@ -254,30 +261,27 @@ export function TheirWords({ slug, company, resume, signedIn }: { slug: string; 
           {showCopy && (
             <div>
               <p className={label}>Your copy for {company}</p>
-              <div className="mt-2 max-h-[28rem] overflow-y-auto rounded-xl border border-line bg-white p-5 text-sm leading-relaxed text-black">
-                {toBlocks(copy).map((b, i) =>
-                  b.kind === "name" ? (
-                    <p key={i} className="text-xl font-bold">{b.text}</p>
-                  ) : b.kind === "heading" ? (
-                    <p key={i} className="mt-4 border-b border-black/20 pb-0.5 text-xs font-bold uppercase tracking-wide">{b.text}</p>
-                  ) : b.kind === "bullet" ? (
-                    <p key={i} className="mt-1 pl-4 -indent-3">• {b.text}</p>
-                  ) : (
-                    <p key={i} className="mt-1">{b.text}</p>
-                  ),
-                )}
-              </div>
+              <p className="mt-1 text-sm text-ink-2">Change anything you like. It&apos;s your résumé.</p>
+              <textarea
+                rows={18}
+                className={`${field} mt-2 font-mono text-[13px]`}
+                value={draft}
+                onChange={(e) => {
+                  setDraft(e.target.value);
+                  setSaved(null);
+                }}
+              />
               {!saved ? (
                 <button type="button" className={`${btn} mt-3`} disabled={saving} onClick={save}>
-                  {saving ? "Saving…" : data.copy_id ? "Save (replaces your last copy for this job)" : "Save my copy"}
+                  {saving ? "Saving…" : data.copy_id ? "Save and download (replaces your last copy for this job)" : "Save and download"}
                 </button>
               ) : (
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <a href={`/copy/${saved.id}/docx`} className={btn}>
-                    Download Word
+                  <a href={`/copy/${saved.id}/pdf`} className={btn}>
+                    Download PDF
                   </a>
-                  <a href={`/copy/${saved.id}`} target="_blank" rel="noopener" className={ghost}>
-                    PDF
+                  <a href={`/copy/${saved.id}/docx`} className={ghost}>
+                    Word
                   </a>
                   <Link href="/watchlist#copies" className="text-sm text-ink-3 underline underline-offset-2 hover:text-ink">
                     Saved under Saved

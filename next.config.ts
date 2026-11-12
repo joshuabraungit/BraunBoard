@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   // Résumé uploads on /for-you. Vercel caps a request at about 4.5MB.
   experimental: { serverActions: { bodySizeLimit: "4.5mb" } },
   // The kit PDF is gated, so it lives outside public/ and ships with the download route.
-  outputFileTracingIncludes: { "/kit/download": ["./private/before-you-say-yes.pdf"] },
+  outputFileTracingIncludes: { "/kit/download": ["./private/before-you-say-yes.pdf"], "/copy/[id]/pdf": ["./private/fonts/*.ttf"] },
   // Same browser-security headers on every response (pages, static files, API). See security-headers.ts.
   async headers() {
     return [

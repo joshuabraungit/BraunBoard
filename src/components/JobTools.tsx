@@ -142,7 +142,7 @@ function ResumeBar({ resume, onChange, optional, signedIn }: { resume: Resume | 
           <span className="flex items-center gap-3">
             <label className="cursor-pointer text-ink-3 underline underline-offset-2 hover:text-ink">
               {busy ? "Reading…" : "Replace"}
-              <input type="file" accept=".pdf,.txt,application/pdf,text/plain" className="sr-only" disabled={busy} onChange={(e) => read(e.target.files?.[0])} />
+              <input type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" className="sr-only" disabled={busy} onChange={(e) => read(e.target.files?.[0])} />
             </label>
             <button type="button" onClick={() => onChange(null)} className="text-ink-3 underline underline-offset-2 hover:text-ink">
               {signedIn ? "Delete" : "Remove"}
@@ -151,9 +151,9 @@ function ResumeBar({ resume, onChange, optional, signedIn }: { resume: Resume | 
         </div>
       ) : (
         <label className="flex cursor-pointer flex-wrap items-center gap-2">
-          <span className={ghost}>{busy ? "Reading…" : "Add your résumé (PDF)"}</span>
+          <span className={ghost}>{busy ? "Reading…" : "Add your résumé (PDF or Word)"}</span>
           <span className="text-ink-3">{optional ? "Optional here, but it helps." : signedIn ? "Saved to your account so it works on any job. Delete it anytime." : "Stays in this browser tab. I don't save it."}</span>
-          <input type="file" accept=".pdf,.txt,application/pdf,text/plain" className="sr-only" disabled={busy} onChange={(e) => read(e.target.files?.[0])} />
+          <input type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" className="sr-only" disabled={busy} onChange={(e) => read(e.target.files?.[0])} />
         </label>
       )}
       {error && <p className="mt-2 text-red">{error}</p>}

@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 const FONT = "Calibri";
 
+
 function para(b: Block): Paragraph {
   if (b.kind === "name")
     return new Paragraph({ alignment: AlignmentType.LEFT, spacing: { after: 80 }, children: [new TextRun({ text: b.text, bold: true, size: 36, font: FONT })] });
@@ -17,6 +18,7 @@ function para(b: Block): Paragraph {
       border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "999999", space: 2 } },
       children: [new TextRun({ text: b.text.toUpperCase(), bold: true, size: 20, font: FONT })],
     });
+  if (b.kind === "role") return new Paragraph({ spacing: { before: 120, after: 40 }, children: [new TextRun({ text: b.text, bold: true, size: 21, font: FONT })] });
   if (b.kind === "bullet") return new Paragraph({ bullet: { level: 0 }, spacing: { after: 40 }, children: [new TextRun({ text: b.text, size: 21, font: FONT })] });
   return new Paragraph({ spacing: { after: 40 }, children: [new TextRun({ text: b.text, size: 21, font: FONT })] });
 }
