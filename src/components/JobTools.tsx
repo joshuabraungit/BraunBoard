@@ -326,6 +326,17 @@ function People({ slug, company }: { slug: string; company: string }) {
 
 function sheetText(s: PrepSheet, company: string, title: string): string {
   const out: string[] = [`${title} at ${company}`, `Prep for: ${STAGE_LABELS[s.stage]}`, ""];
+  out.push(
+    "3 NUMBERS TO KNOW",
+    ...s.numbers.map((n) => `- ${n.value ?? "Know this one"}: ${n.label}`),
+    "",
+    "2 STORIES TO TELL",
+    ...s.stories.slice(0, 2).map((st) => `- ${st.title}`),
+    "",
+    "1 QUESTION TO ASK",
+    `- ${s.one.text} (${s.one.why})`,
+    "",
+  );
   if (s.sell) out.push("WHAT YOU'D SELL", `- ${s.sell}`, "");
   if (s.buyer) out.push("WHO YOU'D SELL TO", `- ${s.buyer}`, "");
   if (s.interviewer.length) out.push("WHO YOU'RE MEETING", ...s.interviewer.map((b) => `- ${b}`), "");
@@ -357,6 +368,57 @@ function printSheet(s: PrepSheet, company: string, title: string) {
   w.document.close();
 }
 
+/** The 3-2-1: know 3 numbers, tell 2 stories, ask 1 question. Short enough to remember without the sheet. */
+function ThreeTwoOne({ data, company, title }: { data: PrepSheet; company: string; title: string }) {
+  const n = "font-serif text-2xl leading-none text-ink";
+  const head = "flex items-baseline gap-2 text-sm text-ink-2";
+  const gap = data.gap_talk[0];
+  return (
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm text-ink-2">
+          {company} · {STAGE_LABELS[data.stage].toLowerCase()}
+        </p>
+        <CopyButton text={sheetText(data, company, title)} label="Copy" className="text-sm text-ink-3 underline underline-offset-2 hover:text-ink" />
+      </div>
+
+      <p className={`${head} mt-3`}>
+        <span className={n}>3</span> numbers to know
+      </p>
+      <div className="mt-2 grid grid-cols-3 gap-2">
+        {data.numbers.map((x) => (
+          <div key={x.label} className="rounded-lg bg-bg px-2 py-2 text-center">
+            {x.value ? <p className="text-lg font-bold tabular-nums">{x.value}</p> : <p className="text-sm font-semibold text-amber">Know this one</p>}
+            <p className="text-xs text-ink-2">{x.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <p className={`${head} mt-4`}>
+        <span className={n}>2</span> stories to tell
+      </p>
+      <ul className="mt-1 space-y-1 text-[15px]">
+        {data.stories.slice(0, 2).map((st) => (
+          <li key={st.title}>{st.title}</li>
+        ))}
+      </ul>
+
+      <p className={`${head} mt-4`}>
+        <span className={n}>1</span> question to ask
+      </p>
+      <p className="mt-1 font-serif text-[16px] leading-snug">&ldquo;{data.one.text}&rdquo;</p>
+      <p className="mt-0.5 text-xs text-ink-3">{data.one.why}</p>
+
+      {gap && (
+        <div className="mt-4 border-t border-line pt-3 text-sm">
+          <p className="text-ink-2">If they ask about {gap.want.charAt(0).toLowerCase() === gap.want.charAt(0) ? gap.want : gap.want.replace(/^[A-Z][a-z]/, (m) => m.toLowerCase())}</p>
+          <p className="mt-0.5">&ldquo;{gap.say}&rdquo;</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PrepTool({ slug, resume, company, title, gapNotes }: { slug: string; resume: Resume | null; company: string; title: string; gapNotes: GapNote[] }) {
   const { data, busy, error, run } = useRun<PrepSheet>();
   const [stage, setStage] = useState<keyof typeof STAGE_LABELS>("hiring_manager");
@@ -374,6 +436,11 @@ function PrepTool({ slug, resume, company, title, gapNotes }: { slug: string; re
           ))}
         </div>
       </fieldset>
+      <details className="group text-sm">
+        <summary className="cursor-pointer list-none text-ink-3 underline underline-offset-2 hover:text-ink [&::-webkit-details-marker]:hidden">
+          Add who you&apos;re meeting or your own stories (optional)
+        </summary>
+        <div className="mt-2 space-y-3">
       <label className="block">
         <span className={label}>Who you&apos;re meeting (optional)</span>
         <textarea rows={3} className={`${field} mt-1`} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Paste their LinkedIn About section and recent roles. I only use what you paste." />
@@ -388,8 +455,10 @@ function PrepTool({ slug, resume, company, title, gapNotes }: { slug: string; re
           placeholder="A win and a loss, a few lines each: who it was, what you did, how it ended. Skip it and I'll pull from your résumé."
         />
       </label>
+        </div>
+      </details>
       <button type="button" className={btn} disabled={busy || (!resume && stories.trim().length < 40)} onClick={() => run(() => prepForJob(slug, { resume: resume?.text ?? "", stage, bio, stories, gaps: gapNotes }))}>
-        {busy ? "Building your sheet… (about 20 seconds)" : data ? "Build it again" : "Build my prep sheet"}
+        {busy ? "Building your 3-2-1… (about 20 seconds)" : data ? "Build it again" : "Build my 3-2-1"}
       </button>
       {!resume && stories.trim().length < 40 && <p className="text-xs text-ink-3">Add your résumé or write a story or two to start.</p>}
       {gapNotes.length > 0 && (
@@ -398,9 +467,13 @@ function PrepTool({ slug, resume, company, title, gapNotes }: { slug: string; re
         </p>
       )}
       {error && <p className="text-sm text-red">{error}</p>}
+      {data && <ThreeTwoOne data={data} company={company} title={title} />}
       {data && (
-        <div className="rounded-xl border border-line bg-bg p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+        <details className="group rounded-xl border border-line bg-bg p-4">
+          <summary className="cursor-pointer list-none text-sm font-semibold [&::-webkit-details-marker]:hidden">
+            Show the full sheet <span className="text-ink-3 group-open:hidden">↓</span>
+          </summary>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <p className="font-bold">
               Prep sheet · <span className="font-normal text-ink-2">{STAGE_LABELS[data.stage]}</span>
             </p>
@@ -477,7 +550,7 @@ function PrepTool({ slug, resume, company, title, gapNotes }: { slug: string; re
               </ul>
             </div>
           </div>
-        </div>
+        </details>
       )}
     </div>
   );

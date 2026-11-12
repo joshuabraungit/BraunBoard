@@ -265,8 +265,12 @@ export interface PrepSheet extends Prep {
   buyer: string | null;
   lights: { tone: "red" | "yellow" | "green"; text: string }[];
   asks: { text: string; why: string }[];
+  /** 3-2-1: the one question to ask. The one that tells them most whether the job is real. */
+  one: { text: string; why: string };
   chatter: Chatter | null;
 }
+
+const ATTAINMENT_Q = { text: "What percentage of the team hit quota last year?", why: "If they can't answer, that's an answer." };
 
 export async function prepForJob(
   slug: string,
@@ -313,6 +317,9 @@ export async function prepForJob(
         buyer: job.buyer ?? null,
         lights,
         asks,
+        // Attainment first: it's the question that sorts real jobs from shaky ones. If the posting
+        // already answers it, the next question from the job page's list.
+        one: asks.find((a) => /quota/i.test(a.text)) ? { ...asks.find((a) => /quota/i.test(a.text))!, why: ATTAINMENT_Q.why } : (asks[0] ?? prep.questions[0] ?? ATTAINMENT_Q),
         chatter: await cachedChatter(job.company_id),
       },
     };

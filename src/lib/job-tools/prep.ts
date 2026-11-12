@@ -3,7 +3,7 @@
 // who they're meeting, which of their deals to tell, and questions for this stage.
 import "server-only";
 import { arr, askJson, str } from "./claude";
-import { keepBacked, noDashes } from "./guard";
+import { keepBacked, noDashes, numbersIn } from "./guard";
 
 export const STAGES = {
   recruiter: "Recruiter screen",
@@ -19,7 +19,14 @@ export interface Story {
   when: string;
   beats: string[];
 }
+/** One of the "3 numbers to know". value is null when the résumé doesn't have it: they should know it anyway. */
+export interface KnowNumber {
+  value: string | null;
+  label: string;
+}
 export interface Prep {
+  /** 3-2-1: the three numbers they'll be asked about. */
+  numbers: KnowNumber[];
   interviewer: string[];
   stories: Story[];
   questions: { text: string; why: string }[];
@@ -39,19 +46,21 @@ const SYSTEM = `You build a one-page interview prep sheet for a salesperson. Bul
 
 Return ONLY JSON:
 {
+ "numbers": [{"value": "131%", "label": "of quota, FY24"}],
  "interviewer": ["2 to 4 bullets about the person they're meeting"],
- "stories": [{"title": "short name for the deal", "when": "which question this answers, e.g. 'Tell me about a deal you lost'", "beats": ["3 short beats: the situation, what they did, how it ended"]}],
+ "stories": [{"title": "one plain line naming the story, under 9 words, e.g. 'A deal you found yourself'", "when": "which question this answers, e.g. 'Tell me about a deal you lost'", "beats": ["3 short beats: the situation, what they did, how it ended"]}],
  "questions": [{"text": "a question to ask them", "why": "one short line on what the answer tells you"}],
  "gap_talk": [{"want": "the thing the job wants, as listed", "say": "how to answer honestly if it comes up"}]
 }
 
 Rules:
+- "numbers": exactly 3, the numbers a hiring manager for THIS job is most likely to ask about, in this order of preference: quota attainment, revenue closed or pipeline built, average deal size, then anything else on the résumé (meetings set, accounts, retention). "value" must be copied from the résumé exactly as written ("131%", "$1.9M", "142"). "label" is 2 to 4 words. If one of the first three isn't on the résumé, return it with "value": null and the label of what they should know (e.g. "your quota attainment"). Never estimate.
 - "interviewer": ONLY from the bio the person pasted. If they pasted nothing, return []. Never guess about someone. Note what they might care about given their role.
 - "stories": exactly 2. Pick the deal stories that best fit THIS job, from the stories they wrote or, if none, from their résumé. One win, and one loss or stall if they have one. Never invent a deal, number, customer or outcome.
 - "questions": 5 questions tuned to the interview stage. These qualify the JOB, they don't perform for it. Curious, not clever. Use the yellow and red lights and what the posting doesn't say.
   Recruiter screen: process, pay, how the team is set up. Hiring manager: how deals come in, who hits quota and why, how they coach. Panel/role play: what good looks like, what they'll grade. Final/exec: where the business is headed, why this role exists now.
   Don't repeat the questions they already have (listed below).
-- "gap_talk": one entry for each item under "They said they haven't done this", and nothing else. "say" is 1 or 2 plain sentences they could say out loud: own that they haven't done it, then point to the closest real thing from their résumé or notes, and end curious about how the team does it. Never imply they've done it. Never invent experience. If nothing on their résumé is close, just own it and ask. Empty list if there are no such items.
+- "gap_talk": one entry for each item under "They said they haven't done this", and nothing else. "say" is under 25 words, plain enough to say out loud: own that they haven't done it, then point to the closest real thing from their résumé or notes, and end curious about how the team does it. Never imply they've done it. Never invent experience. If nothing on their résumé is close, just own it and ask. Empty list if there are no such items.
 - Plain words. No em dashes.`;
 
 export function cleanPrep(raw: Record<string, unknown>, allowedForStories: string, bio: string, gapWants: string[] = []): Prep {
@@ -84,7 +93,15 @@ export function cleanPrep(raw: Record<string, unknown>, allowedForStories: strin
     .map((g) => ({ want: str(g.want, 160), say: backed(str(g.say, 400), allowedForStories) }))
     .filter((g) => g.want && g.say && wanted.has(g.want.toLowerCase()))
     .slice(0, 5);
-  return { interviewer, stories, questions, gap_talk, cut };
+  const resumeNums = new Set(numbersIn(allowedForStories));
+  const numbers: KnowNumber[] = arr(raw.numbers)
+    .map((n) => (n ?? {}) as Record<string, unknown>)
+    .map((n) => ({ value: str(n.value, 20) || null, label: noDashes(str(n.label, 40)) }))
+    .filter((n) => n.label)
+    // A number only shows if it's really on their résumé. Otherwise it becomes "know this one".
+    .map((n) => (n.value && numbersIn(n.value).length && numbersIn(n.value).every((x) => resumeNums.has(x)) ? n : { value: null, label: n.label }))
+    .slice(0, 3);
+  return { numbers, interviewer, stories, questions, gap_talk, cut };
 }
 
 export async function buildPrep(input: {
