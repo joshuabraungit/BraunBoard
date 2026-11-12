@@ -6,6 +6,9 @@ import { deleteWatch, renameWatch } from "@/app/actions";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { JobGrid } from "@/components/JobCard";
 import { WatchCompanyButton } from "@/components/Actions";
+import { canUseTools } from "@/lib/job-tools/gate";
+import { listCopies, listFacts } from "@/lib/job-tools/words-db";
+import { removeCopy, removeFact } from "@/app/jobs/[slug]/tools-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +32,8 @@ export default async function Watchlist({ searchParams }: { searchParams: Promis
 
   const [watches, state, companies] = await Promise.all([listWatches(), getUserState(), listCompanies()]);
   const saved = await getJobsByIds([...state.savedJobIds]);
+  const words = canUseTools(user);
+  const [copies, facts] = words ? await Promise.all([listCopies(user.id).catch(() => []), listFacts(user.id).catch(() => [])]) : [[], []];
   const watchedCompanies = companies.filter((c) => state.watchedCompanyIds.has(c.id));
 
   return (
@@ -85,6 +90,54 @@ export default async function Watchlist({ searchParams }: { searchParams: Promis
 
       <h2 className="mb-3 mt-10 text-lg font-bold">Saved jobs</h2>
       <JobGrid jobs={saved} ctx={{ savedJobIds: state.savedJobIds, back: "/watchlist" }} empty="Hit ♡ Save on any job to keep it here." />
+
+      {words && (
+        <>
+          <h2 id="copies" className="mb-3 mt-10 scroll-mt-24 text-lg font-bold">Résumé copies</h2>
+          {copies.length ? (
+            <ul className="divide-y divide-line rounded-xl border border-line bg-surface">
+              {copies.map((c) => (
+                <li key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                  <Link href={`/jobs/${c.job_slug}`} className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold">{c.company}</span>
+                    <span className="block truncate text-xs text-ink-3">
+                      {c.job_title} · saved {new Date(c.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                  </Link>
+                  <a href={`/copy/${c.id}/docx`} className="text-sm font-semibold underline underline-offset-2">Word</a>
+                  <a href={`/copy/${c.id}`} className="text-sm font-semibold underline underline-offset-2">PDF</a>
+                  <form action={removeCopy}>
+                    <input type="hidden" name="id" value={c.id} />
+                    <button className="text-xs text-ink-3 hover:text-ink">Delete</button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <Empty>On any job, open &ldquo;Say it in their words&rdquo; to make a copy of your résumé in that job&apos;s language. It shows up here.</Empty>
+          )}
+
+          <h2 className="mb-1 mt-10 text-lg font-bold">Things I&apos;ve done</h2>
+          <p className="mb-3 text-sm text-ink-2">What you told me when a job asked. I use these on other jobs too, and you approve every line.</p>
+          {facts.length ? (
+            <ul className="divide-y divide-line rounded-xl border border-line bg-surface">
+              {facts.map((f) => (
+                <li key={f.id} className="flex items-start gap-3 px-4 py-3">
+                  <span className="min-w-0 flex-1 text-sm">
+                    <span className="font-semibold">{f.want}:</span> {f.said}
+                  </span>
+                  <form action={removeFact}>
+                    <input type="hidden" name="id" value={f.id} />
+                    <button className="text-xs text-ink-3 hover:text-ink">Delete</button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <Empty>Nothing yet. When a job asks about something your résumé doesn&apos;t show and you say yes, it lands here.</Empty>
+          )}
+        </>
+      )}
     </>
   );
 }

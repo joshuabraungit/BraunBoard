@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CopyButton } from "@/components/CopyButton";
 import { PicksSignupFromUrl } from "@/components/PicksSignupFromUrl";
 import { PlaybookTabs } from "@/components/PlaybookTabs";
+import { toolsPublic } from "@/lib/job-tools/gate";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/their-words" },
@@ -104,6 +105,16 @@ export default function TheirWordsPage() {
           </div>
           <pre className="mt-3 max-h-80 overflow-y-auto whitespace-pre-wrap rounded-xl bg-bg p-4 font-sans text-sm leading-relaxed text-ink-2">{PROMPT}</pre>
         </div>
+
+        {toolsPublic() && (
+          <Link href="/jobs" className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-5 hover:border-line-strong">
+            <span>
+              <span className="block font-semibold">Or let Braun Board do it</span>
+              <span className="block text-sm text-ink-2">Add your résumé once. On any job, tap &ldquo;Say it in their words,&rdquo; approve each change, and download a copy for that job.</span>
+            </span>
+            <span className="shrink-0 rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white">Find a job →</span>
+          </Link>
+        )}
 
         <h3 className="mt-8 text-lg font-bold tracking-tight">What you get back</h3>
         <ol className="mt-3 space-y-4">
