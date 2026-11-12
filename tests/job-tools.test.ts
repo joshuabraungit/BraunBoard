@@ -235,3 +235,21 @@ describe("fit", () => {
     expect(cleanFit({ lines_up: "maybe" }, RESUME).lines_up).toBe("partly");
   });
 });
+
+describe("fit questions", () => {
+  it("never asks anything personal, since yes answers get saved", async () => {
+    const { cleanFit } = await import("../src/lib/job-tools/fit");
+    const f = cleanFit(
+      {
+        questions: [
+          { want: "Work authorization", ask: "Do you meet the US citizenship or green card requirement?" },
+          { want: "Boston on-site", ask: "Would you be willing to relocate to Boston?" },
+          { want: "CFO buyers", ask: "Have you sold directly to a CFO?" },
+        ],
+      },
+      RESUME,
+    );
+    expect(f.questions.map((q) => q.want)).toEqual(["CFO buyers"]);
+  });
+});
+

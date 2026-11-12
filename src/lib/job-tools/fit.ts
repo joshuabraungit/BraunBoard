@@ -37,17 +37,21 @@ Read the posting and their résumé (plus any notes they confirmed earlier). The
 - "strong": 2 to 4 things the job needs that their résumé clearly shows. "point" says what they've done, in plain words. "why" says which part of the posting it matches.
 - "explore": up to 3 things the job wants that they might have, where the résumé hints at it without making it clear. Example: the job sells to CFOs and they've "worked with finance teams".
 - "gaps": up to 3 things the job clearly requires that nothing on the résumé shows. Only real requirements, not nice-to-haves.
-- "questions": at most 3, drawn from "explore" first, then "gaps". Each is a plain, curious question asking whether they've done it and just didn't write it down. Never assume they have. "want" is the requirement in a few words.
+- "questions": at most 3, drawn from "explore" first, then "gaps". Each is a plain, curious question asking whether they've done a kind of WORK and just didn't write it down. Never assume they have. "want" is the requirement in a few words.
+  Questions are only about work experience and skills. Never ask about where they live, relocating, citizenship, visas, work authorization, age, health or anything personal. Put location, travel, language and work-authorization requirements in "gaps" as a plain note about the job instead (e.g. "The job is on-site in Boston five days a week"), never as a question.
 - "lines_up": "well" if the strong points cover what matters most, "partly" if it's mixed, "not_much" if the core of the job is something they haven't done.
 - "summary": one plain sentence about the job and their background, never about the person's worth. Example: "Your new-business record lines up well; the open question is whether you've sold to finance leaders."
 
 Rules:
 - Use only what the résumé and their notes say. Never add a number, company, title, tool, industry or result.
 - Talk to them as "you". Short sentences. Plain words. No em dashes. No score or percentage.
+- Never guess at personality or traits ("coachable", "driven", "a growth mindset"). Only what they did.
 - Don't pad. Fewer, truer points beat more points.
 
 Return ONLY JSON:
 {"lines_up": "well|partly|not_much", "summary": "...", "strong": [{"point": "...", "why": "..."}], "explore": [{"point": "...", "why": "..."}], "gaps": [{"point": "...", "why": "..."}], "questions": [{"want": "...", "ask": "..."}]}`;
+
+const PERSONAL = /\b(citizen|citizenship|green card|visa|sponsorship|work authori[sz]ation|right to work|work rights|relocat|move to|live in|living in|based in|commute|age|health|disabilit|pregnan|religio|married|children)\b/i;
 
 const points = (v: unknown, max: number): FitPoint[] =>
   arr(v)
@@ -66,6 +70,8 @@ export function cleanFit(raw: Record<string, unknown>, resume: string, facts: st
     .map((q) => (q ?? {}) as Record<string, unknown>)
     .map((q) => ({ want: noDashes(str(q.want, 120)), ask: noDashes(str(q.ask, 240)) }))
     .filter((q) => q.want && q.ask)
+    // Backstop: answers get saved, so never ask anything personal.
+    .filter((q) => !PERSONAL.test(`${q.want} ${q.ask}`))
     .slice(0, 3);
   const lu = str(raw.lines_up, 20);
   const lines_up: LinesUp = lu === "well" || lu === "partly" || lu === "not_much" ? lu : "partly";
@@ -77,7 +83,7 @@ export async function readFit(resume: string, jobText: string, facts: string[] =
   const { json } = await askJson({
     system: FIT_SYSTEM,
     user: `${jobText}\n\n---\nMy résumé:\n${resume.slice(0, 20000)}${notes}`,
-    maxTokens: 3000,
+    maxTokens: 6000,
   });
   return cleanFit(json, resume, facts);
 }
