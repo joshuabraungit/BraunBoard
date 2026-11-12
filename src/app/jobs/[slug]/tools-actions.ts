@@ -26,7 +26,6 @@ import { buildPrep, isStage, type GapNote, type Prep, type Stage } from "@/lib/j
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 const fail = (error: string) => ({ ok: false as const, error });
 
-import { MOCK } from "./mock-walkthrough";
 async function allowed(): Promise<boolean> {
   const user = await getUser().catch(() => null);
   return canUseTools(user);
@@ -102,7 +101,6 @@ export async function peopleSay(slug: string): Promise<Result<Chatter>> {
 
 /** The résumé saved to this account, if there is one. */
 export async function myResume(): Promise<Result<{ text: string; name: string } | null>> {
-  if (process.env.BYA_MOCK) { await new Promise((r) => setTimeout(r, 300)); return { ok: true, data: MOCK.resume }; }
   if (!(await allowed())) return fail("Not available yet.");
   const user = await getUser().catch(() => null);
   if (!user) return { ok: true, data: null };
@@ -124,7 +122,6 @@ export interface WordsRun extends Tune {
 
 /** "Say it in their words": suggestions for this job, from their saved résumé and notes. */
 export async function tuneForJob(slug: string): Promise<Result<WordsRun>> {
-  if (process.env.BYA_MOCK) { await new Promise((r) => setTimeout(r, 300)); return { ok: true, data: MOCK.tune }; }
   if (!(await allowed())) return fail("Not available yet.");
   const user = await getUser().catch(() => null);
   if (!user) return fail("Sign in first so I can use your saved résumé.");
@@ -146,7 +143,6 @@ export async function tuneForJob(slug: string): Promise<Result<WordsRun>> {
 
 /** Before You Apply, step 2: where they fit this job, from their saved résumé and notes. */
 export async function fitForJob(slug: string): Promise<Result<Fit>> {
-  if (process.env.BYA_MOCK) { await new Promise((r) => setTimeout(r, 300)); return { ok: true, data: MOCK.fit }; }
   if (!(await allowed())) return fail("Not available yet.");
   const user = await getUser().catch(() => null);
   if (!user) return fail("Sign in first so I can use your saved résumé.");
@@ -167,7 +163,6 @@ export async function fitForJob(slug: string): Promise<Result<Fit>> {
 
 /** A "yes, I have" answer: saved to Things I've done so the résumé copy and prep can use it. */
 export async function saveAnswer(want: string, said: string): Promise<Result<null>> {
-  if (process.env.BYA_MOCK) { await new Promise((r) => setTimeout(r, 300)); return { ok: true, data: null }; }
   if (!(await allowed())) return fail("Not available yet.");
   const user = await getUser().catch(() => null);
   if (!user) return fail("Sign in first.");
@@ -209,7 +204,6 @@ export async function answerGap(slug: string, want: string, said: string): Promi
 
 /** Save the copy they built for this job. Only the text they approved arrives here. */
 export async function saveWordsCopy(slug: string, body: string): Promise<Result<{ id: string }>> {
-  if (process.env.BYA_MOCK) { await new Promise((r) => setTimeout(r, 300)); return { ok: true, data: { id: "00000000-0000-0000-0000-0000000000aa" } }; }
   if (!(await allowed())) return fail("Not available yet.");
   const user = await getUser().catch(() => null);
   if (!user) return fail("Sign in first.");
@@ -278,7 +272,6 @@ export async function prepForJob(
   slug: string,
   input: { resume: string; stage: string; bio: string; stories: string; gaps?: GapNote[] },
 ): Promise<Result<PrepSheet>> {
-  if (process.env.BYA_MOCK) { await new Promise((r) => setTimeout(r, 300)); return { ok: true, data: MOCK.prep }; }
   if (!(await allowed())) return fail("Not available yet.");
   if (!(await getUser().catch(() => null))) return fail("Sign in first.");
   if (!isStage(input.stage)) return fail("Pick which interview this is.");
