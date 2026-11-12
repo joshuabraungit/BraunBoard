@@ -6,6 +6,9 @@ export interface Swap {
   after: string;
 }
 
+const BULLET = /^\s*[•\-*▪●◦·‣]\s*/;
+const BULLET_START = /^\s*[•\-*▪●◦·‣]\s+/;
+const CONTINUES = /^[a-z0-9$(&]/;
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const quotes = (s: string) => s.replace(/[‘’]/g, "'").replace(/[“”]/g, '"');
 
@@ -20,9 +23,10 @@ function looseRegex(line: string): RegExp | null {
 export function applySwaps(text: string, swaps: Swap[]): string {
   let out = quotes(text);
   for (const s of swaps) {
-    const re = looseRegex(s.before);
+    // Compare without bullet marks, so a rewrite never drops or doubles the line's bullet.
+    const re = looseRegex(s.before.replace(BULLET_START, ""));
     if (!re) continue;
-    out = out.replace(re, () => s.after.trim());
+    out = out.replace(re, () => s.after.trim().replace(BULLET_START, ""));
   }
   return out;
 }
@@ -34,7 +38,7 @@ export interface Add {
   after: string;
 }
 
-const BULLET = /^\s*[•\-*▪●◦·‣]\s*/;
+
 
 /** Put new lines in as bullets under the line they belong with, or in a short section at the end. */
 export function applyAdds(text: string, adds: Add[]): string {
@@ -56,7 +60,7 @@ export function applyAdds(text: string, adds: Add[]): string {
       const next = out.indexOf("\n", at + 1);
       const nextLine = out.slice(at + 1, next === -1 ? out.length : next);
       // Bullets, and wrapped bullet lines (PDFs break a long bullet onto a line starting lowercase).
-      if (!BULLET.test(nextLine) && !/^\s*[a-z]/.test(nextLine)) break;
+      if (!BULLET.test(nextLine) && !CONTINUES.test(nextLine.trim())) break;
       at = next === -1 ? out.length : next;
     }
     out = `${out.slice(0, at)}\n• ${line}${out.slice(at)}`;
@@ -88,7 +92,15 @@ function isHeading(line: string): boolean {
  */
 export function toBlocks(text: string): Block[] {
   // Wide gaps from PDF columns ("Account Executive, Acme        2021 – Present") become a dot.
-  const lines = text.split("\n").map((l) => l.trim().replace(/\s{3,}|\t+/g, " · ")).filter(Boolean);
+  const raw = text.split("\n").map((l) => l.trim().replace(/\s{3,}|\t+/g, " · ")).filter(Boolean);
+  // PDFs break a long bullet onto the next line. A line right after a bullet that starts
+  // lowercase or with a number is the rest of that bullet, not a new line.
+  const lines: string[] = [];
+  for (const l of raw) {
+    const prev = lines[lines.length - 1];
+    if (prev && BULLET.test(prev) && CONTINUES.test(l) && !BULLET.test(l)) lines[lines.length - 1] = `${prev} ${l}`;
+    else lines.push(l);
+  }
   return lines.map((line, i): Block => {
     if (i === 0) return { kind: "name", text: line };
     if (BULLET.test(line)) return { kind: "bullet", text: line.replace(BULLET, "") };

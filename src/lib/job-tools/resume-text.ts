@@ -8,9 +8,22 @@ export async function pdfText(bytes: Buffer): Promise<string> {
   return (Array.isArray(text) ? text.join("\n") : text).replace(/[ \t]+\n/g, "\n").trim();
 }
 
-/** Word (.docx): one line per paragraph, so bullets and headings stay on their own lines. */
+const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'", nbsp: " " };
+
+/** Word (.docx): one line per paragraph, with list items kept as "• " bullets. */
 export async function docxText(bytes: Buffer): Promise<string> {
   const mammoth = await import("mammoth");
-  const { value } = await mammoth.extractRawText({ buffer: bytes });
-  return value.replace(/\r/g, "").replace(/\n{2,}/g, "\n").replace(/[ \t]+\n/g, "\n").trim();
+  const { value } = await mammoth.convertToHtml({ buffer: bytes });
+  return value
+    .replace(/<li[^>]*>/gi, "\n• ")
+    .replace(/<\/(p|h[1-6]|li|tr)>|<br\s*\/?>/gi, "\n")
+    .replace(/<\/t[dh]>/gi, "  ")
+    .replace(/<img[^>]*>/gi, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&(#?\w+);/g, (m, e: string) => ENTITIES[e] ?? (e.startsWith("#") ? String.fromCodePoint(Number(e.slice(1))) : m))
+    .replace(/\r/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{2,}/g, "\n")
+    .replace(/\n• \n/g, "\n• ")
+    .trim();
 }
