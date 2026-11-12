@@ -29,7 +29,7 @@ const GET = [
 ] as const;
 
 const STEPS = [
-  ["Submit and pay.", "Paste in your job and add pay, location, and when you'd like it to start. About five minutes."],
+  ["Submit and pay.", "Paste in your job, add base pay, and you're done. About two minutes."],
   ["I review it.", "Usually within one business day. If it isn't a sales role or base pay is missing, you get a full refund."],
   ["I rewrite it. You approve it.", "I send you the plain-English version. Change anything you like. Nothing goes up until you say yes."],
   [
