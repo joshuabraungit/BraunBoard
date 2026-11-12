@@ -2,11 +2,12 @@
 // "Say it in their words": suggested rewrites in the job's language, reviewed one by one,
 // then saved as a copy for this job. The original résumé never changes.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { answerGap, saveWordsCopy, tuneForJob, type WordsRun } from "@/app/jobs/[slug]/tools-actions";
 import { buildCopy, type Add } from "@/lib/job-tools/words-text";
 import type { FactAdd } from "@/lib/job-tools/tune";
+import type { GapNote } from "@/lib/job-tools/prep";
 
 type Choice = "yes" | "no";
 const btn = "rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50";
@@ -28,7 +29,20 @@ function Decide({ choice, onChoose }: { choice: Choice | undefined; onChoose: (c
   );
 }
 
-export function TheirWords({ slug, company, resume, signedIn }: { slug: string; company: string; resume: { text: string } | null; signedIn: boolean }) {
+export function TheirWords({
+  slug,
+  company,
+  resume,
+  signedIn,
+  onGaps,
+}: {
+  slug: string;
+  company: string;
+  resume: { text: string } | null;
+  signedIn: boolean;
+  /** Their yes/no answers, so interview prep can use them. */
+  onGaps?: (notes: GapNote[]) => void;
+}) {
   const [data, setData] = useState<WordsRun | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -46,6 +60,18 @@ export function TheirWords({ slug, company, resume, signedIn }: { slug: string; 
   const [gapState, setGapState] = useState<Record<string, "open" | "no" | "busy" | "done">>({});
   const [gapText, setGapText] = useState<Record<string, string>>({});
   const [gapError, setGapError] = useState<Record<string, string>>({});
+
+  // Hand their answers to the other tools on this page (interview prep).
+  useEffect(() => {
+    if (!onGaps || !data) return;
+    const notes: GapNote[] = [];
+    for (const g of data.gaps) {
+      const st = gapState[g.want];
+      if (st === "no") notes.push({ want: g.want, has: false });
+      if (st === "done") notes.push({ want: g.want, has: true, said: gapText[g.want] ?? "" });
+    }
+    onGaps(notes);
+  }, [data, gapState, gapText, onGaps]);
 
   const [saved, setSaved] = useState<{ id: string } | null>(null);
   const [saving, setSaving] = useState(false);

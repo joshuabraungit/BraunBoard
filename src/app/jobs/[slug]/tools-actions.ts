@@ -20,7 +20,7 @@ import { cachedChatter, fetchChatter, type Chatter } from "@/lib/job-tools/chatt
 import { lineFromAnswer, tuneResume, type FactAdd, type Tune } from "@/lib/job-tools/tune";
 import { addFact, copyForJob, deleteCopy, deleteFact, deleteSavedResume, getSavedResume, listFacts, saveCopy, saveResume, COPY_MAX_CHARS } from "@/lib/job-tools/words-db";
 import { writeLetter, type Letter } from "@/lib/job-tools/letter";
-import { buildPrep, isStage, type Prep, type Stage } from "@/lib/job-tools/prep";
+import { buildPrep, isStage, type GapNote, type Prep, type Stage } from "@/lib/job-tools/prep";
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 const fail = (error: string) => ({ ok: false as const, error });
@@ -214,6 +214,13 @@ export async function letterForJob(slug: string, resume: string, why: string): P
   }
 }
 
+/** The signed-in person's "Things I've done", for stories. Best effort. */
+async function prepFacts(): Promise<string[]> {
+  const user = await getUser().catch(() => null);
+  if (!user) return [];
+  return (await listFacts(user.id).catch(() => [])).slice(0, 10).map((f) => `${f.want}: ${f.said}`);
+}
+
 export interface PrepSheet extends Prep {
   stage: Stage;
   sell: string | null;
@@ -225,7 +232,7 @@ export interface PrepSheet extends Prep {
 
 export async function prepForJob(
   slug: string,
-  input: { resume: string; stage: string; bio: string; stories: string },
+  input: { resume: string; stage: string; bio: string; stories: string; gaps?: GapNote[] },
 ): Promise<Result<PrepSheet>> {
   if (!(await allowed())) return fail("Not available yet.");
   if (!(await getUser().catch(() => null))) return fail("Sign in first.");
@@ -253,6 +260,11 @@ export async function prepForJob(
       stories: input.stories.slice(0, 4000),
       lights: lights.map((l) => l.text),
       existingQuestions: asks.map((a) => a.text),
+      gaps: (input.gaps ?? [])
+        .slice(0, 6)
+        .map((g) => ({ want: String(g.want ?? "").slice(0, 160), has: !!g.has, said: g.said ? String(g.said).slice(0, 600) : undefined }))
+        .filter((g) => g.want),
+      facts: await prepFacts(),
     });
     return {
       ok: true,

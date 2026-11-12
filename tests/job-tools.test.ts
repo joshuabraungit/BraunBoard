@@ -186,3 +186,22 @@ describe("noDashes", () => {
     expect(noDashes("Closed it — fast")).toBe("Closed it, fast");
   });
 });
+
+describe("prep gap talk", () => {
+  it("only answers the gaps they said no to, and never claims experience", async () => {
+    const { cleanPrep } = await import("../src/lib/job-tools/prep");
+    const p = cleanPrep(
+      {
+        gap_talk: [
+          { want: "MEDDICC", say: "I haven't used MEDDICC. I qualify every deal with discovery calls on budget and timing. How does your team use it?" },
+          { want: "Salesforce", say: "x" },
+          { want: "Healthcare", say: "I sold to Kaiser for 3 years." },
+        ],
+      },
+      "Sold to restaurant owners. Discovery calls on budget and timing.",
+      "",
+      ["MEDDICC", "Healthcare"],
+    );
+    expect(p.gap_talk.map((g) => g.want)).toEqual(["MEDDICC"]);
+  });
+});

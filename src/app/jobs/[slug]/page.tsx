@@ -83,6 +83,19 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
   ]);
   const product = products?.find((c) => c.id === job.company_id && c.story) ?? null;
   const read = braunRead({ ...job, company: stats });
+  // For the job tools' "is this one worth your time?" check: the same lights the Read shows.
+  const qualify = {
+    verdict: read.verdict,
+    line: read.line,
+    reds: [
+      ...read.flags.filter((f) => f.tone === "red" && f.scored !== false).map((f) => f.label),
+      ...read.checks.filter((c) => c.grade === "bad" && !c.missing).map((c) => c.detail),
+    ],
+    yellows: [
+      ...read.flags.filter((f) => f.tone === "red" && f.scored === false).map((f) => f.label),
+      ...read.checks.filter((c) => c.missing || c.grade === "unknown").map((c) => c.detail),
+    ],
+  };
   const match = watch ? scoreMatch(job, watch.prefs) : null;
   // Attainment is the question for people carrying a number. For SEs and leaders it means something else.
   const showAttainment = ATTAINMENT_ROLES.has(job.role_family) && job.seniority === "Individual Contributor";
@@ -257,7 +270,7 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
       <QuestionsPanel questions={questions} title={job.title_raw} company={job.company_name} roleFamily={job.role_family} />
 
       {/* Not live yet: only admins see this until JOB_TOOLS_PUBLIC=1. */}
-      {canUseTools(user) && <JobTools slug={job.slug} company={job.company_name} title={job.title_raw} preview={!toolsPublic()} signedIn={!!user} />}
+      {canUseTools(user) && <JobTools slug={job.slug} company={job.company_name} title={job.title_raw} preview={!toolsPublic()} signedIn={!!user} qualify={qualify} />}
 
       {/* Ask Josh: the job rides along with the message, so he sees exactly which posting it's about. */}
       <details id="ask" className="group mt-6 rounded-2xl border border-line bg-surface p-5">
