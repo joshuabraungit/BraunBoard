@@ -200,6 +200,7 @@ export async function removeFact(formData: FormData): Promise<void> {
 
 export async function letterForJob(slug: string, resume: string, why: string): Promise<Result<Letter>> {
   if (!(await allowed())) return fail("Not available yet.");
+  if (!(await getUser().catch(() => null))) return fail("Sign in first.");
   if (resume.trim().length < MIN_RESUME) return fail("Add your résumé first.");
   const bits = await loadJobBits(slug);
   if (!bits) return fail("Couldn't find that job.");
@@ -227,6 +228,7 @@ export async function prepForJob(
   input: { resume: string; stage: string; bio: string; stories: string },
 ): Promise<Result<PrepSheet>> {
   if (!(await allowed())) return fail("Not available yet.");
+  if (!(await getUser().catch(() => null))) return fail("Sign in first.");
   if (!isStage(input.stage)) return fail("Pick which interview this is.");
   if (input.resume.trim().length < MIN_RESUME && input.stories.trim().length < 40) return fail("Add your résumé or write a deal story or two first.");
   const bits = await loadJobBits(slug);
