@@ -2,7 +2,9 @@
 
 // A tab left open across a deploy has buttons that point at code that's gone ("Failed to find
 // Server Action"). When the visitor comes back to the tab, check whether the site was updated
-// and quietly reload, unless they've typed something we'd throw away.
+// and quietly reload, unless they've typed something we'd throw away. Also checks every few
+// minutes while the tab sits open, since a tab left visible overnight (or a laptop waking
+// from sleep) never fires the "came back" events.
 
 import { useEffect } from "react";
 
@@ -39,7 +41,9 @@ export function DeployCheck() {
     };
     document.addEventListener("visibilitychange", check);
     window.addEventListener("focus", check);
+    const timer = window.setInterval(check, 5 * 60_000);
     return () => {
+      window.clearInterval(timer);
       document.removeEventListener("visibilitychange", check);
       window.removeEventListener("focus", check);
     };
