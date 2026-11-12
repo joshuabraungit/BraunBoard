@@ -53,7 +53,7 @@ export default function BeforeYouApplyPage() {
       <section className="mt-6 rounded-2xl border border-line bg-surface p-5">
         <h2 className="text-xl font-bold tracking-tight">Why I built it this way</h2>
         <div className="mt-2">
-          <WhyThisWayOpen />
+          <WhyThisWayOpen builtIn={toolsPublic()} />
         </div>
       </section>
 
