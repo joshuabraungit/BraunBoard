@@ -67,6 +67,7 @@ export function TheirWords({ slug, company, resume, signedIn }: { slug: string; 
       setAdds(r.data.adds.map((a) => ({ ...a, from: "From Things I've done" })));
       setAddPick({});
       setGapState({});
+      setEditing(null);
     } catch {
       setError("Something went wrong. Try again in a minute.");
     } finally {
@@ -121,7 +122,7 @@ export function TheirWords({ slug, company, resume, signedIn }: { slug: string; 
       <div className="mt-3 rounded-xl bg-bg p-4 text-[15px]">
         <p className="font-semibold">Upload once, tailor for any job.</p>
         <p className="mt-1 text-ink-2">Sign in and add your résumé. On any job here, you&apos;ll see your lines in their words, approve what fits, and download a copy for that job.</p>
-        <Link href={`/login?next=/jobs/${slug}%23get-ready`} className={`${btn} mt-3 inline-block`}>
+        <Link href={`/login?why=words&next=/jobs/${slug}%23get-ready`} className={`${btn} mt-3 inline-block`}>
           Sign in →
         </Link>
       </div>
@@ -254,7 +255,11 @@ export function TheirWords({ slug, company, resume, signedIn }: { slug: string; 
                 setShowCopy(true);
               }}
             >
-              {changes === 0 ? "Pick at least one change" : `Make my copy (${changes} change${changes === 1 ? "" : "s"})`}
+              {changes === 0
+                ? "Pick at least one change"
+                : showCopy && draft !== copy
+                  ? "Rebuild my copy (replaces your edits below)"
+                  : `Make my copy (${changes} change${changes === 1 ? "" : "s"})`}
             </button>
           </div>
 

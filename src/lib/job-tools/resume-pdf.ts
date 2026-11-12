@@ -20,14 +20,33 @@ const loadFonts = () =>
     readFile(path.join(process.cwd(), "private", "fonts", "Inter_700Bold.ttf")),
   ]));
 
+const charSets = new WeakMap<PDFFont, Set<number>>();
+
 /** Drop characters the font can't draw rather than failing the whole download. */
 function drawable(font: PDFFont, text: string): string {
-  const set = new Set(font.getCharacterSet());
+  let set = charSets.get(font);
+  if (!set) charSets.set(font, (set = new Set(font.getCharacterSet())));
   return [...text].filter((c) => set.has(c.codePointAt(0)!)).join("");
 }
 
+/** Break a word that's wider than the line (a long URL) into pieces that fit. */
+function chop(font: PDFFont, size: number, word: string, width: number): string[] {
+  if (font.widthOfTextAtSize(word, size) <= width) return [word];
+  const out: string[] = [];
+  let piece = "";
+  for (const c of word) {
+    if (piece && font.widthOfTextAtSize(piece + c, size) > width) {
+      out.push(piece);
+      piece = "";
+    }
+    piece += c;
+  }
+  if (piece) out.push(piece);
+  return out;
+}
+
 function wrap(font: PDFFont, size: number, text: string, width: number): string[] {
-  const words = text.split(/\s+/).filter(Boolean);
+  const words = text.split(/\s+/).filter(Boolean).flatMap((w) => chop(font, size, w, width));
   const lines: string[] = [];
   let line = "";
   for (const w of words) {
@@ -84,7 +103,8 @@ export async function resumePdf(body: string, title: string): Promise<Uint8Array
       y -= 5;
       write(b.text, bold, 10.5, MARGIN.x, WIDTH, 1.5);
     } else if (b.kind === "bullet") {
-      need(14);
+      // Make room first, so the dot never sits at the bottom of a page with its text on the next.
+      need(10.5 * 1.35);
       page.drawText("•", { x: MARGIN.x + 2, y: y - 10.5 * 1.35, size: 10.5, font: reg, color: BLACK });
       write(b.text, reg, 10.5, MARGIN.x + 14, WIDTH - 14, 1.5);
     } else write(b.text, reg, 10.5, MARGIN.x, WIDTH, 1.5);

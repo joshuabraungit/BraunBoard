@@ -19,6 +19,14 @@ describe("their words copy", () => {
     expect(out.split("\n")[0]).toBe("Jane Doe");
   });
 
+  it("keeps the bullet whether or not the rewrite quotes it", () => {
+    const a = applySwaps(RESUME, [{ before: "• Hit 120% of quota in 2024", after: "Exceeded quota at 120% in 2024" }]);
+    expect(a).toContain("\n• Exceeded quota at 120% in 2024");
+    const b = applySwaps(RESUME, [{ before: "Hit 120% of quota in 2024", after: "• Exceeded quota at 120% in 2024" }]);
+    expect(b).toContain("\n• Exceeded quota at 120% in 2024");
+    expect(b).not.toContain("• • ");
+  });
+
   it("puts a new line under its job, or at the end when it can't tell", () => {
     const out = applyAdds(RESUME, [
       { text: "Ran a pilot with three restaurant groups", after: "Account Executive, Acme" },
@@ -37,6 +45,12 @@ describe("their words copy", () => {
     expect(blocks.find((b) => b.text.startsWith("Hit 120%"))?.kind).toBe("bullet");
     expect(blocks.find((b) => b.text === "Account Executive, Acme")?.kind).toBe("role");
     expect(blocks.find((b) => b.text === "jane@example.com")?.kind).toBe("line");
+  });
+
+  it("joins a bullet the PDF wrapped onto two lines", () => {
+    const blocks = toBlocks("Jane\nAE, Acme\n• Sold to ops leaders at companies with\n100 to 2,000 employees\n• Hit 120%\nSDR, Acme\n• Booked meetings");
+    expect(blocks.map((b) => b.kind)).toEqual(["name", "role", "bullet", "bullet", "role", "bullet"]);
+    expect(blocks[2]!.text).toBe("Sold to ops leaders at companies with 100 to 2,000 employees");
   });
 
   it("turns PDF column gaps into a dot", () => {

@@ -67,7 +67,14 @@ export async function readResumeText(formData: FormData): Promise<Result<{ text:
     const text = isPdf ? await pdfText(bytes) : isDocx ? await docxText(bytes) : bytes.toString("utf8");
     if (text.trim().length < MIN_RESUME) return fail("I couldn't pull text out of that one. If it's a scan or an image, export a PDF from Word or Google Docs instead.");
     const user = await getUser().catch(() => null);
-    if (user) await saveResume(user.id, file.name, text);
+    if (user) {
+      try {
+        await saveResume(user.id, file.name, text);
+      } catch (e) {
+        console.error("[tools] résumé save failed:", e instanceof Error ? e.message : e);
+        return fail("I read it, then couldn't save it to your account. Try again in a minute.");
+      }
+    }
     return { ok: true, data: { text: text.slice(0, 30000), name: file.name } };
   } catch (e) {
     console.error("[tools] résumé text failed:", e instanceof Error ? e.message : e);
