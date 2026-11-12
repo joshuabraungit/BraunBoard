@@ -95,7 +95,8 @@ export function JobTools({ slug, company, title, preview, signedIn }: { slug: st
 
       {tab && <p className="mt-3 text-sm text-ink-2">{TABS.find((t) => t.id === tab)!.blurb}</p>}
 
-      {tab && tab !== "people" && !(tab === "tune" && !signedIn) && <ResumeBar resume={resume} onChange={keep} optional={tab === "prep"} signedIn={signedIn} />}
+      {tab && tab !== "people" && signedIn && <ResumeBar resume={resume} onChange={keep} optional={tab === "prep"} signedIn={signedIn} />}
+      {(tab === "letter" || tab === "prep") && !signedIn && <SignInFirst slug={slug} />}
 
       <div className={tab === "people" ? "" : "hidden"}>
         <People slug={slug} company={company} />
@@ -104,12 +105,24 @@ export function JobTools({ slug, company, title, preview, signedIn }: { slug: st
         <TheirWords slug={slug} company={company} resume={resume} signedIn={signedIn} />
       </div>
       <div className={tab === "letter" ? "" : "hidden"}>
-        <LetterTool slug={slug} resume={resume} company={company} />
+        {signedIn && <LetterTool slug={slug} resume={resume} company={company} />}
       </div>
       <div className={tab === "prep" ? "" : "hidden"}>
-        <PrepTool slug={slug} resume={resume} company={company} title={title} />
+        {signedIn && <PrepTool slug={slug} resume={resume} company={company} title={title} />}
       </div>
     </section>
+  );
+}
+
+function SignInFirst({ slug }: { slug: string }) {
+  return (
+    <div className="mt-3 rounded-xl bg-bg p-4 text-[15px]">
+      <p className="font-semibold">Upload once, use it on any job.</p>
+      <p className="mt-1 text-ink-2">Sign in and add your résumé. Then your letter and interview prep for any job here are a tap away.</p>
+      <a href={`/login?why=words&next=/jobs/${slug}%23get-ready`} className={`${btn} mt-3 inline-block`}>
+        Sign in →
+      </a>
+    </div>
   );
 }
 
