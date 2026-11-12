@@ -51,7 +51,7 @@ Rules:
 Return ONLY JSON:
 {"lines_up": "well|partly|not_much", "summary": "...", "strong": [{"point": "...", "why": "..."}], "explore": [{"point": "...", "why": "..."}], "gaps": [{"point": "...", "why": "..."}], "questions": [{"want": "...", "ask": "..."}]}`;
 
-const PERSONAL = /\b(citizen|citizenship|green card|visa|sponsorship|work authori[sz]ation|right to work|work rights|relocat|move to|live in|living in|based in|commute|age|health|disabilit|pregnan|religio|married|children)\b/i;
+const PERSONAL = /\b(citizen|green card|visa\b|sponsorship|work authori[sz]ation|right to work|work rights|relocat|move to|live in|living in|based in|commut|health|disabilit|pregnan|religio|married|children)/i;
 
 const points = (v: unknown, max: number): FitPoint[] =>
   arr(v)
