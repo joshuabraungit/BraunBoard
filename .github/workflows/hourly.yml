@@ -57,6 +57,9 @@ jobs:
       - name: Company size (new companies)
         if: always()
         run: npx tsx scripts/size-backfill.ts 40
+      - name: Tell Bing about new and removed jobs (IndexNow)
+        if: always()
+        run: npx tsx scripts/indexnow.ts 2
       - name: Daily digest (if due)
         if: always()
         run: npm run digest -- --if-due

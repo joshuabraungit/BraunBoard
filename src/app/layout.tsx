@@ -40,6 +40,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <main className="mx-auto max-w-6xl px-4 pb-24 pt-6">{children}</main>
         <MobileTabBar />
         <footer className="border-t border-line py-6 pb-24 text-center text-xs text-ink-3 sm:pb-6">
+          <Link href="/about" className="hover:text-ink">About</Link>
+          <span className="mx-2">·</span>
           <Link href="/privacy" className="hover:text-ink">Privacy</Link>
           <span className="mx-2">·</span>
           <Link href="/terms" className="hover:text-ink">Terms</Link>
