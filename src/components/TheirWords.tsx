@@ -16,13 +16,14 @@ const field = "w-full rounded-lg border border-line-strong bg-bg p-3 text-[15px]
 const label = "text-xs font-bold uppercase tracking-wide text-ink-3";
 
 function Decide({ choice, onChoose }: { choice: Choice | undefined; onChoose: (c: Choice) => void }) {
-  const on = "border-ink bg-ink text-white";
+  // aria-pressed styles, so the picked button's colors always win over the plain ones.
+  const pick = `${ghost} aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-white`;
   return (
     <div className="mt-2 flex gap-2">
-      <button type="button" aria-pressed={choice === "yes"} className={`${ghost} ${choice === "yes" ? on : ""}`} onClick={() => onChoose("yes")}>
+      <button type="button" aria-pressed={choice === "yes"} className={pick} onClick={() => onChoose("yes")}>
         Use it
       </button>
-      <button type="button" aria-pressed={choice === "no"} className={`${ghost} ${choice === "no" ? on : ""}`} onClick={() => onChoose("no")}>
+      <button type="button" aria-pressed={choice === "no"} className={pick} onClick={() => onChoose("no")}>
         Skip
       </button>
     </div>
