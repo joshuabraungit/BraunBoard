@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/admin";
 import { AdminNotice } from "@/components/AdminNotice";
 import { CopyButton } from "@/components/CopyButton";
 import { canRefund, orderLines, resultsLink, reviewFields, reviewLink, videoUrl, type SponsoredJobRow } from "@/lib/sponsor";
-import { formatPrice, isRunning } from "@/lib/sponsor-form";
+import { REMOTE_TYPES, formatPrice, isRunning } from "@/lib/sponsor-form";
 import { reviewSummary, type AssetReview } from "@/lib/sponsor-review";
 import { cancelOrder, editCopy, goLive, removeVideo, saveLinkedInPost, sendReceiptAgain, setSponsoredStatus } from "./actions";
 import { VideoUpload } from "./VideoUpload";
@@ -213,12 +213,26 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                             )}
                           </label>
                         ))}
+                        <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
+                          <label className="block">
+                            <span className="text-xs text-ink-2">Remote or in office? (read from their description)</span>
+                            <select name="remote_type" defaultValue={r.remote_type} className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm">
+                              {REMOTE_TYPES.map((t) => (
+                                <option key={t}>{t}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="block">
+                            <span className="text-xs text-ink-2">Location (read from their description; blank = none)</span>
+                            <input name="location" defaultValue={r.location ?? ""} maxLength={120} className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm" />
+                          </label>
+                        </div>
                         <label className="flex items-center gap-2 text-sm">
                           <input type="checkbox" name="first_sales_hire" defaultChecked={!!r.first_sales_hire} className="h-4 w-4" />
                           <span>First sales hire (shows &ldquo;Ground floor: first sales hire&rdquo; when there&apos;s no OTE %)</span>
                         </label>
                         <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">Save copy</button>
-                        <p className="text-xs text-ink-3">Updates the home page card and job page right away. Pay, location and dates stay as the buyer sent them.</p>
+                        <p className="text-xs text-ink-3">Updates the home page card and job page right away. Pay and dates stay as the buyer sent them.</p>
                       </form>
                     </details>
                   )}

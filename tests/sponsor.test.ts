@@ -7,7 +7,6 @@ const good: Record<string, string> = {
   company: "Acme",
   contact_name: "Pat Lee",
   email: " Pat@Acme.com ",
-  job_title: "Mid-Market AE",
   job_url: "https://acme.com/jobs/1",
   description: "Sell to ops leaders.",
   salary_min: "$90,000",
@@ -15,11 +14,8 @@ const good: Record<string, string> = {
   ote_min: "",
   ote_max: "",
   currency: "USD",
-  location: "",
-  remote_type: "Remote",
   start_date: "",
   notes: "",
-  sales_role: "yes",
 };
 const fd = (o: Record<string, string>) => {
   const f = new FormData();
@@ -45,14 +41,17 @@ describe("parseSponsorForm", () => {
       expect(r.order.salary_min).toBe(90000);
       expect(r.order.salary_max).toBe(110000);
       expect(r.order.ote_min).toBeNull();
-      expect(r.order.location).toBeNull();
     }
   });
 
-  it("requires base pay, a sales role and a location for in-office jobs", () => {
-    const r = parseSponsorForm(fd({ ...good, salary_min: "", sales_role: "", remote_type: "Hybrid" }));
+  it("requires base pay, the apply link and the description", () => {
+    const r = parseSponsorForm(fd({ ...good, salary_min: "", job_url: "", description: "" }));
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(Object.keys(r.errors).sort()).toEqual(["location", "salary_min", "sales_role"]);
+    if (!r.ok) expect(Object.keys(r.errors).sort()).toEqual(["description", "job_url", "salary_min"]);
+  });
+
+  it("doesn't ask for title, where or a sales-role checkbox anymore", () => {
+    expect(parseSponsorForm(fd(good)).ok).toBe(true);
   });
 
   it("catches backwards ranges, half an OTE and bad links", () => {
@@ -166,12 +165,18 @@ describe("what they sell", () => {
 describe("admin edits", () => {
   const edit = (o: Record<string, string>) => {
     const f = new FormData();
-    for (const [k, v] of Object.entries({ job_title: "Director of Growth", job_url: "https://x.com/j", description: "Sell research.", product_short: "", product_story: "", ...o })) f.set(k, v);
+    for (const [k, v] of Object.entries({ job_title: "Director of Growth", job_url: "https://x.com/j", description: "Sell research.", product_short: "", product_story: "", remote_type: "Remote", location: "", ...o })) f.set(k, v);
     return parseSponsorEdit(f);
   };
   it("saves good copy and clears blank product fields", () => {
     const r = edit({ product_short: "Surveys" });
     expect(r.ok && r.edit).toMatchObject({ job_title: "Director of Growth", product_short: "Surveys", product_story: null });
+  });
+  it("lets Josh fix remote/hybrid/on-site and location", () => {
+    const r = edit({ remote_type: "Hybrid", location: " Austin, TX " });
+    expect(r.ok && r.edit).toMatchObject({ remote_type: "Hybrid", location: "Austin, TX" });
+    expect(edit({ location: "" }).ok && edit({ location: "" })).toMatchObject({ edit: { location: null } });
+    expect(edit({ remote_type: "Sometimes" }).ok).toBe(false);
   });
   it("refuses a blank title or a bad link", () => {
     expect(edit({ job_title: "" }).ok).toBe(false);

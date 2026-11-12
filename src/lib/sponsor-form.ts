@@ -27,7 +27,6 @@ const schema = z
     company: text(120),
     contact_name: text(120),
     email: z.string().trim().toLowerCase().pipe(z.email("That email doesn't look right")),
-    job_title: text(140),
     job_url: z.string().trim().pipe(z.url({ protocol: /^https?$/, error: "Paste the full link, starting with https://" })),
     description: text(10000),
     salary_min: money,
@@ -35,8 +34,6 @@ const schema = z
     ote_min: money,
     ote_max: money,
     currency: z.enum(CURRENCIES),
-    location: z.string().trim().max(120).optional().transform((v) => v || null),
-    remote_type: z.enum(REMOTE_TYPES, { error: "Pick one" }),
     start_date: z
       .string()
       .trim()
@@ -53,7 +50,6 @@ const schema = z
       .transform((v) => (v === "" ? null : Number(v))),
     product_short: z.string().trim().max(80, "Keep it under 80 characters").optional().transform((v) => v || null),
     product_story: z.string().trim().max(500, "Keep it under 500 characters").optional().transform((v) => v || null),
-    sales_role: z.literal("yes", { error: "Sponsored jobs have to be sales roles" }),
   });
 
 /** Checks that span fields. Runs on the raw input so they show alongside every other error. */
@@ -67,29 +63,31 @@ function crossChecks(raw: Record<string, unknown>): FieldErrors {
   if (ok(smin) && ok(smax) && smin > smax) e.salary_max = "Max should be at least the min";
   if ((omin === null) !== (omax === null)) e[omin === null ? "ote_min" : "ote_max"] = "Add both ends of the OTE range, or leave both blank";
   else if (ok(omin) && ok(omax) && omin > omax) e.ote_max = "Max should be at least the min";
-  const remote = String(raw.remote_type ?? "");
-  if (remote && remote !== "Remote" && !String(raw.location ?? "").trim()) e.location = "Where is the job?";
   const start = String(raw.start_date ?? "").trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(start) && start < new Date().toISOString().slice(0, 10)) e.start_date = "Pick today or later";
   return e;
 }
 
-export type SponsorOrder = Omit<z.output<typeof schema>, "sales_role" | "salary_min" | "salary_max"> & {
+/** What the form gives us. Title and where are read from the description (see sponsor-read.ts). */
+export type SponsorFormInput = Omit<z.output<typeof schema>, "salary_min" | "salary_max"> & {
   salary_min: number;
   salary_max: number;
 };
+export type SponsorOrder = SponsorFormInput & {
+  job_title: string;
+  remote_type: (typeof REMOTE_TYPES)[number];
+  location: string | null;
+};
 export type FieldErrors = Partial<Record<string, string>>;
 
-export function parseSponsorForm(fd: FormData): { ok: true; order: SponsorOrder } | { ok: false; errors: FieldErrors } {
+export function parseSponsorForm(fd: FormData): { ok: true; order: SponsorFormInput } | { ok: false; errors: FieldErrors } {
   const raw = Object.fromEntries([...fd.entries()].filter(([, v]) => typeof v === "string"));
   const r = schema.safeParse(raw);
   const errors: FieldErrors = {};
   for (const i of r.success ? [] : r.error.issues) errors[String(i.path[0] ?? "form")] ??= i.message;
   for (const [k, msg] of Object.entries(crossChecks(raw))) errors[k] ??= msg;
   if (!r.success || Object.keys(errors).length) return { ok: false, errors };
-  const { sales_role: _ok, ...order } = r.data;
-  void _ok;
-  return { ok: true, order: order as SponsorOrder };
+  return { ok: true, order: r.data as SponsorFormInput };
 }
 
 /** Logo is optional. Returns an error message, or null when it's fine (or absent). */
@@ -171,6 +169,8 @@ const editSchema = z.object({
   product_short: z.string().trim().max(80, "Keep it under 80 characters").transform((v) => v || null),
   product_story: z.string().trim().max(500, "Keep it under 500 characters").transform((v) => v || null),
   buyer_short: z.string().trim().max(100, "Keep it under 100 characters").transform((v) => v || null),
+  remote_type: z.enum(REMOTE_TYPES, { error: "Pick Remote, Hybrid or On-site" }),
+  location: z.string().trim().max(120, "Keep it under 120 characters").transform((v) => v || null),
   ote_attainment_pct: z
       .string()
       .trim()
@@ -183,7 +183,7 @@ const editSchema = z.object({
 export type SponsorEdit = z.output<typeof editSchema>;
 
 export function parseSponsorEdit(fd: FormData): { ok: true; edit: SponsorEdit } | { ok: false; error: string } {
-  const raw = Object.fromEntries(["job_title", "job_url", "description", "product_short", "product_story", "buyer_short", "ote_attainment_pct", "first_sales_hire"].map((k) => [k, String(fd.get(k) ?? "")]));
+  const raw = Object.fromEntries(["job_title", "job_url", "description", "product_short", "product_story", "buyer_short", "remote_type", "location", "ote_attainment_pct", "first_sales_hire"].map((k) => [k, String(fd.get(k) ?? "")]));
   const r = editSchema.safeParse(raw);
   if (!r.success) {
     const i = r.error.issues[0];

@@ -4,6 +4,7 @@
 import { redirect } from "next/navigation";
 import { checkLogo, parseSponsorForm, sponsorPriceCents, SPONSOR_DAYS, type FieldErrors } from "@/lib/sponsor-form";
 import { attachSession, createOrder, uploadLogo } from "@/lib/sponsor";
+import { readJobBasics } from "@/lib/sponsor-read";
 import { createCheckoutSession } from "@/lib/stripe";
 
 export type SponsorState = { errors: FieldErrors; values: Record<string, string> };
@@ -26,7 +27,8 @@ export async function startCheckout(_prev: SponsorState, fd: FormData): Promise<
 
   let url: string | null;
   try {
-    const o = parsed.order;
+    // Title and remote/hybrid/on-site come from the pasted description. Josh checks them in Admin.
+    const o = { ...parsed.order, ...(await readJobBasics(parsed.order.description)) };
     const orderId = await createOrder(o, price);
     const logoPath = logo instanceof File && logo.size > 0 ? await uploadLogo(orderId, logo) : null;
     const session = await createCheckoutSession({
