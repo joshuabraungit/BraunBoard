@@ -6,7 +6,7 @@ export const WHY_LEAD = "Most résumé tools try to make you look like a match. 
 /** builtIn: the Braun Board tool, where the honesty rules are checked in code. The prompt alone can only ask. */
 export const whyPoints = (builtIn: boolean): [string, string][] => [
   [
-    "No truth, no transaction.",
+    "Nothing made up.",
     builtIn
       ? "Nothing goes on your résumé that you didn't do. If a line would need a number you didn't give me, I ask. I don't guess. On Braun Board it's checked in code, not just promised."
       : "Nothing goes on your résumé that you didn't do. If a line would need a number you didn't give it, it asks. It doesn't guess. The prompt spells that out, and the test below is how you check.",

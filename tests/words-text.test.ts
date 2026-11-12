@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyAdds, applySwaps, buildCopy, copyFileName, toBlocks } from "../src/lib/job-tools/words-text";
+import { applyAdds, applySwaps, buildCopy, copyFileName, toBlocks, unwrapLines } from "../src/lib/job-tools/words-text";
 
 const RESUME = `Jane Doe
 jane@example.com
@@ -61,3 +61,11 @@ describe("their words copy", () => {
     expect(copyFileName("Embold Research", "AE / East", "docx")).toBe("Resume - Embold Research - AE East.docx");
   });
 });
+
+describe("unwrapLines", () => {
+  it("joins a wrapped bullet so the AI quotes the whole thing", () => {
+    const t = unwrapLines("AE, Acme\n- Ran full cycle with operations leaders at\ncompanies with 100–2,000 employees\n- President's Club\nEDUCATION");
+    expect(t).toBe("AE, Acme\n- Ran full cycle with operations leaders at companies with 100–2,000 employees\n- President's Club\nEDUCATION");
+  });
+});
+

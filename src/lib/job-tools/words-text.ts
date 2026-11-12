@@ -69,6 +69,18 @@ export function applyAdds(text: string, adds: Add[]): string {
   return out;
 }
 
+/** Join bullets a PDF wrapped onto two lines, so the AI sees (and quotes) whole bullets. */
+export function unwrapLines(text: string): string {
+  const out: string[] = [];
+  for (const raw of text.split("\n")) {
+    const l = raw.trimEnd();
+    const prev = out[out.length - 1];
+    if (prev && BULLET.test(prev) && l.trim() && CONTINUES.test(l.trim()) && !BULLET.test(l)) out[out.length - 1] = `${prev} ${l.trim()}`;
+    else out.push(l);
+  }
+  return out.join("\n");
+}
+
 export function buildCopy(resume: string, swaps: Swap[], adds: Add[]): string {
   return applyAdds(applySwaps(resume, swaps), adds).replace(/\n{3,}/g, "\n\n").trim();
 }

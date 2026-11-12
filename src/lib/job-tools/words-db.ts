@@ -2,6 +2,7 @@
 // Every query is filtered by the signed-in user's id. Tables have RLS on and no policies.
 import "server-only";
 import { adminClient } from "../supabase/admin";
+import { unwrapLines } from "./words-text";
 
 export interface SavedResume {
   file_name: string;
@@ -28,13 +29,14 @@ export const COPY_MAX_CHARS = 40000;
 
 export async function getSavedResume(userId: string): Promise<SavedResume | null> {
   const { data } = await adminClient().from("saved_resumes").select("file_name, body, updated_at").eq("user_id", userId).maybeSingle();
-  return (data as SavedResume | null) ?? null;
+  const r = (data as SavedResume | null) ?? null;
+  return r ? { ...r, body: unwrapLines(r.body) } : null;
 }
 
 export async function saveResume(userId: string, fileName: string, body: string): Promise<void> {
   const { error } = await adminClient()
     .from("saved_resumes")
-    .upsert({ user_id: userId, file_name: fileName.slice(0, 200), body: body.slice(0, RESUME_MAX_CHARS), updated_at: new Date().toISOString() });
+    .upsert({ user_id: userId, file_name: fileName.slice(0, 200), body: unwrapLines(body).slice(0, RESUME_MAX_CHARS), updated_at: new Date().toISOString() });
   if (error) throw error;
 }
 
