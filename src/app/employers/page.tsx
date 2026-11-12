@@ -125,6 +125,12 @@ const POST_COMMENTS = [
     initials: "DM",
     headline: "B2B Marketing & Distribution",
     text: "What would success look like for the Director of Growth in the first six months, given they’ll be opening new markets and figuring out the playbook?",
+    // Embold's own reply on the post (Nov 2026).
+    reply: {
+      name: "Embold Research",
+      initials: "ER",
+      text: "Great question! At six months, success means you’ve built a solid pipeline, are meeting your metrics, and are ramping toward your quarterly revenue goals. Just as important, you’ll know our research and work well enough to show clients how it solves their problems. You'll continue to be well supported and guided by your manager and team.",
+    },
   },
   {
     name: "Sumit Gupta",
@@ -293,6 +299,20 @@ export default function EmployersPage() {
                   <p className="text-sm font-semibold leading-tight">{c.name}</p>
                   <p className="text-xs text-ink-3">{c.headline}</p>
                   <p className="mt-2 text-[15px] leading-relaxed text-ink">{c.text}</p>
+                  {"reply" in c && c.reply && (
+                    <div className="mt-3 flex gap-3">
+                      <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink text-[11px] font-bold text-white">
+                        {c.reply.initials}
+                      </span>
+                      <div className="min-w-0 rounded-xl border border-line bg-surface px-4 py-3">
+                        <p className="text-sm font-semibold leading-tight">
+                          {c.reply.name}{" "}
+                          <span className="ml-1 rounded bg-line px-1.5 py-0.5 text-[11px] font-semibold text-ink-2">Employer</span>
+                        </p>
+                        <p className="mt-2 text-[15px] leading-relaxed text-ink">{c.reply.text}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
