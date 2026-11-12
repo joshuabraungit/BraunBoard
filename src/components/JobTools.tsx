@@ -411,7 +411,7 @@ function ThreeTwoOne({ data, company, title }: { data: PrepSheet; company: strin
 
       {gap && (
         <div className="mt-4 border-t border-line pt-3 text-sm">
-          <p className="text-ink-2">If {gap.want.toLowerCase()} comes up</p>
+          <p className="text-ink-2">If they ask about {gap.want.charAt(0).toLowerCase() === gap.want.charAt(0) ? gap.want : gap.want.replace(/^[A-Z][a-z]/, (m) => m.toLowerCase())}</p>
           <p className="mt-0.5">&ldquo;{gap.say}&rdquo;</p>
         </div>
       )}
