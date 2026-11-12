@@ -25,7 +25,8 @@ describe("their words copy", () => {
       { text: "Coached two new SDRs", after: "" },
     ]);
     const lines = out.split("\n");
-    expect(lines[lines.indexOf("Account Executive, Acme") + 1]).toBe("• Ran a pilot with three restaurant groups");
+    // Lands at the end of that job's bullets, before the next section.
+    expect(lines[lines.indexOf("EDUCATION") - 1]).toBe("• Ran a pilot with three restaurant groups");
     expect(out.trimEnd().endsWith("More experience\n• Coached two new SDRs")).toBe(true);
   });
 
@@ -35,6 +36,10 @@ describe("their words copy", () => {
     expect(blocks.find((b) => b.text === "EXPERIENCE")?.kind).toBe("heading");
     expect(blocks.find((b) => b.text.startsWith("Hit 120%"))?.kind).toBe("bullet");
     expect(blocks.find((b) => b.text === "Account Executive, Acme")?.kind).toBe("line");
+  });
+
+  it("turns PDF column gaps into a dot", () => {
+    expect(toBlocks("Jane\nAE, Acme          2021 – Present")[1]!.text).toBe("AE, Acme · 2021 – Present");
   });
 
   it("makes a safe file name", () => {

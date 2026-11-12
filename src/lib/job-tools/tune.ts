@@ -34,7 +34,7 @@ export interface Tune {
   score_after: number;
 }
 
-const SYSTEM = `You help a salesperson describe their real experience in the words one job posting uses. You change WORDS, never FACTS.
+export const TUNE_SYSTEM = `You help a salesperson describe their real experience in the words one job posting uses. You change WORDS, never FACTS.
 
 Step 1. Pick 10 to 15 keywords from the posting: the phrases it repeats or leans on (skills, methods, tools, buyer types, sales motions). Short phrases, as the posting writes them.
 Step 2. Suggest up to 8 rewrites of lines on the résumé so they use the posting's words where the résumé ALREADY shows the same thing in different words.
@@ -48,6 +48,8 @@ Hard rules:
 - Never add a number, company, product, tool, certification, industry, buyer type, title or segment the person didn't give.
 - Never make a small part of a job sound like the whole job, or like they sold to a different industry, title or company size than they did.
 - Keep it about the same length. Plain words. No em dashes.
+- Work their words into the sentence naturally. Never tack keywords on in parentheses.
+- Skip rewrites that only swap a synonym without making the line clearer to this hiring manager.
 - If nothing honest can be changed, return fewer rewrites. Zero is fine.
 
 Return ONLY JSON:
@@ -93,14 +95,19 @@ export function cleanTune(raw: Record<string, unknown>, resume: string, facts: s
   };
 }
 
-export async function tuneResume(resume: string, jobText: string, facts: string[] = []): Promise<Tune> {
+export function tuneMessage(resume: string, jobText: string, facts: string[] = []): string {
   const notes = facts.length ? `\n\n---\nThings I've done (confirmed by me):\n${facts.map((f) => `- ${f}`).join("\n")}` : "";
-  const { json } = await askJson({
-    system: SYSTEM,
-    user: `${jobText}\n\n---\nMy résumé:\n${resume.slice(0, 20000)}${notes}`,
-    maxTokens: 4500,
-  });
-  return cleanTune(json, resume, facts);
+  return `${jobText}\n\n---\nMy résumé:\n${resume.slice(0, 20000)}${notes}`;
+}
+
+/** The model's answer before the guardrails, for testing. */
+export async function tuneRaw(resume: string, jobText: string, facts: string[] = []): Promise<Record<string, unknown>> {
+  const { json } = await askJson({ system: TUNE_SYSTEM, user: tuneMessage(resume, jobText, facts), maxTokens: 4500 });
+  return json;
+}
+
+export async function tuneResume(resume: string, jobText: string, facts: string[] = []): Promise<Tune> {
+  return cleanTune(await tuneRaw(resume, jobText, facts), resume, facts);
 }
 
 // ---- A new line from a gap answer ----
@@ -109,6 +116,8 @@ const LINE_SYSTEM = `A salesperson just told you about something they've done th
 
 Rules:
 - Use only what they said. Never add a number, company, tool, industry, title or result they didn't say.
+- Say what they did, not what it proves. No "building confidence", "showing strong skills", "high-volume" or other claims about what it taught them, unless they said it.
+- If what they said doesn't actually answer the question they were asked, still write the line from what they said. Never stretch it to fit the question.
 - Use the job posting's words where they honestly fit.
 - Short: under 25 words. Start with a verb. No em dashes.
 - "after": copy EXACTLY, word for word, the résumé line this belongs under (usually the job title line of the role it happened in). If you can't tell, use "".
@@ -127,7 +136,7 @@ export async function lineFromAnswer(resume: string, jobText: string, want: stri
   const { json } = await askJson({
     system: LINE_SYSTEM,
     user: `${jobText}\n\n---\nMy résumé:\n${resume.slice(0, 20000)}\n\n---\nThey asked about: ${want}\nWhat I did: ${said}`,
-    maxTokens: 600,
+    maxTokens: 2000,
   });
   return cleanLine(json, resume, said);
 }

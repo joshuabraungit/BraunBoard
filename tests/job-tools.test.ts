@@ -177,3 +177,12 @@ describe("prep", () => {
     expect(p.questions).toHaveLength(1);
   });
 });
+
+describe("noDashes", () => {
+  it("keeps number ranges as ranges", async () => {
+    const { noDashes } = await import("../src/lib/job-tools/guard");
+    expect(noDashes("companies with 100–2,000 employees")).toBe("companies with 100 to 2,000 employees");
+    expect(noDashes("chair (2022 – 2025)")).toBe("chair (2022 to 2025)");
+    expect(noDashes("Closed it — fast")).toBe("Closed it, fast");
+  });
+});

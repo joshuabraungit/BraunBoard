@@ -140,4 +140,9 @@ export function keepBacked(text: string, allowed: string): { text: string; remov
 }
 
 /** No em or en dashes in anything we hand someone to send. */
-export const noDashes = (s: string) => s.replace(/\s*[—–]\s*/g, ", ").replace(/,\s*,/g, ",");
+export const noDashes = (s: string) =>
+  s
+    // A range between numbers ("100–2,000", "2022 – 2025") is "to", not a comma.
+    .replace(/(\d[\d,.%kKmM$]*)\s*[—–]\s*(\$?\d|present\b|Present\b)/g, "$1 to $2")
+    .replace(/\s*[—–]\s*/g, ", ")
+    .replace(/,\s*,/g, ",");
