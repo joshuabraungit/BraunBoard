@@ -137,7 +137,7 @@ export default async function ResultsPage({ params, searchParams }: Props) {
         </ul>
       </section>
 
-      <ResultsStats views={o.views} clicks={o.apply_clicks} />
+      <ResultsStats views={o.views} clicks={o.apply_clicks} applications={o.client_applications ?? null} interviews={o.client_interviews ?? null} />
 
       <section className="rounded-2xl border border-line bg-surface p-5">
         <h2 className="text-lg font-bold tracking-tight">Where people came from</h2>

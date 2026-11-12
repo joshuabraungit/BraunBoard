@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ResultsStats, SourcesTable } from "@/components/SponsorResults";
-import type { SourceRow } from "@/lib/sponsor-results";
+import { sourceRows, type SourceRow } from "@/lib/sponsor-results";
 import Image from "next/image";
 import Link from "next/link";
 import { formatPrice, sponsorPriceCents, SPONSOR_DAYS } from "@/lib/sponsor-form";
@@ -23,7 +23,7 @@ const GET = [
   ["One LinkedIn post.", "I share your job with my 289,000 followers."],
   ["One newsletter send.", "Your job goes out in my newsletter."],
   ["Your own job page.", "Pay, what you sell, and an Apply button that goes to your application."],
-  ["A live results page.", "Views, apply clicks, and where people came from. Check it anytime."],
+  ["A live results page.", "Views, apply clicks, applications, interviews, and where people came from. Check it anytime."],
   ["Fast Track, if you want it.", "A few guaranteed screening calls for Braun Board readers. More on that below."],
   ["An optional OTE badge.", "More on that below."],
 ] as const;
@@ -63,13 +63,14 @@ const AFTER = [
   },
 ];
 
-// Real numbers from a recent sponsor, 6 days into their run (Nov 8, 2026). Name and role removed.
-const SAMPLE = { views: 115, clicks: 16 };
-const SAMPLE_SOURCES: SourceRow[] = [
-  { label: "Braun Board home page and direct", views: 89, pct: 86, clicks: 0 },
-  { label: "LinkedIn", views: 11, pct: 11, clicks: 0 },
-  { label: "Google", views: 4, pct: 4, clicks: 0 },
-];
+// Real numbers from a recent sponsor, 10 days into their run (Nov 12, 2026). Applications and
+// interviews are the ones they shared on their results page. Name and role removed.
+const SAMPLE = { views: 733, clicks: 32, applications: 3, interviews: 2 };
+const SAMPLE_SOURCES: SourceRow[] = sourceRows({
+  views_by_source: { Email: 421, Direct: 115, LinkedIn: 38, Google: 4, ChatGPT: 1 },
+  clicks_by_source: {},
+  tracked_clicks: 0,
+});
 
 // The real LinkedIn post for Embold Research (shared with their OK, Nov 2026).
 const POST_URL = "https://lnkd.in/p/eKVtZvG7";
@@ -248,17 +249,17 @@ export default function EmployersPage() {
         <div className="mt-5 rounded-2xl border border-line bg-bg p-4 sm:p-6">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <p className="text-lg font-bold tracking-tight">Acme · Sales role</p>
-            <p className="text-sm font-semibold text-accent">Day 6 of 30</p>
+            <p className="text-sm font-semibold text-accent">Day 10 of 30</p>
           </div>
           <div className="mt-4">
-            <ResultsStats views={SAMPLE.views} clicks={SAMPLE.clicks} />
+            <ResultsStats views={SAMPLE.views} clicks={SAMPLE.clicks} applications={SAMPLE.applications} interviews={SAMPLE.interviews} />
           </div>
           <div className="mt-4 rounded-xl border border-line bg-surface p-4">
             <p className="font-bold">Where people came from</p>
             <SourcesTable rows={SAMPLE_SOURCES} showClicks={false} />
           </div>
         </div>
-        <p className="mt-3 text-[15px] text-ink-3">Real numbers from a recent sponsor, six days in, before the LinkedIn post and newsletter went out. Name changed.</p>
+        <p className="mt-3 text-[15px] text-ink-3">Real numbers from a recent sponsor, ten days in. Applications and interviews are the ones their team shared. Name changed.</p>
       </section>
 
       {/* The LinkedIn post */}

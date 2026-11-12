@@ -13,11 +13,29 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   );
 }
 
-export function ResultsStats({ views, clicks }: { views: number; clicks: number }) {
+/**
+ * Views and apply clicks are ours. Applications and interviews live in the sponsor's own system,
+ * so they show what the sponsor shared on the results page (a dash until they do).
+ */
+export function ResultsStats({
+  views,
+  clicks,
+  applications,
+  interviews,
+}: {
+  views: number;
+  clicks: number;
+  applications: number | null;
+  interviews: number | null;
+}) {
+  const theirs = (x: number | null) => (x == null ? "–" : n(x));
+  const sub = applications == null && interviews == null ? "Share yours below" : "From your team";
   return (
-    <section className="grid grid-cols-2 gap-3">
+    <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <Stat label="Job page views" value={n(views)} sub="People who opened your job" />
       <Stat label="Apply clicks" value={n(clicks)} sub="Went on to your application" />
+      <Stat label="Applications" value={theirs(applications)} sub={sub} />
+      <Stat label="Interviews" value={theirs(interviews)} sub={sub} />
     </section>
   );
 }

@@ -14,7 +14,7 @@ const WHAT_YOU_GET = [
   [`${SPONSOR_DAYS} days on the home page`, "Featured at the top of Braun Board, where sellers start their search."],
   ["A LinkedIn post", "I share the job with my audience of sales folks."],
   ["A newsletter send", "The job goes out to people who asked for sales jobs in their inbox."],
-  ["A live results page", "Views, apply clicks, and where people came from. Check it anytime."],
+  ["A live results page", "Views, apply clicks, applications, interviews, and where people came from. Check it anytime."],
   ["Fast Track, if you want it", "Pick a few guaranteed screening calls, like five. Braun Board readers claim a code and put it on their application."],
 ] as const;
 
