@@ -1,15 +1,14 @@
 "use client";
-// "Get ready for this one": four tools on the job page. What people say, résumé tune-up,
-// a letter, and an interview prep sheet. The résumé is read once and kept in this browser
-// tab only, so the rep can hop between jobs without uploading again.
+// "Get ready for this one": four tools on the job page. What people say, "Say it in their
+// words", a letter, and an interview prep sheet. Signed in, the résumé is saved to the
+// account so it works on any job. Signed out, it's kept in this browser tab only.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { CopyButton } from "./CopyButton";
 import { LIGHT } from "./lights";
-import { applyEdits, keywordScore } from "@/lib/job-tools/guard";
-import { letterForJob, peopleSay, prepForJob, readResumeText, tuneForJob, type PrepSheet } from "@/app/jobs/[slug]/tools-actions";
+import { TheirWords } from "./TheirWords";
+import { forgetResume, letterForJob, myResume, peopleSay, prepForJob, readResumeText, type PrepSheet } from "@/app/jobs/[slug]/tools-actions";
 import type { Chatter } from "@/lib/job-tools/chatter";
-import type { Tune } from "@/lib/job-tools/tune";
 import type { Letter } from "@/lib/job-tools/letter";
 
 const STAGE_LABELS = {
@@ -22,7 +21,7 @@ const STAGE_LABELS = {
 type Tab = "people" | "tune" | "letter" | "prep";
 const TABS: { id: Tab; label: string; blurb: string }[] = [
   { id: "people", label: "What people say", blurb: "A quick read on what people who work there say." },
-  { id: "tune", label: "Tune my résumé", blurb: "Match their words. I won't invent your past." },
+  { id: "tune", label: "Say it in their words", blurb: "Your résumé in their language. Nothing added that isn't true." },
   { id: "letter", label: "Write my letter", blurb: "Short, about them, ends with a question." },
   { id: "prep", label: "Prep my interview", blurb: "One page you can glance at mid-call." },
 ];
@@ -41,19 +40,31 @@ const label = "text-xs font-bold uppercase tracking-wide text-ink-3";
 const Dot = ({ tone }: { tone: "green" | "yellow" | "red" }) => <span aria-hidden className={`mt-1.5 inline-block h-2.5 w-2.5 shrink-0 rounded-full ${LIGHT[tone]}`} />;
 const toneWord = { green: "Green light", yellow: "Yellow light", red: "Red light" } as const;
 
-export function JobTools({ slug, company, title, preview }: { slug: string; company: string; title: string; preview: boolean }) {
+export function JobTools({ slug, company, title, preview, signedIn }: { slug: string; company: string; title: string; preview: boolean; signedIn: boolean }) {
   const [tab, setTab] = useState<Tab | null>(null);
   const [resume, setResume] = useState<Resume | null>(null);
 
-  // Bring back a résumé read earlier in this tab. Storage can be blocked, so it's best effort.
+  // Signed in: the résumé saved to their account. Signed out: one read earlier in this tab.
   useEffect(() => {
+    if (signedIn) {
+      myResume()
+        .then((r) => {
+          if (r.ok && r.data) setResume(r.data);
+        })
+        .catch(() => {});
+      return;
+    }
     try {
       const saved = sessionStorage.getItem(KEY);
       if (saved) setResume(JSON.parse(saved) as Resume);
     } catch {}
-  }, []);
+  }, [signedIn]);
   const keep = (r: Resume | null) => {
     setResume(r);
+    if (signedIn) {
+      if (!r) forgetResume().catch(() => {});
+      return;
+    }
     try {
       if (r) sessionStorage.setItem(KEY, JSON.stringify(r));
       else sessionStorage.removeItem(KEY);
@@ -84,13 +95,13 @@ export function JobTools({ slug, company, title, preview }: { slug: string; comp
 
       {tab && <p className="mt-3 text-sm text-ink-2">{TABS.find((t) => t.id === tab)!.blurb}</p>}
 
-      {tab && tab !== "people" && <ResumeBar resume={resume} onChange={keep} optional={tab === "prep"} />}
+      {tab && tab !== "people" && !(tab === "tune" && !signedIn) && <ResumeBar resume={resume} onChange={keep} optional={tab === "prep"} signedIn={signedIn} />}
 
       <div className={tab === "people" ? "" : "hidden"}>
         <People slug={slug} company={company} />
       </div>
       <div className={tab === "tune" ? "" : "hidden"}>
-        <TuneTool slug={slug} resume={resume} />
+        <TheirWords slug={slug} company={company} resume={resume} signedIn={signedIn} />
       </div>
       <div className={tab === "letter" ? "" : "hidden"}>
         <LetterTool slug={slug} resume={resume} company={company} />
@@ -102,7 +113,7 @@ export function JobTools({ slug, company, title, preview }: { slug: string; comp
   );
 }
 
-function ResumeBar({ resume, onChange, optional }: { resume: Resume | null; onChange: (r: Resume | null) => void; optional?: boolean }) {
+function ResumeBar({ resume, onChange, optional, signedIn }: { resume: Resume | null; onChange: (r: Resume | null) => void; optional?: boolean; signedIn: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function read(file: File | undefined) {
@@ -128,14 +139,20 @@ function ResumeBar({ resume, onChange, optional }: { resume: Resume | null; onCh
           <span>
             <span className="font-semibold">Your résumé:</span> {resume.name}
           </span>
-          <button type="button" onClick={() => onChange(null)} className="text-ink-3 underline underline-offset-2 hover:text-ink">
-            Remove
-          </button>
+          <span className="flex items-center gap-3">
+            <label className="cursor-pointer text-ink-3 underline underline-offset-2 hover:text-ink">
+              {busy ? "Reading…" : "Replace"}
+              <input type="file" accept=".pdf,.txt,application/pdf,text/plain" className="sr-only" disabled={busy} onChange={(e) => read(e.target.files?.[0])} />
+            </label>
+            <button type="button" onClick={() => onChange(null)} className="text-ink-3 underline underline-offset-2 hover:text-ink">
+              {signedIn ? "Delete" : "Remove"}
+            </button>
+          </span>
         </div>
       ) : (
         <label className="flex cursor-pointer flex-wrap items-center gap-2">
           <span className={ghost}>{busy ? "Reading…" : "Add your résumé (PDF)"}</span>
-          <span className="text-ink-3">{optional ? "Optional here, but it helps." : "Stays in this browser tab. I don't save it."}</span>
+          <span className="text-ink-3">{optional ? "Optional here, but it helps." : signedIn ? "Saved to your account so it works on any job. Delete it anytime." : "Stays in this browser tab. I don't save it."}</span>
           <input type="file" accept=".pdf,.txt,application/pdf,text/plain" className="sr-only" disabled={busy} onChange={(e) => read(e.target.files?.[0])} />
         </label>
       )}
@@ -202,109 +219,6 @@ function People({ slug, company }: { slug: string; company: string }) {
       )}
       {error && <p className="mt-2 text-sm text-red">{error}</p>}
       {data && <ChatterLines chatter={data} company={company} />}
-    </div>
-  );
-}
-
-function TuneTool({ slug, resume }: { slug: string; resume: Resume | null }) {
-  const { data, busy, error, run } = useRun<Tune>();
-  const [skip, setSkip] = useState<Set<number>>(new Set());
-  const chosen = useMemo(() => (data ? data.edits.filter((_, i) => !skip.has(i)) : []), [data, skip]);
-  const after = useMemo(() => (data && resume ? keywordScore(data.keywords, applyEdits(resume.text, chosen)) : 0), [data, resume, chosen]);
-  const changesText = chosen.map((e) => `CHANGE:\n${e.before}\n\nTO:\n${e.after}`).join("\n\n---\n\n");
-
-  function download() {
-    if (!resume) return;
-    const blob = new Blob([applyEdits(resume.text, chosen)], { type: "text/plain" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `${resume.name.replace(/\.[a-z]+$/i, "")}-tuned.txt`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
-
-  return (
-    <div className="mt-3">
-      <button
-        type="button"
-        className={btn}
-        disabled={busy || !resume}
-        onClick={() => {
-          setSkip(new Set());
-          run(() => tuneForJob(slug, resume!.text));
-        }}
-      >
-        {busy ? "Reading both… (about 20 seconds)" : data ? "Run it again" : "Tune my résumé for this job"}
-      </button>
-      {error && <p className="mt-2 text-sm text-red">{error}</p>}
-      {data && (
-        <div className="mt-4 space-y-5">
-          <div className="flex items-center gap-3 rounded-xl bg-bg px-4 py-3">
-            <span className="text-2xl font-bold tabular-nums">
-              {data.score_before}% <span className="text-ink-3">→</span> <span className="text-accent">{after}%</span>
-            </span>
-            <span className="text-sm text-ink-2">of their keywords on your résumé</span>
-          </div>
-
-          <div>
-            <p className={label}>Suggested changes</p>
-            {data.edits.length === 0 ? (
-              <p className="mt-2 text-sm text-ink-2">Nothing I can change without stretching the truth. Your résumé already speaks their language, or the gaps below are real.</p>
-            ) : (
-              <ul className="mt-2 space-y-3">
-                {data.edits.map((e, i) => (
-                  <li key={e.before}>
-                    <label className="flex cursor-pointer gap-3 rounded-xl border border-line p-3 has-[:checked]:border-accent">
-                      <input
-                        type="checkbox"
-                        className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]"
-                        checked={!skip.has(i)}
-                        onChange={() => {
-                          const s = new Set(skip);
-                          if (s.has(i)) s.delete(i);
-                          else s.add(i);
-                          setSkip(s);
-                        }}
-                      />
-                      <span className="text-sm leading-relaxed">
-                        <span className="block text-ink-3 line-through">{e.before}</span>
-                        <span className="mt-1 block font-medium">{e.after}</span>
-                        {e.why && <span className="mt-1 block text-xs text-ink-3">{e.why}</span>}
-                      </span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {chosen.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <CopyButton text={changesText} label="Copy changes" className={ghost} />
-                <button type="button" className={ghost} onClick={download}>
-                  Download as text
-                </button>
-              </div>
-            )}
-            {chosen.length > 0 && <p className="mt-2 text-xs text-ink-3">Paste the changes into your own file so your formatting stays the way you like it.</p>}
-          </div>
-
-          {data.gaps.length > 0 && (
-            <div>
-              <p className={label}>They want it, your résumé doesn&apos;t show it</p>
-              <p className="mt-1 text-sm text-ink-2">Don&apos;t fake these. Here&apos;s how to handle them if they come up.</p>
-              <ul className="mt-2 space-y-2">
-                {data.gaps.map((g) => (
-                  <li key={g.want} className="flex gap-2.5 text-sm">
-                    <Dot tone="yellow" />
-                    <span>
-                      <span className="font-semibold">{g.want}.</span> {g.say}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

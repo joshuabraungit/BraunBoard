@@ -257,7 +257,7 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
       <QuestionsPanel questions={questions} title={job.title_raw} company={job.company_name} roleFamily={job.role_family} />
 
       {/* Not live yet: only admins see this until JOB_TOOLS_PUBLIC=1. */}
-      {canUseTools(user) && <JobTools slug={job.slug} company={job.company_name} title={job.title_raw} preview={!toolsPublic()} />}
+      {canUseTools(user) && <JobTools slug={job.slug} company={job.company_name} title={job.title_raw} preview={!toolsPublic()} signedIn={!!user} />}
 
       {/* Ask Josh: the job rides along with the message, so he sees exactly which posting it's about. */}
       <details id="ask" className="group mt-6 rounded-2xl border border-line bg-surface p-5">

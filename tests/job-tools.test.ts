@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import { applyEdits, keepBacked, keywordScore, noDashes, unsupported, vetEdits } from "../src/lib/job-tools/guard";
 import { cleanChatter } from "../src/lib/job-tools/chatter";
-import { cleanTune } from "../src/lib/job-tools/tune";
+import { cleanLine, cleanTune } from "../src/lib/job-tools/tune";
 import { cleanLetter } from "../src/lib/job-tools/letter";
 import { cleanPrep } from "../src/lib/job-tools/prep";
 
@@ -103,8 +103,8 @@ describe("tune", () => {
         keywords: ["new logos", "cold calling", "discovery", "MEDDICC"],
         edits: [{ before: "- Found new customers by cold calling restaurant owners", after: "- Won new logos by cold calling restaurant owners", why: "their phrase" }],
         gaps: [
-          { want: "MEDDICC", say: "Say you qualify with discovery calls and are happy to learn their framework." },
-          { want: "cold calling", say: "x" },
+          { want: "MEDDICC", ask: "Have you used MEDDICC or a similar way to qualify deals?" },
+          { want: "cold calling", ask: "x" },
         ],
       },
       RESUME,
@@ -113,6 +113,29 @@ describe("tune", () => {
     expect(t.score_before).toBe(50);
     expect(t.score_after).toBe(75);
     expect(t.gaps.map((g) => g.want)).toEqual(["MEDDICC"]);
+    expect(t.adds).toEqual([]);
+  });
+
+  it("keeps a number question, and only adds lines backed by their own notes", () => {
+    const t = cleanTune(
+      {
+        keywords: ["new logos"],
+        edits: [{ before: "- Found new customers by cold calling restaurant owners", after: "- Won new logos by cold calling restaurant owners", why: "x", ask: "About how many new accounts?" }],
+        adds: [
+          { text: "Ran a pilot with three restaurant groups", after: "- Found new customers by cold calling restaurant owners", why: "x" },
+          { text: "Ran a pilot with Marriott", after: "- Found new customers by cold calling restaurant owners", why: "x" },
+        ],
+      },
+      RESUME,
+      ["Pilots: ran a pilot with three restaurant groups"],
+    );
+    expect(t.edits[0]!.ask).toBe("About how many new accounts?");
+    expect(t.adds.map((a) => a.text)).toEqual(["Ran a pilot with three restaurant groups"]);
+  });
+
+  it("a gap answer becomes a line only with what they said", () => {
+    expect(cleanLine({ text: "Led a pilot with three hospital groups", after: "" }, RESUME, "I ran a pilot with three hospital groups")?.text).toBe("Led a pilot with three hospital groups");
+    expect(cleanLine({ text: "Led a pilot with Kaiser that closed $2M", after: "" }, RESUME, "I ran a pilot with three hospital groups")).toBeNull();
   });
 });
 
