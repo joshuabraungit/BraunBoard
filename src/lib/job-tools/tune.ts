@@ -34,7 +34,7 @@ export interface Tune {
   score_after: number;
 }
 
-const SYSTEM = `You help a salesperson describe their real experience in the words one job posting uses. You change WORDS, never FACTS.
+export const TUNE_SYSTEM = `You help a salesperson describe their real experience in the words one job posting uses. You change WORDS, never FACTS.
 
 Step 1. Pick 10 to 15 keywords from the posting: the phrases it repeats or leans on (skills, methods, tools, buyer types, sales motions). Short phrases, as the posting writes them.
 Step 2. Suggest up to 8 rewrites of lines on the résumé so they use the posting's words where the résumé ALREADY shows the same thing in different words.
@@ -93,14 +93,19 @@ export function cleanTune(raw: Record<string, unknown>, resume: string, facts: s
   };
 }
 
-export async function tuneResume(resume: string, jobText: string, facts: string[] = []): Promise<Tune> {
+export function tuneMessage(resume: string, jobText: string, facts: string[] = []): string {
   const notes = facts.length ? `\n\n---\nThings I've done (confirmed by me):\n${facts.map((f) => `- ${f}`).join("\n")}` : "";
-  const { json } = await askJson({
-    system: SYSTEM,
-    user: `${jobText}\n\n---\nMy résumé:\n${resume.slice(0, 20000)}${notes}`,
-    maxTokens: 4500,
-  });
-  return cleanTune(json, resume, facts);
+  return `${jobText}\n\n---\nMy résumé:\n${resume.slice(0, 20000)}${notes}`;
+}
+
+/** The model's answer before the guardrails, for testing. */
+export async function tuneRaw(resume: string, jobText: string, facts: string[] = []): Promise<Record<string, unknown>> {
+  const { json } = await askJson({ system: TUNE_SYSTEM, user: tuneMessage(resume, jobText, facts), maxTokens: 4500 });
+  return json;
+}
+
+export async function tuneResume(resume: string, jobText: string, facts: string[] = []): Promise<Tune> {
+  return cleanTune(await tuneRaw(resume, jobText, facts), resume, facts);
 }
 
 // ---- A new line from a gap answer ----

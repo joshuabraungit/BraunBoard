@@ -1,0 +1,25 @@
+name: Their words test (made-up résumés)
+
+# Read-only test of "Say it in their words": runs the real tool on made-up résumés against
+# real jobs and stores the answers in words_qa. The site is untouched.
+on:
+  workflow_dispatch:
+  push:
+    branches: [qa-their-words]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx --conditions=react-server scripts/qa/their-words.ts
