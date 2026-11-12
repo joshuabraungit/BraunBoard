@@ -45,13 +45,11 @@ type QState = "open" | "no" | "busy" | "saved";
 
 export function FitStep({
   slug,
-  company,
   hasResume,
   onNotes,
   onDone,
 }: {
   slug: string;
-  company: string;
   hasResume: boolean;
   /** Their answers, for interview prep. */
   onNotes: (notes: GapNote[]) => void;
@@ -119,6 +117,7 @@ export function FitStep({
           {busy ? "Reading both… (about 20 seconds)" : "See where I fit"}
         </button>
       )}
+      {!fit && !hasResume && <p className="mt-2 text-sm text-ink-3">Add your résumé above to start.</p>}
       {error && <p className="mt-2 text-sm text-red">{error}</p>}
 
       {fit && (
@@ -128,7 +127,11 @@ export function FitStep({
             {fit.summary && <p className="mt-1 text-[15px]">{fit.summary}</p>}
           </div>
 
-          <Points title="Where you're strong" items={fit.strong} mark="✓" />
+          {fit.strong.length > 0 ? (
+            <Points title="Where you're strong" items={fit.strong} mark="✓" />
+          ) : (
+            <p className="text-sm text-ink-2">I couldn&apos;t point to anything on your résumé that clearly matches what this job needs most.</p>
+          )}
           <Points title="Worth exploring" items={fit.explore} mark="?" />
           <Points title="Possible gaps" items={fit.gaps} mark="–" />
 
@@ -193,7 +196,7 @@ export function FitStep({
           )}
 
           <button type="button" className="text-sm text-ink-3 underline underline-offset-2 hover:text-ink" onClick={run} disabled={busy}>
-            {busy ? "Reading again…" : `Read ${company} again`}
+            {busy ? "Checking again…" : "Check again"}
           </button>
         </div>
       )}

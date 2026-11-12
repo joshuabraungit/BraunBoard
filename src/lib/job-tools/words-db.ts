@@ -47,7 +47,11 @@ export async function listFacts(userId: string): Promise<Fact[]> {
   return (data as Fact[] | null) ?? [];
 }
 
+export const FACTS_MAX = 200;
+
 export async function addFact(userId: string, want: string, said: string): Promise<void> {
+  const { count } = await adminClient().from("resume_facts").select("id", { count: "exact", head: true }).eq("user_id", userId);
+  if ((count ?? 0) >= FACTS_MAX) throw new Error("Too many saved answers");
   const { error } = await adminClient().from("resume_facts").insert({ user_id: userId, want: want.slice(0, 200), said: said.slice(0, 1000) });
   if (error) throw error;
 }

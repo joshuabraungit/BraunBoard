@@ -114,7 +114,7 @@ export default async function Watchlist({ searchParams }: { searchParams: Promis
               ))}
             </ul>
           ) : (
-            <Empty>On any job, open &ldquo;Say it in their words&rdquo; to make a copy of your résumé in that job&apos;s language. It shows up here.</Empty>
+            <Empty>On any job, open Before You Apply and make a résumé copy for that job. It shows up here.</Empty>
           )}
 
           <h2 className="mb-1 mt-10 text-lg font-bold">Things I&apos;ve done</h2>

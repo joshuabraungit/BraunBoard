@@ -3,10 +3,13 @@ import Link from "next/link";
 
 export const WHY_LEAD = "Most résumé tools try to make you look like a match. I'd rather help you find out if you are one.";
 
-export const WHY_POINTS: [string, string][] = [
+/** builtIn: the Braun Board tool, where the honesty rules are checked in code. The prompt alone can only ask. */
+export const whyPoints = (builtIn: boolean): [string, string][] => [
   [
     "No truth, no transaction.",
-    "Nothing goes on your résumé that you didn't do. If a line would need a number you didn't give me, I ask. I don't guess. It's checked in code, not just promised.",
+    builtIn
+      ? "Nothing goes on your résumé that you didn't do. If a line would need a number you didn't give me, I ask. I don't guess. On Braun Board it's checked in code, not just promised."
+      : "Nothing goes on your résumé that you didn't do. If a line would need a number you didn't give it, it asks. It doesn't guess. The prompt spells that out, and the test below is how you check.",
   ],
   [
     "Curiosity before conclusions.",
@@ -22,11 +25,11 @@ export const WHY_POINTS: [string, string][] = [
 export const WHY_CLOSE =
   "It's the same way I teach selling. We don't control who says yes. We do control where we spend our time, and whether everything we say is true.";
 
-function Points() {
+function Points({ builtIn }: { builtIn: boolean }) {
   return (
     <>
       <ul className="mt-3 space-y-3">
-        {WHY_POINTS.map(([t, d]) => (
+        {whyPoints(builtIn).map(([t, d]) => (
           <li key={t}>
             <p className="font-semibold">{t}</p>
             <p className="text-ink-2">{d}</p>
@@ -47,7 +50,7 @@ export function WhyThisWayFolded() {
         Why I built it this way <span className="text-ink-3 group-open:hidden">↓</span>
       </summary>
       <p className="mt-2 text-[15px]">{WHY_LEAD}</p>
-      <Points />
+      <Points builtIn />
       <Link href="/before-you-apply" className="mt-2 inline-block text-ink-3 underline underline-offset-2 hover:text-ink">
         More on this
       </Link>
@@ -56,11 +59,11 @@ export function WhyThisWayFolded() {
 }
 
 /** Open version for the Toolkit page. */
-export function WhyThisWayOpen() {
+export function WhyThisWayOpen({ builtIn }: { builtIn: boolean }) {
   return (
     <div className="text-[15px] leading-relaxed">
       <p className="text-lg">{WHY_LEAD}</p>
-      <Points />
+      <Points builtIn={builtIn} />
     </div>
   );
 }

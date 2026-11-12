@@ -79,6 +79,10 @@ export function JobTools({
   }, [signedIn]);
   const keep = (r: Resume | null) => {
     setResume(r);
+    // A different résumé means a different read.
+    setFitDone(false);
+    setShowWords(false);
+    setGapNotes([]);
     if (signedIn) {
       if (!r) forgetResume().catch(() => {});
       return;
@@ -112,7 +116,14 @@ export function JobTools({
       {signedIn ? (
         <>
           <ResumeBar resume={resume} onChange={keep} signedIn={signedIn} />
-          <FitStep slug={slug} company={company} hasResume={!!resume} onNotes={setGapNotes} onDone={(f) => setFitDone(!!f)} />
+          {/* Keyed on the résumé, so a new or deleted résumé starts a fresh read. */}
+          <FitStep
+            key={resume?.name ?? "none"}
+            slug={slug}
+            hasResume={!!resume}
+            onNotes={setGapNotes}
+            onDone={(f) => setFitDone(!!f)}
+          />
         </>
       ) : (
         <SignInFirst slug={slug} />
@@ -228,7 +239,13 @@ function ResumeBar({ resume, onChange, optional, signedIn }: { resume: Resume | 
               {busy ? "Reading…" : "Replace"}
               <input type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" className="sr-only" disabled={busy} onChange={(e) => read(e.target.files?.[0])} />
             </label>
-            <button type="button" onClick={() => onChange(null)} className="text-ink-3 underline underline-offset-2 hover:text-ink">
+            <button
+              type="button"
+              onClick={() => {
+                if (!signedIn || window.confirm("Delete your saved résumé? Your saved copies stay.")) onChange(null);
+              }}
+              className="text-ink-3 underline underline-offset-2 hover:text-ink"
+            >
               {signedIn ? "Delete" : "Remove"}
             </button>
           </span>
@@ -377,7 +394,7 @@ function PrepTool({ slug, resume, company, title, gapNotes }: { slug: string; re
       {!resume && stories.trim().length < 40 && <p className="text-xs text-ink-3">Add your résumé or write a story or two to start.</p>}
       {gapNotes.length > 0 && (
         <p className="text-xs text-ink-3">
-          Using your {gapNotes.length} answer{gapNotes.length === 1 ? "" : "s"} from Say it in their words.
+          Using your {gapNotes.length} answer{gapNotes.length === 1 ? "" : "s"} from Where you fit.
         </p>
       )}
       {error && <p className="text-sm text-red">{error}</p>}
