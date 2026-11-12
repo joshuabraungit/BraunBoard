@@ -35,6 +35,7 @@ export function TheirWords({
   resume,
   signedIn,
   onGaps,
+  askGaps = true,
 }: {
   slug: string;
   company: string;
@@ -42,6 +43,8 @@ export function TheirWords({
   signedIn: boolean;
   /** Their yes/no answers, so interview prep can use them. */
   onGaps?: (notes: GapNote[]) => void;
+  /** False when Before You Apply already asked its questions. */
+  askGaps?: boolean;
 }) {
   const [data, setData] = useState<WordsRun | null>(null);
   const [busy, setBusy] = useState(false);
@@ -206,7 +209,7 @@ export function TheirWords({
             )}
           </div>
 
-          {data.gaps.length > 0 && (
+          {askGaps && data.gaps.length > 0 && (
             <div>
               <p className={label}>Questions, not guesses</p>
               <p className="mt-1 text-sm text-ink-2">They want these and your résumé doesn&apos;t show them. No is a fine answer. If yes, I&apos;ll remember it for other jobs.</p>

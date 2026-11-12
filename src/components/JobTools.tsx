@@ -1,16 +1,18 @@
 "use client";
-// "Get ready for this one": four tools on the job page. What people say, "Say it in their
-// words", a letter, and an interview prep sheet. Signed in, the résumé is saved to the
-// account so it works on any job. Signed out, it's kept in this browser tab only.
+// Before You Apply: one flow on the job page. Is the job worth it (the Braun Read), where you
+// fit (strong / worth exploring / gaps, a few questions), then, only if they want it, a
+// résumé copy in the job's words, and interview prep that uses their answers.
+// "What people say" is the free extra. Résumé steps need a sign-in.
 
 import { useEffect, useState } from "react";
 import { CopyButton } from "./CopyButton";
 import { LIGHT } from "./lights";
 import { TheirWords } from "./TheirWords";
+import { FitStep } from "./FitStep";
+import { WhyThisWayFolded } from "./WhyThisWay";
 import type { GapNote } from "@/lib/job-tools/prep";
-import { forgetResume, letterForJob, myResume, peopleSay, prepForJob, readResumeText, type PrepSheet } from "@/app/jobs/[slug]/tools-actions";
+import { forgetResume, myResume, peopleSay, prepForJob, readResumeText, type PrepSheet } from "@/app/jobs/[slug]/tools-actions";
 import type { Chatter } from "@/lib/job-tools/chatter";
-import type { Letter } from "@/lib/job-tools/letter";
 
 const STAGE_LABELS = {
   recruiter: "Recruiter screen",
@@ -18,14 +20,6 @@ const STAGE_LABELS = {
   panel: "Panel or role play",
   final: "Final round",
 } as const;
-
-type Tab = "people" | "tune" | "letter" | "prep";
-const TABS: { id: Tab; label: string; blurb: string }[] = [
-  { id: "people", label: "What people say", blurb: "A quick read on what people who work there say." },
-  { id: "tune", label: "Say it in their words", blurb: "Your résumé in their language. Nothing added that isn't true." },
-  { id: "letter", label: "Write my letter", blurb: "Short, about them, ends with a question." },
-  { id: "prep", label: "Prep my interview", blurb: "One page you can glance at mid-call." },
-];
 
 const KEY = "bb-resume";
 interface Resume {
@@ -63,7 +57,8 @@ export function JobTools({
   signedIn: boolean;
   qualify: Qualify;
 }) {
-  const [tab, setTab] = useState<Tab | null>(null);
+  const [fitDone, setFitDone] = useState(false);
+  const [showWords, setShowWords] = useState(false);
   const [resume, setResume] = useState<Resume | null>(null);
   const [gapNotes, setGapNotes] = useState<GapNote[]>([]);
 
@@ -94,47 +89,64 @@ export function JobTools({
     } catch {}
   };
 
+  const step = "flex items-baseline gap-2 text-base font-bold tracking-tight";
+  const num = "font-serif text-xl leading-none text-accent";
+
   return (
-    <section id="get-ready" className="mt-6 rounded-2xl border border-line bg-surface p-4 sm:p-5">
+    <section id="get-ready" className="mt-6 scroll-mt-24 rounded-2xl border border-line bg-surface p-4 sm:p-5">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="text-lg font-bold tracking-tight">Get ready for this one</h2>
+        <h2 className="text-xl font-bold tracking-tight">Before You Apply</h2>
         {preview && <span className="rounded-full bg-amber-soft px-2.5 py-0.5 text-xs font-semibold text-amber">Preview · only you can see this</span>}
       </div>
-      <p className="mt-1 text-sm text-ink-2">Free while I see if it&apos;s useful. Tell me what you think.</p>
+      <p className="mt-1 text-[15px] text-ink-2">Find out where you fit, and where you don&apos;t, before you hit submit.</p>
+      <WhyThisWayFolded />
 
+      <h3 className={`${step} mt-6`}>
+        <span className={num}>1</span> Is the job worth it?
+      </h3>
       <WorthIt qualify={qualify} />
 
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            aria-pressed={tab === t.id}
-            onClick={() => setTab(tab === t.id ? null : t.id)}
-            className="rounded-xl border border-line-strong bg-bg px-3 py-3 text-left text-sm font-semibold hover:border-ink aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-white"
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <h3 className={`${step} mt-6`}>
+        <span className={num}>2</span> Where you fit
+      </h3>
+      {signedIn ? (
+        <>
+          <ResumeBar resume={resume} onChange={keep} signedIn={signedIn} />
+          <FitStep slug={slug} company={company} hasResume={!!resume} onNotes={setGapNotes} onDone={(f) => setFitDone(!!f)} />
+        </>
+      ) : (
+        <SignInFirst slug={slug} />
+      )}
 
-      {tab && <p className="mt-3 text-sm text-ink-2">{TABS.find((t) => t.id === tab)!.blurb}</p>}
+      {fitDone && (
+        <>
+          <h3 className={`${step} mt-6`}>
+            <span className={num}>3</span> Want a résumé that shows it?
+          </h3>
+          {!showWords ? (
+            <div className="mt-2 text-[15px]">
+              <p className="text-ink-2">Optional. I&apos;ll put your real experience in their words, and you approve every change. Your original stays as it is.</p>
+              <button type="button" className={`${ghost} mt-2`} onClick={() => setShowWords(true)}>
+                Yes, show me
+              </button>
+            </div>
+          ) : (
+            <TheirWords slug={slug} company={company} resume={resume} signedIn={signedIn} askGaps={false} />
+          )}
 
-      {tab && tab !== "people" && signedIn && <ResumeBar resume={resume} onChange={keep} optional={tab === "prep"} signedIn={signedIn} />}
-      {(tab === "letter" || tab === "prep") && !signedIn && <SignInFirst slug={slug} />}
+          <h3 className={`${step} mt-6`}>
+            <span className={num}>4</span> Prep for the interview
+          </h3>
+          <PrepTool slug={slug} resume={resume} company={company} title={title} gapNotes={gapNotes} />
+        </>
+      )}
 
-      <div className={tab === "people" ? "" : "hidden"}>
+      <details className="group mt-6 border-t border-line pt-4">
+        <summary className="cursor-pointer list-none text-sm font-semibold [&::-webkit-details-marker]:hidden">
+          What people say about working at {company} <span className="text-ink-3 group-open:hidden">↓</span>
+        </summary>
         <People slug={slug} company={company} />
-      </div>
-      <div className={tab === "tune" ? "" : "hidden"}>
-        <TheirWords slug={slug} company={company} resume={resume} signedIn={signedIn} onGaps={setGapNotes} />
-      </div>
-      <div className={tab === "letter" ? "" : "hidden"}>
-        {signedIn && <LetterTool slug={slug} resume={resume} company={company} />}
-      </div>
-      <div className={tab === "prep" ? "" : "hidden"}>
-        {signedIn && <PrepTool slug={slug} resume={resume} company={company} title={title} gapNotes={gapNotes} />}
-      </div>
+      </details>
     </section>
   );
 }
@@ -144,8 +156,7 @@ function WorthIt({ qualify }: { qualify: Qualify }) {
   const { verdict, line, reds, yellows } = qualify;
   return (
     <div className="mt-4 rounded-xl bg-bg p-4 text-sm">
-      <p className={label}>First, is this one worth your time?</p>
-      <p className="mt-1 text-[15px]">
+            <p className="mt-1 text-[15px]">
         <span className="font-semibold">{verdict}.</span> {line}
       </p>
       {reds.length > 0 && (
@@ -177,8 +188,8 @@ function WorthIt({ qualify }: { qualify: Qualify }) {
 function SignInFirst({ slug }: { slug: string }) {
   return (
     <div className="mt-3 rounded-xl bg-bg p-4 text-[15px]">
-      <p className="font-semibold">Upload once, use it on any job.</p>
-      <p className="mt-1 text-ink-2">Sign in and add your résumé. Then your letter and interview prep for any job here are a tap away.</p>
+      <p className="font-semibold">Upload once, see where you fit on any job.</p>
+      <p className="mt-1 text-ink-2">Sign in and add your résumé. I&apos;ll show you where you line up, ask before I assume, and never add anything you didn&apos;t do.</p>
       <a href={`/login?why=words&next=/jobs/${slug}%23get-ready`} className={`${btn} mt-3 inline-block`}>
         Sign in →
       </a>
@@ -292,49 +303,6 @@ function People({ slug, company }: { slug: string; company: string }) {
       )}
       {error && <p className="mt-2 text-sm text-red">{error}</p>}
       {data && <ChatterLines chatter={data} company={company} />}
-    </div>
-  );
-}
-
-function LetterTool({ slug, resume, company }: { slug: string; resume: Resume | null; company: string }) {
-  const { data, setData, busy, error, run } = useRun<Letter>();
-  const [why, setWhy] = useState("");
-  return (
-    <div className="mt-3 space-y-3">
-      <label className="block">
-        <span className={label}>Why this job? (optional)</span>
-        <textarea rows={2} className={`${field} mt-1`} value={why} onChange={(e) => setWhy(e.target.value)} placeholder={`A line in your own words about why ${company}. I'll work it in.`} />
-      </label>
-      <button type="button" className={btn} disabled={busy || !resume} onClick={() => run(() => letterForJob(slug, resume!.text, why))}>
-        {busy ? "Writing… (about 15 seconds)" : data ? "Write it again" : "Write my letter"}
-      </button>
-      {error && <p className="text-sm text-red">{error}</p>}
-      {data && (
-        <div className="space-y-5 pt-2">
-          <div>
-            <div className="flex items-center justify-between gap-2">
-              <p className={label}>For the application form</p>
-              <CopyButton text={data.formal} className={ghost} />
-            </div>
-            <textarea rows={10} className={`${field} mt-2`} value={data.formal} onChange={(e) => setData({ ...data, formal: e.target.value })} />
-          </div>
-          <div>
-            <div className="flex items-center justify-between gap-2">
-              <p className={label}>Short note for the hiring manager</p>
-              <CopyButton text={data.note} className={ghost} />
-            </div>
-            <textarea rows={4} className={`${field} mt-2`} value={data.note} onChange={(e) => setData({ ...data, note: e.target.value })} />
-            <p className="mt-1 text-xs text-ink-3">
-              Send this one straight to the hiring manager on LinkedIn or email. More on that in the{" "}
-              <a href="/outreach" className="underline underline-offset-2 hover:text-ink">
-                Cold emails
-              </a>{" "}
-              toolkit.
-            </p>
-          </div>
-          <p className="text-xs text-ink-3">Edit both so they sound like you. Only facts from your résumé and the posting go in.</p>
-        </div>
-      )}
     </div>
   );
 }

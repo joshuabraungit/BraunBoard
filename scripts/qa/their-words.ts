@@ -4,6 +4,7 @@
 import { adminClient } from "../../src/lib/supabase/admin";
 import { jobContext, type ToolJob } from "../../src/lib/job-tools/context";
 import { cleanTune, lineFromAnswer, tuneRaw } from "../../src/lib/job-tools/tune";
+import { readFit } from "../../src/lib/job-tools/fit";
 import { buildCopy } from "../../src/lib/job-tools/words-text";
 import { fail, notice, requireEnv } from "../report";
 import { RESUMES, type TestResume } from "./resumes";
@@ -47,6 +48,14 @@ async function main() {
       const row: Record<string, unknown> = { batch, resume_name: r.name, job_slug: job.slug, company: job.company_name, job_title: job.title_raw };
       try {
         const text = jobContext(job, null);
+        if (process.env.QA_MODE === "fit") {
+          row.cleaned = await readFit(r.text, text, r.facts ?? []);
+          const { error: e3 } = await db.from("words_qa").insert(row);
+          if (e3) throw e3;
+          done++;
+          notice(`${r.name} x ${job.company_name}: fit ok`);
+          continue;
+        }
         const raw = await tuneRaw(r.text, text, r.facts ?? []);
         const cleaned = cleanTune(raw, r.text, r.facts ?? []);
         row.raw = raw;

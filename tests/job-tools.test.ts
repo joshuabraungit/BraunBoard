@@ -205,3 +205,33 @@ describe("prep gap talk", () => {
     expect(p.gap_talk.map((g) => g.want)).toEqual(["MEDDICC"]);
   });
 });
+
+describe("fit", () => {
+  it("drops strengths the résumé doesn't back, caps questions, keeps gaps", async () => {
+    const { cleanFit } = await import("../src/lib/job-tools/fit");
+    const f = cleanFit(
+      {
+        lines_up: "partly",
+        summary: "Your new-business record lines up — the open question is finance buyers.",
+        strong: [
+          { point: "You've cold called restaurant owners to find new customers", why: "they want outbound" },
+          { point: "You closed $2M at Salesforce", why: "x" },
+        ],
+        explore: [{ point: "You may have sold to finance leaders", why: "they sell to CFOs" }],
+        gaps: [{ point: "Healthcare SaaS experience", why: "required" }],
+        questions: [
+          { want: "CFO buyers", ask: "Have you sold directly to a CFO?" },
+          { want: "Healthcare", ask: "Have you sold into healthcare?" },
+          { want: "a", ask: "a?" },
+          { want: "b", ask: "b?" },
+        ],
+      },
+      RESUME,
+    );
+    expect(f.strong).toHaveLength(1);
+    expect(f.questions).toHaveLength(3);
+    expect(f.gaps[0]!.point).toContain("Healthcare");
+    expect(f.summary).not.toContain("—");
+    expect(cleanFit({ lines_up: "maybe" }, RESUME).lines_up).toBe("partly");
+  });
+});

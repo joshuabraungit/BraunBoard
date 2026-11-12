@@ -5,7 +5,7 @@ name: Their words test (made-up résumés)
 on:
   workflow_dispatch:
   push:
-    branches: [qa-their-words]
+    branches: [qa-their-words, qa-fit]
 
 jobs:
   test:
@@ -15,6 +15,7 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      QA_MODE: ${{ github.ref_name == 'qa-fit' && 'fit' || '' }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
