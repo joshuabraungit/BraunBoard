@@ -10,10 +10,12 @@ import { resumeGate, type ResumeGate } from "../resume-limit";
 export const TOOLS_PER_IP_HOUR = 15;
 export const TOOLS_SITE_PER_DAY = () => Number(process.env.JOB_TOOLS_SITE_PER_DAY) || 400;
 
-export type ToolName = "chatter" | "tune" | "tune_line" | "letter" | "prep";
+export type ToolName = "chatter" | "fit" | "tune" | "tune_line" | "letter" | "prep";
 
 /** "Say it in their words" runs per account per day. */
 export const WORDS_PER_USER_DAY = () => Number(process.env.WORDS_PER_USER_DAY) || 5;
+/** "Where you fit" reads per account per day. Cheaper and more useful, so a bit more room. */
+export const FIT_PER_USER_DAY = () => Number(process.env.FIT_PER_USER_DAY) || 10;
 
 export async function claimToolRun(ip: string, tool: ToolName, userId?: string): Promise<ResumeGate | "daily"> {
   if (!isSupabaseConfigured()) return "ok";
@@ -27,9 +29,10 @@ export async function claimToolRun(ip: string, tool: ToolName, userId?: string):
       db.from("job_tool_runs").select("id", { count: "exact", head: true }).gte("created_at", dayAgo),
     ]);
     if (byIp.error || site.error) throw byIp.error ?? site.error;
-    if (userId && tool === "tune") {
-      const mine = await db.from("job_tool_runs").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("tool", "tune").gte("created_at", dayAgo);
-      if (!mine.error && (mine.count ?? 0) >= WORDS_PER_USER_DAY()) return "daily";
+    if (userId && (tool === "tune" || tool === "fit")) {
+      const cap = tool === "fit" ? FIT_PER_USER_DAY() : WORDS_PER_USER_DAY();
+      const mine = await db.from("job_tool_runs").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("tool", tool).gte("created_at", dayAgo);
+      if (!mine.error && (mine.count ?? 0) >= cap) return "daily";
     }
     const gate = resumeGate(byIp.count ?? 0, site.count ?? 0, TOOLS_PER_IP_HOUR, TOOLS_SITE_PER_DAY());
     if (gate === "busy") console.warn("[tools] site-wide daily cap hit");

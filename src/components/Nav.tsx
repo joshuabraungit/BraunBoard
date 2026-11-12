@@ -7,7 +7,7 @@ export const SECTIONS: { href: string; label: string; also: string[] }[] = [
   { href: "/jobs", label: "Jobs", also: ["/for-you", "/new", "/company", "/companies"] },
   { href: "/products", label: "What You'd Sell", also: [] },
   { href: "/salaries", label: "Salaries", also: [] },
-  { href: "/outreach", label: "Toolkit", also: ["/kit", "/cold-call", "/proof-page", "/their-words"] },
+  { href: "/outreach", label: "Toolkit", also: ["/kit", "/cold-call", "/proof-page", "/before-you-apply"] },
   { href: "/watchlist", label: "Saved", also: ["/alerts"] },
 ];
 

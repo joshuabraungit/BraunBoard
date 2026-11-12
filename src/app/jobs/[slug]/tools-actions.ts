@@ -17,6 +17,7 @@ import { claimToolRun, type ToolName } from "@/lib/job-tools/limit";
 import { jobContext } from "@/lib/job-tools/context";
 import { docxText, pdfText } from "@/lib/job-tools/resume-text";
 import { cachedChatter, fetchChatter, type Chatter } from "@/lib/job-tools/chatter";
+import { readFit, type Fit } from "@/lib/job-tools/fit";
 import { lineFromAnswer, tuneResume, type FactAdd, type Tune } from "@/lib/job-tools/tune";
 import { addFact, copyForJob, deleteCopy, deleteFact, deleteSavedResume, getSavedResume, listFacts, saveCopy, saveResume, COPY_MAX_CHARS } from "@/lib/job-tools/words-db";
 import { writeLetter, type Letter } from "@/lib/job-tools/letter";
@@ -34,7 +35,7 @@ async function gate(tool: ToolName, userId?: string): Promise<string | null> {
   const h = await headers();
   const ip = (h.get("x-forwarded-for") ?? "").split(",")[0]!.trim() || h.get("x-real-ip") || "";
   const g = await claimToolRun(ip, tool, userId);
-  if (g === "daily") return "That's 5 for today. Come back tomorrow and I'll do more.";
+  if (g === "daily") return "That's the limit for today. Come back tomorrow and I'll do more.";
   if (g === "slow") return "That's a lot in one hour. Give it a bit and try again.";
   if (g === "busy") return "These tools are taking a breather today. Try again tomorrow.";
   return null;
@@ -137,6 +138,43 @@ export async function tuneForJob(slug: string): Promise<Result<WordsRun>> {
   } catch (e) {
     console.error("[tools] tune failed:", e instanceof Error ? e.message : e);
     return fail("Something went wrong. Try again in a minute.");
+  }
+}
+
+/** Before You Apply, step 2: where they fit this job, from their saved résumé and notes. */
+export async function fitForJob(slug: string): Promise<Result<Fit>> {
+  if (!(await allowed())) return fail("Not available yet.");
+  const user = await getUser().catch(() => null);
+  if (!user) return fail("Sign in first so I can use your saved résumé.");
+  const saved = await getSavedResume(user.id).catch(() => null);
+  if (!saved || saved.body.trim().length < MIN_RESUME) return fail("Add your résumé first.");
+  const bits = await loadJobBits(slug);
+  if (!bits?.job.description_raw) return fail("This posting doesn't have enough text to work with.");
+  const slow = await gate("fit", user.id);
+  if (slow) return fail(slow);
+  try {
+    const facts = (await listFacts(user.id).catch(() => [])).map((f) => `${f.want}: ${f.said}`);
+    return { ok: true, data: await readFit(saved.body, bits.text, facts) };
+  } catch (e) {
+    console.error("[tools] fit failed:", e instanceof Error ? e.message : e);
+    return fail("Something went wrong. Try again in a minute.");
+  }
+}
+
+/** A "yes, I have" answer: saved to Things I've done so the résumé copy and prep can use it. */
+export async function saveAnswer(want: string, said: string): Promise<Result<null>> {
+  if (!(await allowed())) return fail("Not available yet.");
+  const user = await getUser().catch(() => null);
+  if (!user) return fail("Sign in first.");
+  const answer = said.trim().slice(0, 1000);
+  if (answer.length < 10) return fail("Tell me a little more about what you did.");
+  try {
+    await addFact(user.id, want.trim().slice(0, 200), answer);
+    revalidatePath("/watchlist");
+    return { ok: true, data: null };
+  } catch (e) {
+    console.error("[tools] save answer failed:", e instanceof Error ? e.message : e);
+    return fail("Couldn't save that. Try again in a minute.");
   }
 }
 
