@@ -173,7 +173,7 @@ export function TheirWords({
             <div>
               <p className={label}>What they keep saying</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {data.keywords.map((k) => (
+                {data.keywords.slice(0, 8).map((k) => (
                   <span key={k} className="rounded-full bg-bg px-2.5 py-1 text-sm ring-1 ring-line">
                     {k}
                   </span>
@@ -259,7 +259,7 @@ export function TheirWords({
               <ul className="mt-2 space-y-3">
                 {adds.map((a, i) => (
                   <li key={`${a.text}-${i}`} className={`rounded-xl border p-3 ${addPick[i] === "yes" ? "border-accent" : "border-line"} ${addPick[i] === "no" ? "opacity-60" : ""}`}>
-                    <p className="text-[15px] font-medium leading-relaxed">• {a.text}</p>
+                    <p className="text-[15px] font-medium leading-relaxed">• {a.text.replace(/^\s*[•\-*▪●◦·‣]\s*/, "")}</p>
                     <p className="mt-1 text-xs text-ink-3">
                       {a.from}. {a.after ? `Goes under “${a.after.slice(0, 60)}${a.after.length > 60 ? "…" : ""}”` : "Goes in a short section at the end."}
                     </p>

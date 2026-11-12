@@ -77,7 +77,7 @@ export function cleanTune(raw: Record<string, unknown>, resume: string, facts: s
   const adds = facts.length
     ? arr(raw.adds)
         .map((a) => (a ?? {}) as Record<string, unknown>)
-        .map((a) => ({ text: noDashes(str(a.text, 400)), after: norm(str(a.after, 600)), why: noDashes(str(a.why, 160)) }))
+        .map((a) => ({ text: noDashes(str(a.text, 400)).replace(/^\s*[•\-*▪●◦·‣]\s*/, ""), after: norm(str(a.after, 600)), why: noDashes(str(a.why, 160)) }))
         .filter((a) => a.text && a.after && resumeNorm.includes(a.after))
         // Every claim in a new line has to come from their own notes or résumé.
         .filter((a) => unsupported(a.text, `${resume}\n${factText}`).length === 0)
