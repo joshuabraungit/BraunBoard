@@ -10,6 +10,14 @@ export const onRequestError: Instrumentation.onRequestError = async (err, reques
   const digest = (err as { digest?: string } | null)?.digest;
   // notFound() and redirect() work by throwing; they aren't real errors.
   if (typeof digest === "string" && /^NEXT_(NOT_FOUND|REDIRECT|HTTP_ERROR_FALLBACK)/.test(digest)) return;
+  // A POST carrying a server action ID from an old build. Real visitors' tabs already reload
+  // themselves (DeployCheck, app/error.tsx); the repeats here were a bot replaying a stale POST
+  // to one job page from Frankfurt, so note it in the Vercel logs instead of the error table.
+  const msg = (err as { message?: string } | null)?.message ?? "";
+  if ((err as { name?: string } | null)?.name === "UnrecognizedActionError" || /Failed to find Server Action/.test(msg)) {
+    console.warn("[stale-server-action]", request.method, request.path.split("?")[0]);
+    return;
+  }
   const h = request.headers as Record<string, string | string[] | undefined>;
   await reportError(err, {
     where: `${context.routeType} ${context.routePath}`,
