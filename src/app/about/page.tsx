@@ -54,11 +54,6 @@ const FAQ: QA[] = [
     link: { href: "/picks", label: "Get Braun's Picks" },
   },
   {
-    q: "What is 3-2-1 Interview Prep?",
-    a: "Interview prep short enough to remember without notes: 3 numbers to know, 2 stories to tell, 1 question to ask. Built from your résumé, with nothing made up.",
-    link: { href: "/interview-prep", label: "Try 3-2-1 Interview Prep" },
-  },
-  {
     q: "I'm hiring. How do I get my job on Braun Board?",
     a: "If your jobs are on Greenhouse, Lever, Ashby or Workable, they're probably here already. To get in front of more sellers, including good ones who aren't looking, you can sponsor a job: $750 for 30 days on the home page, plus a LinkedIn post to my 289,000 followers and a newsletter send.",
     link: { href: "/employers", label: "Sponsor a job" },
