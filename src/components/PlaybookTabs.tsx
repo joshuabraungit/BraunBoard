@@ -4,7 +4,7 @@ const TABS = [
   { href: "/outreach", label: "Cold emails" },
   { href: "/cold-call", label: "Cold call" },
   { href: "/proof-page", label: "Proof page" },
-  { href: "/before-you-apply", label: "Before You Apply" },
+  { href: "/interview-prep", label: "3-2-1 Interview Prep" },
   { href: "/kit", label: "Before You Say Yes" },
 ] as const;
 

@@ -1,8 +1,8 @@
 "use server";
-// Server side of the job tools. Every action re-checks who's asking (admins only until
-// JOB_TOOLS_PUBLIC=1), loads the job itself rather than trusting the page, and caps paid runs.
-// "Say it in their words" works from the résumé saved to the person's account, so it needs
-// a sign-in. Résumé contents are never logged.
+// Server side of 3-2-1 Interview Prep. Every action re-checks who's asking (everyone unless
+// JOB_TOOLS_PUBLIC=0), loads the job itself rather than trusting the page, and caps paid runs.
+// Prep works from the résumé saved to the person's account, so it needs a sign-in.
+// Résumé contents are never logged.
 
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -16,11 +16,7 @@ import { canUseTools } from "@/lib/job-tools/gate";
 import { claimToolRun, type ToolName } from "@/lib/job-tools/limit";
 import { jobContext } from "@/lib/job-tools/context";
 import { docxText, pdfText } from "@/lib/job-tools/resume-text";
-import { cachedChatter, fetchChatter, type Chatter } from "@/lib/job-tools/chatter";
-import { readFit, type Fit } from "@/lib/job-tools/fit";
-import { lineFromAnswer, tuneResume, type FactAdd, type Tune } from "@/lib/job-tools/tune";
-import { addFact, copyForJob, deleteCopy, deleteFact, deleteSavedResume, getSavedResume, listFacts, saveCopy, saveResume, COPY_MAX_CHARS } from "@/lib/job-tools/words-db";
-import { writeLetter, type Letter } from "@/lib/job-tools/letter";
+import { deleteCopy, deleteFact, deleteSavedResume, getSavedResume, listFacts, saveResume } from "@/lib/job-tools/words-db";
 import { buildPrep, isStage, type GapNote, type Prep, type Stage } from "@/lib/job-tools/prep";
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
@@ -83,22 +79,6 @@ export async function readResumeText(formData: FormData): Promise<Result<{ text:
   }
 }
 
-export async function peopleSay(slug: string): Promise<Result<Chatter>> {
-  if (!(await allowed())) return fail("Not available yet.");
-  const job = await getJob(slug);
-  if (!job) return fail("Couldn't find that job.");
-  const cached = await cachedChatter(job.company_id);
-  if (cached) return { ok: true, data: cached };
-  const slow = await gate("chatter");
-  if (slow) return fail(slow);
-  try {
-    return { ok: true, data: await fetchChatter({ id: job.company_id, name: job.company_name, domain: job.company_domain }) };
-  } catch (e) {
-    console.error("[tools] chatter failed:", e instanceof Error ? e.message : e);
-    return fail("Couldn't check right now. Try again in a minute.");
-  }
-}
-
 /** The résumé saved to this account, if there is one. */
 export async function myResume(): Promise<Result<{ text: string; name: string } | null>> {
   if (!(await allowed())) return fail("Not available yet.");
@@ -115,113 +95,6 @@ export async function forgetResume(): Promise<Result<null>> {
   return { ok: true, data: null };
 }
 
-export interface WordsRun extends Tune {
-  /** Their saved copy for this job, if they made one before. */
-  copy_id: string | null;
-}
-
-/** "Say it in their words": suggestions for this job, from their saved résumé and notes. */
-export async function tuneForJob(slug: string): Promise<Result<WordsRun>> {
-  if (!(await allowed())) return fail("Not available yet.");
-  const user = await getUser().catch(() => null);
-  if (!user) return fail("Sign in first so I can use your saved résumé.");
-  const saved = await getSavedResume(user.id).catch(() => null);
-  if (!saved || saved.body.trim().length < MIN_RESUME) return fail("Add your résumé first.");
-  const bits = await loadJobBits(slug);
-  if (!bits?.job.description_raw) return fail("This posting doesn't have enough text to work with.");
-  const slow = await gate("tune", user.id);
-  if (slow) return fail(slow);
-  try {
-    const facts = (await listFacts(user.id).catch(() => [])).map((f) => `${f.want}: ${f.said}`);
-    const [tune, copy] = await Promise.all([tuneResume(saved.body, bits.text, facts), copyForJob(user.id, slug).catch(() => null)]);
-    return { ok: true, data: { ...tune, copy_id: copy?.id ?? null } };
-  } catch (e) {
-    console.error("[tools] tune failed:", e instanceof Error ? e.message : e);
-    return fail("Something went wrong. Try again in a minute.");
-  }
-}
-
-/** Before You Apply, step 2: where they fit this job, from their saved résumé and notes. */
-export async function fitForJob(slug: string): Promise<Result<Fit>> {
-  if (!(await allowed())) return fail("Not available yet.");
-  const user = await getUser().catch(() => null);
-  if (!user) return fail("Sign in first so I can use your saved résumé.");
-  const saved = await getSavedResume(user.id).catch(() => null);
-  if (!saved || saved.body.trim().length < MIN_RESUME) return fail("Add your résumé first.");
-  const bits = await loadJobBits(slug);
-  if (!bits?.job.description_raw) return fail("This posting doesn't have enough text to work with.");
-  const slow = await gate("fit", user.id);
-  if (slow) return fail(slow);
-  try {
-    const facts = (await listFacts(user.id).catch(() => [])).map((f) => `${f.want}: ${f.said}`);
-    return { ok: true, data: await readFit(saved.body, bits.text, facts) };
-  } catch (e) {
-    console.error("[tools] fit failed:", e instanceof Error ? e.message : e);
-    return fail("Something went wrong. Try again in a minute.");
-  }
-}
-
-/** A "yes, I have" answer: saved to Things I've done so the résumé copy and prep can use it. */
-export async function saveAnswer(want: string, said: string): Promise<Result<null>> {
-  if (!(await allowed())) return fail("Not available yet.");
-  const user = await getUser().catch(() => null);
-  if (!user) return fail("Sign in first.");
-  const answer = said.trim().slice(0, 1000);
-  if (answer.length < 10) return fail("Tell me a little more about what you did.");
-  try {
-    await addFact(user.id, want.trim().slice(0, 200), answer);
-    revalidatePath("/watchlist");
-    return { ok: true, data: null };
-  } catch (e) {
-    console.error("[tools] save answer failed:", e instanceof Error ? e.message : e);
-    return fail("Couldn't save that. Try again in a minute.");
-  }
-}
-
-/** They said yes to a gap question. Remember it, and turn it into one résumé line. */
-export async function answerGap(slug: string, want: string, said: string): Promise<Result<FactAdd>> {
-  if (!(await allowed())) return fail("Not available yet.");
-  const user = await getUser().catch(() => null);
-  if (!user) return fail("Sign in first.");
-  const answer = said.trim().slice(0, 1000);
-  if (answer.length < 10) return fail("Tell me a little more about what you did.");
-  const saved = await getSavedResume(user.id).catch(() => null);
-  if (!saved) return fail("Add your résumé first.");
-  const bits = await loadJobBits(slug);
-  if (!bits) return fail("Couldn't find that job.");
-  const slow = await gate("tune_line", user.id);
-  if (slow) return fail(slow);
-  try {
-    await addFact(user.id, want.trim().slice(0, 200), answer);
-    const line = await lineFromAnswer(saved.body, bits.text, want, answer);
-    if (!line) return fail("I saved that to Things I've done. I couldn't turn it into a line without adding something you didn't say, so write the line yourself below.");
-    return { ok: true, data: line };
-  } catch (e) {
-    console.error("[tools] gap line failed:", e instanceof Error ? e.message : e);
-    return fail("Something went wrong. Try again in a minute.");
-  }
-}
-
-/** Save the copy they built for this job. Only the text they approved arrives here. */
-export async function saveWordsCopy(slug: string, body: string): Promise<Result<{ id: string }>> {
-  if (!(await allowed())) return fail("Not available yet.");
-  const user = await getUser().catch(() => null);
-  if (!user) return fail("Sign in first.");
-  const text = body.trim();
-  if (text.length < MIN_RESUME) return fail("That copy looks empty.");
-  if (text.length > COPY_MAX_CHARS) return fail("That copy is too long to save.");
-  const job = await getJob(slug);
-  if (!job) return fail("Couldn't find that job.");
-  try {
-    const id = await saveCopy(user.id, { job_slug: slug, company: job.company_name, job_title: job.title_raw, body: text });
-    revalidatePath("/watchlist");
-    return { ok: true, data: { id } };
-  } catch (e) {
-    console.error("[tools] save copy failed:", e instanceof Error ? e.message : e);
-    return fail("Couldn't save it. Try again in a minute.");
-  }
-}
-
 export async function removeCopy(formData: FormData): Promise<void> {
   const user = await getUser().catch(() => null);
   if (!user) return;
@@ -234,22 +107,6 @@ export async function removeFact(formData: FormData): Promise<void> {
   if (!user) return;
   await deleteFact(user.id, String(formData.get("id") ?? ""));
   revalidatePath("/watchlist");
-}
-
-export async function letterForJob(slug: string, resume: string, why: string): Promise<Result<Letter>> {
-  if (!(await allowed())) return fail("Not available yet.");
-  if (!(await getUser().catch(() => null))) return fail("Sign in first.");
-  if (resume.trim().length < MIN_RESUME) return fail("Add your résumé first.");
-  const bits = await loadJobBits(slug);
-  if (!bits) return fail("Couldn't find that job.");
-  const slow = await gate("letter");
-  if (slow) return fail(slow);
-  try {
-    return { ok: true, data: await writeLetter(resume, bits.text, why.slice(0, 600)) };
-  } catch (e) {
-    console.error("[tools] letter failed:", e instanceof Error ? e.message : e);
-    return fail("Something went wrong. Try again in a minute.");
-  }
 }
 
 /** The signed-in person's "Things I've done", for stories. Best effort. */
@@ -267,7 +124,6 @@ export interface PrepSheet extends Prep {
   asks: { text: string; why: string }[];
   /** 3-2-1: the one question to ask. The one that tells them most whether the job is real. */
   one: { text: string; why: string };
-  chatter: Chatter | null;
 }
 
 const ATTAINMENT_Q = { text: "What percentage of the team hit quota last year?", why: "If they can't answer, that's an answer." };
@@ -320,7 +176,6 @@ export async function prepForJob(
         // Attainment first: it's the question that sorts real jobs from shaky ones. If the posting
         // already answers it, the next question from the job page's list.
         one: asks.find((a) => /quota/i.test(a.text)) ? { ...asks.find((a) => /quota/i.test(a.text))!, why: ATTAINMENT_Q.why } : (asks[0] ?? prep.questions[0] ?? ATTAINMENT_Q),
-        chatter: await cachedChatter(job.company_id),
       },
     };
   } catch (e) {

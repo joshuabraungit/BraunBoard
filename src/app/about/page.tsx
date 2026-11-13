@@ -54,9 +54,9 @@ const FAQ: QA[] = [
     link: { href: "/picks", label: "Get Braun's Picks" },
   },
   {
-    q: "What is Before You Apply?",
-    a: "A tool for figuring out whether a job is worth your time before you rewrite your résumé for it: where you fit, the questions to ask, and a 3-2-1 interview prep (3 numbers to know, 2 stories to tell, 1 question to ask).",
-    link: { href: "/before-you-apply", label: "Try Before You Apply" },
+    q: "What is 3-2-1 Interview Prep?",
+    a: "Interview prep short enough to remember without notes: 3 numbers to know, 2 stories to tell, 1 question to ask. Built from your résumé, with nothing made up.",
+    link: { href: "/interview-prep", label: "Try 3-2-1 Interview Prep" },
   },
   {
     q: "I'm hiring. How do I get my job on Braun Board?",

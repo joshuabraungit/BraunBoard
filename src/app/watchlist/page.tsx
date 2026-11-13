@@ -91,7 +91,7 @@ export default async function Watchlist({ searchParams }: { searchParams: Promis
       <h2 className="mb-3 mt-10 text-lg font-bold">Saved jobs</h2>
       <JobGrid jobs={saved} ctx={{ savedJobIds: state.savedJobIds, back: "/watchlist" }} empty="Hit ♡ Save on any job to keep it here." />
 
-      {words && (
+      {words && (copies.length > 0 || facts.length > 0) && (
         <>
           <h2 id="copies" className="mb-3 mt-10 scroll-mt-24 text-lg font-bold">Résumé copies</h2>
           {copies.length ? (
@@ -114,7 +114,7 @@ export default async function Watchlist({ searchParams }: { searchParams: Promis
               ))}
             </ul>
           ) : (
-            <Empty>On any job, open Before You Apply and make a résumé copy for that job. It shows up here.</Empty>
+            <Empty>No résumé copies saved.</Empty>
           )}
 
           <h2 className="mb-1 mt-10 text-lg font-bold">Things I&apos;ve done</h2>
@@ -134,7 +134,7 @@ export default async function Watchlist({ searchParams }: { searchParams: Promis
               ))}
             </ul>
           ) : (
-            <Empty>Nothing yet. When a job asks about something your résumé doesn&apos;t show and you say yes, it lands here.</Empty>
+            <Empty>Nothing saved.</Empty>
           )}
         </>
       )}
