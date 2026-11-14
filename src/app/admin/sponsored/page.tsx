@@ -6,7 +6,7 @@ import { CopyButton } from "@/components/CopyButton";
 import { canRefund, orderLines, resultsLink, reviewFields, reviewLink, videoUrl, type SponsoredJobRow } from "@/lib/sponsor";
 import { REMOTE_TYPES, formatPrice, isRunning } from "@/lib/sponsor-form";
 import { reviewSummary, type AssetReview } from "@/lib/sponsor-review";
-import { cancelOrder, editCopy, goLive, removeVideo, saveLinkedInPost, saveLinkedInPost2, sendReceiptAgain, setSponsoredStatus } from "./actions";
+import { cancelOrder, editCopy, goLive, removeVideo, saveLinkedInPost, saveLinkedInPost2, saveVideo2, sendReceiptAgain, setSponsoredStatus } from "./actions";
 import { VideoUpload } from "./VideoUpload";
 import { FastTrackAdmin } from "./FastTrackAdmin";
 
@@ -148,6 +148,7 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                         <ReviewRow label="Job ad" a={rev.ad} />
                         {rev.post ? <ReviewRow label="LinkedIn post" a={rev.post} /> : <div className="flex gap-3"><span className="w-24 shrink-0 text-ink-3">LinkedIn post</span><span className="text-ink-3">None yet. Paste one below to add it to the review.</span></div>}
                         {rev.post2 && <ReviewRow label="Post 2" a={rev.post2} />}
+                        {rev.video2 && <ReviewRow label="Bonus video" a={rev.video2} />}
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <CopyButton text={link} label="Copy review link" className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90" />
@@ -208,6 +209,14 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                           </form>
                         </details>
                       )}
+                      <details className="border-t border-line pt-3">
+                        <summary className="cursor-pointer text-sm font-semibold">{r.video2_url ? "Edit bonus video" : "Add a bonus video"}</summary>
+                        <form action={saveVideo2} className="mt-2 flex flex-wrap gap-2">
+                          <input type="hidden" name="id" value={r.id} />
+                          <input name="video2_url" defaultValue={r.video2_url ?? ""} placeholder="https:// link to the .mp4" className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1.5 text-sm" />
+                          <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">Save video</button>
+                        </form>
+                      </details>
                       <p className="text-xs text-ink-3">
                         The video shows on the job page once she approves it. Edit the copy or swap the video and the review link asks them to look again. Going live is still your button.
                       </p>

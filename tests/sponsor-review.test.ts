@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { adPlainText, parseAdText, parseInline } from "../src/lib/ad-text";
-import { adHash, adReview, postHash, postReview, post2Review, reviewSummary, verdictLine, videoApproved, videoReview, type ReviewFields } from "../src/lib/sponsor-review";
+import { adHash, adReview, postHash, postReview, post2Review, video2Review, reviewSummary, verdictLine, videoApproved, videoReview, type ReviewFields } from "../src/lib/sponsor-review";
 
 const base: ReviewFields = {
   job_title: "Director of Growth",
@@ -118,5 +118,23 @@ describe("Second LinkedIn post review", () => {
     const ad = { ...base2, ad_review: "up" as const, ad_reviewed_hash: adHash(base2), linkedin_post_2: p2 };
     expect(reviewSummary(ad).allApproved).toBe(false);
     expect(reviewSummary({ ...ad, linkedin_review_2: "up", linkedin_reviewed_hash_2: postHash(p2) }).allApproved).toBe(true);
+  });
+});
+
+describe("Bonus video review", () => {
+  const url = "https://example.com/v.mp4";
+  const b: ReviewFields = {
+    job_title: "Director of Growth", description: "Ad", product_short: null,
+    video_path: null, video_review: null, video_note: null, video_reviewed_path: null,
+    ad_review: null, ad_note: null, ad_reviewed_hash: null,
+  };
+  it("waits, approves, and asks again when the link changes", () => {
+    expect(video2Review(b)).toBeNull();
+    const w = { ...b, video2_url: url };
+    expect(video2Review(w)?.status).toBe("waiting");
+    const up = { ...w, video2_review: "up" as const, video2_reviewed_url: url };
+    expect(video2Review(up)?.status).toBe("up");
+    expect(video2Review({ ...up, video2_url: url + "?v=2" })?.status).toBe("changed");
+    expect(reviewSummary(w).video2?.status).toBe("waiting");
   });
 });

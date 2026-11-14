@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
  * The sponsor's explainer video with a big, obvious play button over a still frame.
  * Once it starts, the normal controls take over.
  */
-export function ExplainerVideo({ src, label = "Play the video", className = "" }: { src: string; label?: string; className?: string }) {
+export function ExplainerVideo({ src, label = "Play the video", className = "", wide = false }: { src: string; label?: string; className?: string; wide?: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [started, setStarted] = useState(false);
 
@@ -19,7 +19,7 @@ export function ExplainerVideo({ src, label = "Play the video", className = "" }
         controls={started}
         playsInline
         preload="metadata"
-        className="aspect-[4/5] w-full"
+        className={`${wide ? "aspect-video" : "aspect-[4/5]"} w-full`}
         onPlay={() => setStarted(true)}
       />
       {!started && (

@@ -6,7 +6,7 @@ import { sendReview } from "./actions";
 import Image from "next/image";
 import { ExplainerVideo } from "@/components/ExplainerVideo";
 
-type Key = "video" | "ad" | "post" | "post2";
+type Key = "video" | "ad" | "post" | "post2" | "video2";
 interface Asset {
   status: ReviewStatus;
   note: string | null;
@@ -78,6 +78,7 @@ export function ReviewClient({
   ad,
   post,
   post2 = null,
+  video2 = null,
   adCard,
   adBody,
 }: {
@@ -87,16 +88,17 @@ export function ReviewClient({
   ad: { hash: string } & Asset;
   post: ({ text: string; hash: string } & Asset) | null;
   post2?: ({ text: string; intro: string | null; hash: string } & Asset) | null;
+  video2?: ({ src: string; path: string } & Asset) | null;
   adCard: ReactNode;
   adBody: ReactNode;
 }) {
-  const keys: Key[] = [...(video ? (["video"] as const) : []), "ad", ...(post ? (["post"] as const) : []), ...(post2 ? (["post2"] as const) : [])];
-  const asset = (k: Key): Asset => (k === "video" ? video! : k === "post" ? post! : k === "post2" ? post2! : ad);
-  const version = (k: Key) => (k === "video" ? video!.path : k === "post" ? post!.hash : k === "post2" ? post2!.hash : ad.hash);
+  const keys: Key[] = [...(video ? (["video"] as const) : []), "ad", ...(post ? (["post"] as const) : []), ...(post2 ? (["post2"] as const) : []), ...(video2 ? (["video2"] as const) : [])];
+  const asset = (k: Key): Asset => (k === "video" ? video! : k === "post" ? post! : k === "post2" ? post2! : k === "video2" ? video2! : ad);
+  const version = (k: Key) => (k === "video" ? video!.path : k === "post" ? post!.hash : k === "post2" ? post2!.hash : k === "video2" ? video2!.path : ad.hash);
   const storeKey = `bb-review:${token}`;
 
-  const [open, setOpen] = useState<Record<Key, boolean>>({ video: !!video && needsLook(video.status), ad: needsLook(ad.status), post: !!post && needsLook(post.status), post2: !!post2 && needsLook(post2.status) });
-  const [drafts, setDrafts] = useState<Record<Key, Draft>>({ video: fresh(), ad: fresh(), post: fresh(), post2: fresh() });
+  const [open, setOpen] = useState<Record<Key, boolean>>({ video: !!video && needsLook(video.status), ad: needsLook(ad.status), post: !!post && needsLook(post.status), post2: !!post2 && needsLook(post2.status), video2: !!video2 && needsLook(video2.status) });
+  const [drafts, setDrafts] = useState<Record<Key, Draft>>({ video: fresh(), ad: fresh(), post: fresh(), post2: fresh(), video2: fresh() });
   const [sent, setSent] = useState<string | null>(null);
   const [err, setErr] = useState<{ msg: string; stale?: boolean } | null>(null);
   const [pending, start] = useTransition();
@@ -143,7 +145,7 @@ export function ReviewClient({
   function send() {
     setErr(null);
     const payload: Record<string, unknown> = {};
-    for (const k of toSend) payload[k] = { verdict: drafts[k].verdict, note: drafts[k].note, ...(k === "video" ? { path: video!.path } : { hash: version(k) }) };
+    for (const k of toSend) payload[k] = { verdict: drafts[k].verdict, note: drafts[k].note, ...(k === "video" || k === "video2" ? { path: version(k) } : { hash: version(k) }) };
     start(async () => {
       const r = await sendReview(token, payload);
       if (r.ok) {
@@ -173,7 +175,15 @@ export function ReviewClient({
   const pct = Math.round((doneCount / keys.length) * 100);
 
   const cards: { k: Key; n: number; title: string; blurb: string; body: ReactNode }[] = keys.map((k, i) =>
-    k === "post2"
+    k === "video2"
+      ? {
+          k,
+          n: i + 1,
+          title: "A bonus video",
+          blurb: "A short time-travel episode I'd post on LinkedIn to send sellers your way. On the house.",
+          body: <ExplainerVideo src={video2!.src} label="Play (50 sec)" wide />,
+        }
+      : k === "post2"
       ? {
           k,
           n: i + 1,
@@ -319,7 +329,7 @@ export function ReviewClient({
                   autoFocus
                   value={d.note}
                   onChange={(e) => set(k, { note: e.target.value })}
-                  placeholder={k === "video" ? "e.g. Can we end on our real logo?" : k === "post" || k === "post2" ? "e.g. Can we skip the line about other brands?" : "e.g. Our buyers are mostly counties, not cities."}
+                  placeholder={k === "video" ? "e.g. Can we end on our real logo?" : k === "video2" ? "e.g. Can we change what Josh says at the end?" : k === "post" || k === "post2" ? "e.g. Can we skip the line about other brands?" : "e.g. Our buyers are mostly counties, not cities."}
                   className="w-full resize-y rounded-lg border border-amber/30 bg-surface px-3 py-2.5 text-[15px] leading-relaxed"
                 />
                 <div className="flex flex-wrap justify-end gap-2">

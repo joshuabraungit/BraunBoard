@@ -29,6 +29,11 @@ export interface ReviewFields {
   linkedin_review_2?: Verdict | null;
   linkedin_note_2?: string | null;
   linkedin_reviewed_hash_2?: string | null;
+  /** A second, bonus video (e.g. a history episode for LinkedIn), reviewed by its URL. */
+  video2_url?: string | null;
+  video2_review?: Verdict | null;
+  video2_note?: string | null;
+  video2_reviewed_url?: string | null;
 }
 
 export interface AssetReview {
@@ -82,6 +87,14 @@ export function post2Review(o: ReviewFields): AssetReview | null {
   return { status: o.linkedin_review_2, note: o.linkedin_note_2 ?? null };
 }
 
+/** The bonus video. Null when there isn't one. Swapping the file asks for another look. */
+export function video2Review(o: ReviewFields): AssetReview | null {
+  if (!o.video2_url?.trim()) return null;
+  if (!o.video2_review) return { status: "waiting", note: null };
+  if (o.video2_reviewed_url !== o.video2_url) return { status: "changed", note: o.video2_note ?? null };
+  return { status: o.video2_review, note: o.video2_note ?? null };
+}
+
 /** The video only shows on the public job page once the client has approved that exact file. */
 export const videoApproved = (o: ReviewFields) => videoReview(o)?.status === "up";
 
@@ -90,6 +103,7 @@ export interface ReviewSummary {
   ad: AssetReview;
   post: AssetReview | null;
   post2: AssetReview | null;
+  video2: AssetReview | null;
   /** Everything there is to review has a current thumbs up. */
   allApproved: boolean;
   /** Something is waiting on the client (never reviewed, or changed since). */
@@ -103,12 +117,14 @@ export function reviewSummary(o: ReviewFields): ReviewSummary {
   const video = videoReview(o);
   const post = postReview(o);
   const post2 = post2Review(o);
-  const all = [ad, ...(video ? [video] : []), ...(post ? [post] : []), ...(post2 ? [post2] : [])];
+  const video2 = video2Review(o);
+  const all = [ad, ...(video ? [video] : []), ...(post ? [post] : []), ...(post2 ? [post2] : []), ...(video2 ? [video2] : [])];
   return {
     ad,
     video,
     post,
     post2,
+    video2,
     allApproved: all.every((a) => a.status === "up"),
     waitingOnClient: all.some((a) => a.status === "waiting" || a.status === "changed"),
     changesRequested: all.some((a) => a.status === "down"),
