@@ -6,7 +6,7 @@ import { CopyButton } from "@/components/CopyButton";
 import { canRefund, orderLines, resultsLink, reviewFields, reviewLink, videoUrl, type SponsoredJobRow } from "@/lib/sponsor";
 import { REMOTE_TYPES, formatPrice, isRunning } from "@/lib/sponsor-form";
 import { reviewSummary, type AssetReview } from "@/lib/sponsor-review";
-import { cancelOrder, editCopy, goLive, removeVideo, saveLinkedInPost, sendReceiptAgain, setSponsoredStatus } from "./actions";
+import { cancelOrder, editCopy, goLive, removeVideo, saveLinkedInPost, saveLinkedInPost2, sendReceiptAgain, setSponsoredStatus } from "./actions";
 import { VideoUpload } from "./VideoUpload";
 import { FastTrackAdmin } from "./FastTrackAdmin";
 
@@ -147,6 +147,7 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                         {rev.video ? <ReviewRow label="Video" a={rev.video} /> : <div className="flex gap-3"><span className="w-24 shrink-0 text-ink-3">Video</span><span className="text-ink-3">None yet. Upload one to add it to the review.</span></div>}
                         <ReviewRow label="Job ad" a={rev.ad} />
                         {rev.post ? <ReviewRow label="LinkedIn post" a={rev.post} /> : <div className="flex gap-3"><span className="w-24 shrink-0 text-ink-3">LinkedIn post</span><span className="text-ink-3">None yet. Paste one below to add it to the review.</span></div>}
+                        {rev.post2 && <ReviewRow label="Post 2" a={rev.post2} />}
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <CopyButton text={link} label="Copy review link" className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90" />
@@ -182,6 +183,31 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                           <p className="text-xs text-ink-3">Shows on the review link for a thumbs up or down. Change the words and it goes back up for another look. It doesn&apos;t hold up Mark live.</p>
                         </form>
                       </details>
+                      {r.linkedin_post && (
+                        <details className="border-t border-line pt-3" open={false}>
+                          <summary className="cursor-pointer text-sm font-semibold">{r.linkedin_post_2 ? "Edit second LinkedIn post" : "Add a second LinkedIn post"}</summary>
+                          <form action={saveLinkedInPost2} className="mt-2 space-y-2">
+                            <input type="hidden" name="id" value={r.id} />
+                            <label className="block text-xs font-semibold text-ink-2">Note to {r.contact_name.split(" ")[0]} (shows above the post, optional)</label>
+                            <textarea
+                              name="linkedin_post_2_intro"
+                              defaultValue={r.linkedin_post_2_intro ?? ""}
+                              rows={2}
+                              maxLength={1000}
+                              className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm"
+                            />
+                            <textarea
+                              name="linkedin_post_2"
+                              defaultValue={r.linkedin_post_2 ?? ""}
+                              rows={10}
+                              maxLength={5000}
+                              placeholder="Paste the second post exactly as it'll go on LinkedIn."
+                              className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm"
+                            />
+                            <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">Save second post</button>
+                          </form>
+                        </details>
+                      )}
                       <p className="text-xs text-ink-3">
                         The video shows on the job page once she approves it. Edit the copy or swap the video and the review link asks them to look again. Going live is still your button.
                       </p>

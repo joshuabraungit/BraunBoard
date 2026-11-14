@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { adPlainText, parseAdText, parseInline } from "../src/lib/ad-text";
-import { adHash, adReview, postHash, postReview, reviewSummary, verdictLine, videoApproved, videoReview, type ReviewFields } from "../src/lib/sponsor-review";
+import { adHash, adReview, postHash, postReview, post2Review, reviewSummary, verdictLine, videoApproved, videoReview, type ReviewFields } from "../src/lib/sponsor-review";
 
 const base: ReviewFields = {
   job_title: "Director of Growth",
@@ -96,5 +96,27 @@ describe("LinkedIn post review", () => {
     expect(reviewSummary(ad).allApproved).toBe(false);
     expect(reviewSummary({ ...ad, linkedin_review: "up", linkedin_reviewed_hash: postHash(post) }).allApproved).toBe(true);
     expect(verdictLine(["up", "up", "up"])).toBe("All approved");
+  });
+});
+
+describe("Second LinkedIn post review", () => {
+  const p2 = "This is a sponsored post.\n\nLink in comments.";
+  const base2: ReviewFields = {
+    job_title: "Director of Growth", description: "Ad", product_short: null,
+    video_path: null, video_review: null, video_note: null, video_reviewed_path: null,
+    ad_review: null, ad_note: null, ad_reviewed_hash: null,
+  };
+  it("waits, approves, and asks again after an edit", () => {
+    expect(post2Review(base2)).toBeNull();
+    const w = { ...base2, linkedin_post_2: p2 };
+    expect(post2Review(w)?.status).toBe("waiting");
+    const up = { ...w, linkedin_review_2: "up" as const, linkedin_reviewed_hash_2: postHash(p2) };
+    expect(post2Review(up)?.status).toBe("up");
+    expect(post2Review({ ...up, linkedin_post_2: p2 + " Edited." })?.status).toBe("changed");
+  });
+  it("holds up allApproved until it's approved", () => {
+    const ad = { ...base2, ad_review: "up" as const, ad_reviewed_hash: adHash(base2), linkedin_post_2: p2 };
+    expect(reviewSummary(ad).allApproved).toBe(false);
+    expect(reviewSummary({ ...ad, linkedin_review_2: "up", linkedin_reviewed_hash_2: postHash(p2) }).allApproved).toBe(true);
   });
 });

@@ -23,6 +23,12 @@ export interface ReviewFields {
   linkedin_review?: Verdict | null;
   linkedin_note?: string | null;
   linkedin_reviewed_hash?: string | null;
+  /** A second LinkedIn post for the same job, plus Josh's note to the client shown above it. */
+  linkedin_post_2?: string | null;
+  linkedin_post_2_intro?: string | null;
+  linkedin_review_2?: Verdict | null;
+  linkedin_note_2?: string | null;
+  linkedin_reviewed_hash_2?: string | null;
 }
 
 export interface AssetReview {
@@ -68,6 +74,14 @@ export function postReview(o: ReviewFields): AssetReview | null {
   return { status: o.linkedin_review, note: o.linkedin_note ?? null };
 }
 
+/** The second post. Null when there isn't one. */
+export function post2Review(o: ReviewFields): AssetReview | null {
+  if (!o.linkedin_post_2?.trim()) return null;
+  if (!o.linkedin_review_2) return { status: "waiting", note: null };
+  if (o.linkedin_reviewed_hash_2 !== postHash(o.linkedin_post_2)) return { status: "changed", note: o.linkedin_note_2 ?? null };
+  return { status: o.linkedin_review_2, note: o.linkedin_note_2 ?? null };
+}
+
 /** The video only shows on the public job page once the client has approved that exact file. */
 export const videoApproved = (o: ReviewFields) => videoReview(o)?.status === "up";
 
@@ -75,6 +89,7 @@ export interface ReviewSummary {
   video: AssetReview | null;
   ad: AssetReview;
   post: AssetReview | null;
+  post2: AssetReview | null;
   /** Everything there is to review has a current thumbs up. */
   allApproved: boolean;
   /** Something is waiting on the client (never reviewed, or changed since). */
@@ -87,11 +102,13 @@ export function reviewSummary(o: ReviewFields): ReviewSummary {
   const ad = adReview(o);
   const video = videoReview(o);
   const post = postReview(o);
-  const all = [ad, ...(video ? [video] : []), ...(post ? [post] : [])];
+  const post2 = post2Review(o);
+  const all = [ad, ...(video ? [video] : []), ...(post ? [post] : []), ...(post2 ? [post2] : [])];
   return {
     ad,
     video,
     post,
+    post2,
     allApproved: all.every((a) => a.status === "up"),
     waitingOnClient: all.some((a) => a.status === "waiting" || a.status === "changed"),
     changesRequested: all.some((a) => a.status === "down"),

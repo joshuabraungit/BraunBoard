@@ -6,7 +6,7 @@ import { sendReview } from "./actions";
 import Image from "next/image";
 import { ExplainerVideo } from "@/components/ExplainerVideo";
 
-type Key = "video" | "ad" | "post";
+type Key = "video" | "ad" | "post" | "post2";
 interface Asset {
   status: ReviewStatus;
   note: string | null;
@@ -77,6 +77,7 @@ export function ReviewClient({
   video,
   ad,
   post,
+  post2 = null,
   adCard,
   adBody,
 }: {
@@ -85,16 +86,17 @@ export function ReviewClient({
   video: ({ src: string; path: string } & Asset) | null;
   ad: { hash: string } & Asset;
   post: ({ text: string; hash: string } & Asset) | null;
+  post2?: ({ text: string; intro: string | null; hash: string } & Asset) | null;
   adCard: ReactNode;
   adBody: ReactNode;
 }) {
-  const keys: Key[] = [...(video ? (["video"] as const) : []), "ad", ...(post ? (["post"] as const) : [])];
-  const asset = (k: Key): Asset => (k === "video" ? video! : k === "post" ? post! : ad);
-  const version = (k: Key) => (k === "video" ? video!.path : k === "post" ? post!.hash : ad.hash);
+  const keys: Key[] = [...(video ? (["video"] as const) : []), "ad", ...(post ? (["post"] as const) : []), ...(post2 ? (["post2"] as const) : [])];
+  const asset = (k: Key): Asset => (k === "video" ? video! : k === "post" ? post! : k === "post2" ? post2! : ad);
+  const version = (k: Key) => (k === "video" ? video!.path : k === "post" ? post!.hash : k === "post2" ? post2!.hash : ad.hash);
   const storeKey = `bb-review:${token}`;
 
-  const [open, setOpen] = useState<Record<Key, boolean>>({ video: !!video && needsLook(video.status), ad: needsLook(ad.status), post: !!post && needsLook(post.status) });
-  const [drafts, setDrafts] = useState<Record<Key, Draft>>({ video: fresh(), ad: fresh(), post: fresh() });
+  const [open, setOpen] = useState<Record<Key, boolean>>({ video: !!video && needsLook(video.status), ad: needsLook(ad.status), post: !!post && needsLook(post.status), post2: !!post2 && needsLook(post2.status) });
+  const [drafts, setDrafts] = useState<Record<Key, Draft>>({ video: fresh(), ad: fresh(), post: fresh(), post2: fresh() });
   const [sent, setSent] = useState<string | null>(null);
   const [err, setErr] = useState<{ msg: string; stale?: boolean } | null>(null);
   const [pending, start] = useTransition();
@@ -171,7 +173,25 @@ export function ReviewClient({
   const pct = Math.round((doneCount / keys.length) * 100);
 
   const cards: { k: Key; n: number; title: string; blurb: string; body: ReactNode }[] = keys.map((k, i) =>
-    k === "post"
+    k === "post2"
+      ? {
+          k,
+          n: i + 1,
+          title: post ? "A second LinkedIn post" : "The LinkedIn post",
+          blurb: "Another one for my LinkedIn followers, on the house.",
+          body: (
+            <div className="space-y-3">
+              {post2!.intro && (
+                <div className="flex items-start gap-3 rounded-xl bg-accent-soft px-4 py-3">
+                  <Image src="/josh-braun.png" alt="" width={32} height={32} className="h-8 w-8 shrink-0 rounded-full" />
+                  <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{post2!.intro}</p>
+                </div>
+              )}
+              <LinkedInPost text={post2!.text} />
+            </div>
+          ),
+        }
+      : k === "post"
       ? {
           k,
           n: i + 1,
@@ -299,7 +319,7 @@ export function ReviewClient({
                   autoFocus
                   value={d.note}
                   onChange={(e) => set(k, { note: e.target.value })}
-                  placeholder={k === "video" ? "e.g. Can we end on our real logo?" : k === "post" ? "e.g. Can we skip the line about other brands?" : "e.g. Our buyers are mostly counties, not cities."}
+                  placeholder={k === "video" ? "e.g. Can we end on our real logo?" : k === "post" || k === "post2" ? "e.g. Can we skip the line about other brands?" : "e.g. Our buyers are mostly counties, not cities."}
                   className="w-full resize-y rounded-lg border border-amber/30 bg-surface px-3 py-2.5 text-[15px] leading-relaxed"
                 />
                 <div className="flex flex-wrap justify-end gap-2">

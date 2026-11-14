@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { adminClient } from "@/lib/supabase/admin";
-import { attachVideo, cancelAndRefund, createVideoUpload, getOrder, markLive, resendReceipt, reviewFields, updateLinkedInPost, updateSponsorCopy } from "@/lib/sponsor";
-import { adReview, postReview } from "@/lib/sponsor-review";
+import { attachVideo, cancelAndRefund, createVideoUpload, getOrder, markLive, resendReceipt, reviewFields, updateLinkedInPost, updateLinkedInPost2, updateSponsorCopy } from "@/lib/sponsor";
+import { adReview, postReview, post2Review } from "@/lib/sponsor-review";
 import { formatPrice, parseSponsorEdit } from "@/lib/sponsor-form";
 import { loadCodes } from "@/lib/fast-track";
 
@@ -155,6 +155,31 @@ export async function saveLinkedInPost(formData: FormData) {
         : `Post saved. It's on ${first}'s review link now. Copy the link and send it over.`;
   } catch (e) {
     back(false, e instanceof Error ? e.message : "Couldn't save the post.");
+    return;
+  }
+  revalidatePath("/admin/sponsored");
+  back(true, msg);
+}
+
+/** A second LinkedIn post for the same job, with a note to the client shown above it. */
+export async function saveLinkedInPost2(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  let msg: string;
+  try {
+    const before = await getOrder(id);
+    await updateLinkedInPost2(id, String(formData.get("linkedin_post_2") ?? ""), String(formData.get("linkedin_post_2_intro") ?? ""));
+    const after = await getOrder(id);
+    const was = before ? post2Review(reviewFields(before))?.status : undefined;
+    const now = after ? post2Review(reviewFields(after))?.status : undefined;
+    const first = after?.contact_name.split(" ")[0] ?? "The client";
+    msg = !now
+      ? "Second post cleared. It's off the review link."
+      : (was === "up" || was === "down") && now === "changed"
+        ? `Second post saved. ${first}'s review link shows the new version for another look.`
+        : `Second post saved. It's on ${first}'s review link now. Copy the link and send it over.`;
+  } catch (e) {
+    back(false, e instanceof Error ? e.message : "Couldn't save the second post.");
     return;
   }
   revalidatePath("/admin/sponsored");
