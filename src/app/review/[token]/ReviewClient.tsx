@@ -178,7 +178,7 @@ export function ReviewClient({
           k,
           n: i + 1,
           title: post ? "A second LinkedIn post" : "The LinkedIn post",
-          blurb: "Another one for my LinkedIn followers, on the house.",
+          blurb: "Another one for my LinkedIn followers.",
           body: (
             <div className="space-y-3">
               {post2!.intro && (
