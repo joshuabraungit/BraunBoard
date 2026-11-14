@@ -19,6 +19,8 @@ export interface FastTrackState {
   lastClaimedAt: string | null;
 }
 
+const isOpen = (r: { available_at?: string | null }) => !r.available_at || new Date(r.available_at).getTime() <= Date.now();
+
 export const fastTrackOn = (s: FastTrackConfig) => !!s.fast_track_total && s.fast_track_total > 0;
 
 /** How many codes are left. Null when this sponsor has no Fast Track. */
@@ -26,13 +28,14 @@ export async function fastTrackState(s: SponsoredJobRow & FastTrackConfig): Prom
   if (!fastTrackOn(s)) return null;
   const { data, error } = await adminClient()
     .from("fast_track_codes")
-    .select("claimed_at")
+    .select("claimed_at, available_at")
     .eq("sponsor_id", s.id);
   if (error) {
     console.error("[fast-track] load failed", error.message);
     return null;
   }
-  const rows = data ?? [];
+  // Codes scheduled for later don't count until their time comes.
+  const rows = (data ?? []).filter(isOpen);
   const claimed = rows.filter((r) => r.claimed_at).map((r) => r.claimed_at as string).sort();
   return { total: rows.length, left: rows.length - claimed.length, lastClaimedAt: claimed.at(-1) ?? null };
 }
@@ -105,8 +108,8 @@ export async function sendCodeEmail(s: SponsoredJobRow & FastTrackConfig, to: st
 
 /** Tells Josh someone claimed a code, with how many are left. */
 export async function sendClaimNotice(s: SponsoredJobRow, name: string, email: string, code: string) {
-  const { data } = await adminClient().from("fast_track_codes").select("claimed_at").eq("sponsor_id", s.id);
-  const rows = data ?? [];
+  const { data } = await adminClient().from("fast_track_codes").select("claimed_at, available_at").eq("sponsor_id", s.id);
+  const rows = (data ?? []).filter(isOpen);
   const left = rows.filter((r) => !r.claimed_at).length;
   const leftLine = left === 0 ? `That was the last one. All ${rows.length} are claimed.` : `${left} of ${rows.length} left.`;
   const text = [`${name} (${email}) just claimed ${code} for ${s.job_title} at ${s.company}.`, "", leftLine].join("\n");
