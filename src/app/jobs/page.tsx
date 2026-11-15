@@ -44,6 +44,7 @@ function toFilters(sp: SP, market: MarketChoice): JobFilters {
     minBase: num(sp.minBase),
     minOte: num(sp.minOte),
     size: isSizeBucket(sp.size) ? sp.size : undefined,
+    firstAe: sp.first === "1" || undefined,
     // Default to the last 90 days so old postings don't bury fresh ones. "all" means any time.
     postedWithinDays: sp.posted === "all" ? undefined : (num(sp.posted) ?? DEFAULT_POSTED_DAYS),
   };
@@ -71,6 +72,7 @@ function quickPicks(market: MarketChoice): { label: string; qs: string }[] {
   const highOte = payPresets(market, "ote")[2];
   const q = (o: Record<string, string>) => new URLSearchParams(o).toString();
   return [
+    { label: "🚀 First AE job", qs: q({ first: "1" }) },
     { label: "Remote AE", qs: q({ role: "Account Executive", remote: "Remote" }) },
     { label: highOte.label, qs: q({ minOte: String(highOte.value) }) },
     { label: "Startups", qs: q({ size: "startup" }) },
@@ -132,6 +134,8 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
     return `/jobs${s ? `?${s}` : ""}`;
   };
   const hasFilters = qs.length > 0;
+  // Alerts can't follow the First AE job tag yet, so that search isn't offered as a watch.
+  const watchable = hasFilters && sp.first !== "1";
 
   // What's filtered right now, each with a link that drops just that filter.
   const without = (key: string) => {
@@ -143,6 +147,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
   const payLabel = (kind: "base" | "ote", v?: string) => payOptions(market, kind, v).find((o) => String(o.value) === v)?.label;
   const chips = [
     sp.q && { key: "q", label: `“${sp.q}”` },
+    sp.first === "1" && { key: "first", label: "First AE job" },
     sp.role && ROLE_OPTIONS.includes(sp.role as never) && { key: "role", label: ROLE_LABELS[sp.role] ?? sp.role },
     isMarketChoice(sp.country) && sp.country !== defaultMarket && { key: "country", label: MARKET_CHOICES[sp.country].label },
     sp.remote && (REMOTE_TYPES as readonly string[]).includes(sp.remote) && { key: "remote", label: sp.remote },
@@ -196,7 +201,17 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
           );
         })}
       </nav>
+      {sp.first === "1" && (
+        <p className="mt-3 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-ink-2">
+          AE jobs where the posting is open to 0 to 2 years of closing, or counts SDR time. Going for your first one?{" "}
+          <Link href="/kit" className="font-semibold text-ink underline underline-offset-2 hover:no-underline">
+            Grab Before You Say Yes, the interview kit →
+          </Link>
+        </p>
+      )}
       <AutoSubmitForm className="mb-4 mt-3 space-y-2" action="/jobs">
+        {/* Keep the First AE job pick on when other filters change. */}
+        {sp.first === "1" && <input type="hidden" name="first" value="1" />}
         <div className="flex gap-2">
           <input name="q" type="search" enterKeyHint="search" defaultValue={sp.q} placeholder="Keyword or company" aria-label="Keyword or company" className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm" />
           <button className="rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white">Search</button>
@@ -260,7 +275,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
           {!sp.posted && " posted in the last 90 days"}
         </p>
         <LightsKey />
-        {hasFilters && (
+        {watchable && (
           <form action={watchSearch} className="flex w-full items-center gap-2 sm:w-auto">
             <input type="hidden" name="qs" value={watchQs} />
             <input name="name" defaultValue={suggestedName} aria-label="Name this watch" placeholder="Name this watch" className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm sm:w-56 sm:flex-none" />
@@ -282,10 +297,10 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
             <div>
               <p className="font-semibold">Not seeing it? Let the job find you.</p>
               <p className="mt-0.5 text-sm text-ink-2">
-                {hasFilters ? "Save this search and I'll email you when a new one shows up." : "Tell me the sales job you'd take. I'll email you when it shows up."}
+                {watchable ? "Save this search and I'll email you when a new one shows up." : "Tell me the sales job you'd take. I'll email you when it shows up."}
               </p>
             </div>
-            {hasFilters ? (
+            {watchable ? (
               <form action={watchSearch}>
                 <input type="hidden" name="qs" value={watchQs} />
                 <input type="hidden" name="name" value={suggestedName} />

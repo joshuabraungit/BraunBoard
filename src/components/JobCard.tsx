@@ -67,31 +67,35 @@ const HUNTER_ICON: Record<string, string> = { "New Logo": "✨", Expansion: "�
 // Roles where new business vs. account growth is the question a rep asks. SEs and sales leaders aren't, so they stay blank when unsaid.
 const QUOTA_ROLES = new Set(["Account Executive", "Account Manager", "Customer Expansion", "SDR/BDR"]);
 
-/** New Business, Account Growth, both, or Partnerships. A quota role that doesn't say gets "ask"; anything else that doesn't say, nothing. */
-export function HunterPill({ motion, role }: { motion: JobView["sales_motion"]; role?: string }) {
+/** New Business, Account Growth, both, or Partnerships. A quota role that doesn't say gets "ask"; anything else that doesn't say, nothing. Plus "First AE job" when the posting is open to one. */
+export function HunterPill({ motion, role, firstAe }: { motion: JobView["sales_motion"]; role?: string; firstAe?: boolean }) {
   const label = motion === "Channel" ? "Partnerships" : HUNTER_LABELS[motion];
   const pill = "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold";
-  if (!label) {
-    if (motion !== "Unknown" || !role || !QUOTA_ROLES.has(role)) return null;
-    return (
-      <p className="mt-2">
-        <span className={`${pill} border-dashed border-line text-ink-3`} title="The posting doesn't say if you'd win new customers or grow existing ones. Worth asking.">
-          New business or growth? Ask
-        </span>
-      </p>
-    );
-  }
+  const hunter = label ? (
+    <span className={`${pill} border-line text-ink-2`} title={motion === "Channel" ? "Partnerships: you sell through and with partners." : HUNTER_WHY[motion]}>
+      <span aria-hidden>{HUNTER_ICON[motion]}</span>
+      {label}
+    </span>
+  ) : motion === "Unknown" && role && QUOTA_ROLES.has(role) ? (
+    <span className={`${pill} border-dashed border-line text-ink-3`} title="The posting doesn't say if you'd win new customers or grow existing ones. Worth asking.">
+      New business or growth? Ask
+    </span>
+  ) : null;
+  const first = firstAe ? (
+    <span className={`${pill} border-accent/40 bg-accent-soft text-accent`} title="The posting is open to someone with 0 to 2 years of closing experience, or counts SDR/BDR time.">
+      <span aria-hidden>🚀</span>
+      First AE job
+    </span>
+  ) : null;
+  if (!hunter && !first) return null;
   return (
-    <p className="mt-2">
-      <span className={`${pill} border-line text-ink-2`} title={motion === "Channel" ? "Partnerships: you sell through and with partners." : HUNTER_WHY[motion]}>
-        <span aria-hidden>{HUNTER_ICON[motion]}</span>
-        {label}
-      </span>
+    <p className="mt-2 flex flex-wrap gap-1.5">
+      {first}
+      {hunter}
     </p>
   );
 }
 
-/** The money row under the pay: base vs. commission, how the pay ranks, and deal size. */
 function MoneyRow({ job, extras }: { job: JobView; extras?: CardExtras }) {
   const share = baseShare(job);
   if (share == null && !extras?.pay && !job.deal_size) return null;
@@ -156,7 +160,7 @@ export function JobCard({ job, ctx, openings = 1, locations = 1, extras }: { job
 
       {extras?.hiring && <p className="mt-1 text-xs font-semibold text-fresh">🔥 {extras.hiring}</p>}
 
-      <HunterPill motion={job.sales_motion} role={job.role_family} />
+      <HunterPill motion={job.sales_motion} role={job.role_family} firstAe={job.first_ae} />
 
       {comp && <p className="mt-2 text-[15px] font-semibold text-accent">{comp}</p>}
       <MoneyRow job={job} extras={extras} />

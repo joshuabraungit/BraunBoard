@@ -13,6 +13,7 @@ import { payCurrency, resolveCompensation } from "./compensation";
 import { extractAttributes } from "./extract";
 import { plainRole } from "./role-plain";
 import { dealSize } from "./deal-size";
+import { firstAe } from "./first-ae";
 import { resolveCountry } from "./country";
 import { dedupeKey, descriptionSimilarity, DUPLICATE_THRESHOLD, looksLikeRepost, normalizeLocationKey, sameRole, sameTitle } from "./dedupe";
 import type { AtsProvider, CompanyRef, RawJob } from "./types";
@@ -285,6 +286,11 @@ async function insertNewJob(
     (v) => ({ deal_size: v, deal_size_checked_at: new Date().toISOString() }),
     () => ({}),
   );
+  // Open to a first-time AE, when the posting says so. Optional, like the deal size.
+  const firstAeTag = await firstAe(job.title, job.description, attrs.role_family).then(
+    (v) => ({ first_ae: v.first_ae, first_ae_quote: v.quote, first_ae_checked_at: new Date().toISOString() }),
+    () => ({}),
+  );
   const locKey = normalizeLocationKey(loc.city, loc.state, loc.remote_type);
   const key = dedupeKey(company.id, cls.title_normalized, locKey);
 
@@ -374,6 +380,7 @@ async function insertNewJob(
       summary: attrs.summary,
       ...rolePlain,
       ...deal,
+      ...firstAeTag,
       disclosures: attrs.disclosures,
       sales_motion: attrs.sales_motion,
       self_sourcing_level: attrs.self_sourcing_level,

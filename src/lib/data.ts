@@ -69,6 +69,8 @@ export interface JobView {
   role_plain?: string | null;
   /** What a deal in this job is worth, when the posting says ("$50K–$500K"). */
   deal_size?: string | null;
+  /** Open to a first-time AE, per the posting. */
+  first_ae?: boolean;
   /** 2-3 word "Sells to" label for cards. */
   buyer_short?: string | null;
 }
@@ -100,13 +102,15 @@ export interface JobFilters {
   companySlug?: string;
   /** "startup", "growth", "large" or "enterprise". */
   size?: string;
+  /** Only jobs open to a first-time AE. */
+  firstAe?: boolean;
 }
 
 /** How long shared job and company lists are reused before asking the database again. */
 const JOB_CACHE_SECONDS = 300;
 
 const CARD_COLUMNS =
-  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags, currency, markets, attainment, company_size, buyer, industry, role_group, company_sells, deal_size, buyer_short, company_sector";
+  "id, slug, title_raw, role_family, seniority, sales_segment, sales_motion, self_sourcing_level, customer_segment, remote_type, location_raw, city, state, salary_min, salary_max, ote_min, ote_max, summary, disclosures, apply_url, first_seen_at:posted_at, company_id, company_name, company_slug, company_logo_url, company_domain, flags, currency, markets, attainment, company_size, buyer, industry, role_group, company_sells, deal_size, buyer_short, company_sector, first_ae";
 
 function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
   const since = f.postedWithinDays ? Date.now() - f.postedWithinDays * 86_400_000 : 0;
@@ -122,6 +126,7 @@ function applyFiltersLocal(jobs: JobView[], f: JobFilters): JobView[] {
       (!f.minOte || (j.ote_max ?? j.ote_min ?? 0) >= f.minOte) &&
       (!f.companySlug || j.company_slug === f.companySlug) &&
       (!f.size || j.company_size === f.size) &&
+      (!f.firstAe || !!j.first_ae) &&
       (!since || new Date(j.first_seen_at).getTime() >= since),
   );
 }
@@ -144,7 +149,7 @@ export async function listJobsWithTotal(
 
 const cachedJobs = unstable_cache(
   (f: JobFilters, limit: number, opts: { offset?: number }) => fetchJobs(f, limit, opts),
-  ["jobs-v4"],
+  ["jobs-v5"],
   { revalidate: JOB_CACHE_SECONDS, tags: ["jobs"] },
 );
 
@@ -166,6 +171,7 @@ function withFilters<Q extends { or: any; eq: any; in: any; overlaps: any; gte: 
   if (f.minOte) q = q.gte("ote_max_usd", f.minOte);
   if (f.companySlug) q = q.eq("company_slug", f.companySlug);
   if (f.size) q = q.eq("company_size", f.size);
+  if (f.firstAe) q = q.eq("first_ae", true);
   if (f.postedWithinDays) q = q.gte("posted_at", new Date(Date.now() - f.postedWithinDays * 86_400_000).toISOString());
   return q;
 }

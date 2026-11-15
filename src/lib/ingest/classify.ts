@@ -21,6 +21,11 @@ const EXCLUDE = [
   /\b(recruit(er|ing)|talent acquisition|sourcer)\b/i,
   /\b(people|hr|human resources)( business)? partner\b/i, // HR, even when the title says "Field Sales"
   /\b(marketing|demand gen|growth marketing|content|brand|communications|pr manager)\b/i,
+  // PR agencies call their client leads "account executives"; they don't sell.
+  /\b(public relations|pr account executive|pr (account|client) (manager|director))\b/i,
+  /\bPR\s*$/, // "Account Manager, Tech PR" (capital PR only, so "pr" inside words never matches)
+  // Medical device and clinical roles (Josh took medtech off the board, Nov 2026).
+  /\b(medical device|clinical (sales )?(specialist|associate|consultant|representative)|surgical (sales|specialist)|spine|orthopa?edic)\b/i,
   /\b(store|cashier|associate,? (store|retail)|showroom)\b/i,
   /\b(realtor|loan officer|licensed agent)\b/i,
   /\b(customer (service|support|care)|support (specialist|engineer|agent)|call center)\b/i,
