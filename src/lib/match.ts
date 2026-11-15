@@ -25,7 +25,13 @@ export interface WatchPrefs {
   experience?: string[];
   /** Industries they want (see industries.ts). Empty or missing = any industry. */
   industries?: string[];
+  /** Only jobs tagged "First AE job" (open to 0 to 2 years of closing, or SDR time). Missing = any. */
+  first_ae_only?: boolean;
 }
+
+/** A "First AE job" watch only takes AE jobs with that tag. Other roles on the same watch (like SDR) are untouched. */
+export const fitsFirstAe = (job: { first_ae?: boolean | null; role_family?: string | null }, prefs: { first_ae_only?: boolean }) =>
+  !prefs.first_ae_only || job.role_family !== "Account Executive" || !!job.first_ae;
 
 // Role words say nothing about the market ("operations leaders" vs "finance leaders"), so they never match.
 const GENERIC = new Set(
@@ -72,6 +78,7 @@ export const DEALBREAKER_LABELS: Record<Dealbreaker, string> = {
 
 export interface MatchableJob {
   title_raw: string;
+  first_ae?: boolean | null;
   role_family: RoleFamily;
   sales_segment: SalesSegment;
   sales_motion: SalesMotion;

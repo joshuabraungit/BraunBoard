@@ -41,6 +41,8 @@ export const OnboardingAnswers = z.object({
   sold_to: z.string().max(160).default(""),
   /** Industries they want. Empty = any. Usually filled in from their résumé. */
   industries: z.array(z.enum(INDUSTRY_KEYS as [Industry, ...Industry[]])).default([]),
+  /** Going for their first AE job: only jobs tagged "First AE job". */
+  first_ae: z.boolean().default(false),
 });
 export type OnboardingAnswers = z.infer<typeof OnboardingAnswers>;
 
@@ -62,6 +64,7 @@ export const StoredWatch = z.object({
     company_sizes: z.array(z.enum(SIZE_BUCKETS)).optional(),
     experience: z.array(z.string()).optional(),
     industries: z.array(z.string()).optional(),
+    first_ae_only: z.boolean().optional(),
   }),
 });
 export type StoredWatch = z.infer<typeof StoredWatch>;
@@ -98,13 +101,14 @@ export function answersToPrefs(a: OnboardingAnswers): WatchPrefs {
     company_sizes: a.sizes,
     experience: experienceTerms(a.sold_to ?? ""),
     industries: a.industries ?? [],
+    first_ae_only: !!a.first_ae && a.roles.some((r) => r === "ae" || r === "ent_ae" || r === "strat_ae"),
   };
 }
 
 /** "Enterprise AE · Remote · $275K+ OTE" */
 export function defaultWatchName(a: OnboardingAnswers): string {
   const roles = a.roles.map((r) => ROLE_CHOICES[r].label.replace("Account Executive", "AE"));
-  const parts = [roles.slice(0, 2).join(" / ") + (roles.length > 2 ? " +" : "")];
+  const parts = [a.first_ae ? "First AE job" : roles.slice(0, 2).join(" / ") + (roles.length > 2 ? " +" : "")];
   if (a.work !== "any") parts.push(WORK_CHOICES[a.work]);
   if (a.country === "UK") parts.push("UK");
   if (a.country === "DE") parts.push("Germany");
@@ -145,5 +149,6 @@ export function rowToPrefs(r: Record<string, unknown>): WatchPrefs {
     company_sizes: ((r.company_sizes as string[] | undefined) ?? []).filter((s) => (SIZE_BUCKETS as readonly string[]).includes(s)),
     experience: ((r.experience as string[] | undefined) ?? []).filter((s) => typeof s === "string"),
     industries: ((r.industries as string[] | undefined) ?? []).filter((s) => s in INDUSTRIES),
+    first_ae_only: r.first_ae_only === true,
   });
 }

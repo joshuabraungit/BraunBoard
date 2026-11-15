@@ -134,8 +134,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
     return `/jobs${s ? `?${s}` : ""}`;
   };
   const hasFilters = qs.length > 0;
-  // Alerts can't follow the First AE job tag yet, so that search isn't offered as a watch.
-  const watchable = hasFilters && sp.first !== "1";
+  const watchable = hasFilters;
 
   // What's filtered right now, each with a link that drops just that filter.
   const without = (key: string) => {
@@ -168,7 +167,7 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
     if (!p.get("country")) p.set("country", market);
     return p.toString();
   })();
-  const suggestedName = [isSizeBucket(sp.size) ? SIZE_LABELS[sp.size].label : null, sp.segment, sp.role === "Account Executive" ? "AE" : sp.role, sp.role === PARTNERSHIPS_ROLE || sp.motion === "Channel" ? "Partnerships" : null, sp.remote, market === "CA" ? "Canada" : market === "UK" ? "UK" : market === "DE" ? "Germany" : market === "EU" ? "Remote Europe" : null, sp.minOte && payOptions(market, "ote", sp.minOte).find((p) => String(p.value) === sp.minOte)?.label, sp.q]
+  const suggestedName = [sp.first === "1" ? "First AE job" : null, isSizeBucket(sp.size) ? SIZE_LABELS[sp.size].label : null, sp.segment, sp.role === "Account Executive" ? "AE" : sp.role, sp.role === PARTNERSHIPS_ROLE || sp.motion === "Channel" ? "Partnerships" : null, sp.remote, market === "CA" ? "Canada" : market === "UK" ? "UK" : market === "DE" ? "Germany" : market === "EU" ? "Remote Europe" : null, sp.minOte && payOptions(market, "ote", sp.minOte).find((p) => String(p.value) === sp.minOte)?.label, sp.q]
     .filter(Boolean)
     .join(" · ");
   return (

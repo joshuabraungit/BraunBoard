@@ -29,3 +29,16 @@ describe("quoteTooSenior (a 'yes' backed by a 2+ years ask doesn't count)", () =
     expect(quoteTooSenior("If you've spent 2–3 years as an SDR, this role gives you room to grow")).toBe(false);
   });
 });
+
+import { fitsFirstAe } from "../src/lib/match";
+describe("fitsFirstAe (First AE job watches)", () => {
+  const ae = (first_ae: boolean) => ({ role_family: "Account Executive", first_ae });
+  it("only lets tagged AE jobs through when the watch asks", () => {
+    expect(fitsFirstAe(ae(true), { first_ae_only: true })).toBe(true);
+    expect(fitsFirstAe(ae(false), { first_ae_only: true })).toBe(false);
+  });
+  it("leaves SDR jobs and normal watches alone", () => {
+    expect(fitsFirstAe({ role_family: "SDR/BDR", first_ae: false }, { first_ae_only: true })).toBe(true);
+    expect(fitsFirstAe(ae(false), {})).toBe(true);
+  });
+});

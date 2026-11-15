@@ -3,13 +3,13 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fitsIndustry } from "../industries";
-import { fitsSize, openInCountries, scoreMatch, shouldAlert, type MatchableJob, type WatchPrefs } from "../match";
+import { fitsFirstAe, fitsSize, openInCountries, scoreMatch, shouldAlert, type MatchableJob, type WatchPrefs } from "../match";
 
 export async function matchNewJobs(db: SupabaseClient, jobIds: string[]): Promise<number> {
   const { data: jobs } = await db
     .from("jobs")
     .select(
-      "id, company_id, title_raw, role_family, sales_segment, sales_motion, self_sourcing_level, remote_type, city, state, salary_min, salary_max, ote_min, ote_max, currency, markets, description_raw, buyer, industry, companies(employee_range, size_bucket, industry)",
+      "id, company_id, title_raw, role_family, sales_segment, sales_motion, self_sourcing_level, remote_type, city, state, salary_min, salary_max, ote_min, ote_max, currency, markets, description_raw, buyer, industry, first_ae, companies(employee_range, size_bucket, industry)",
     )
     .in("id", jobIds);
   if (!jobs?.length) return 0;
@@ -29,7 +29,7 @@ export async function matchNewJobs(db: SupabaseClient, jobIds: string[]): Promis
     // Best match per user wins (unique on user_id + job_id)
     const best = new Map<string, Record<string, unknown>>();
     for (const w of watches ?? []) {
-      if (!openInCountries(job, w as unknown as WatchPrefs) || !fitsSize(job, w as unknown as WatchPrefs) || !fitsIndustry(job, w as unknown as WatchPrefs)) continue;
+      if (!openInCountries(job, w as unknown as WatchPrefs) || !fitsSize(job, w as unknown as WatchPrefs) || !fitsIndustry(job, w as unknown as WatchPrefs) || !fitsFirstAe(job, w as unknown as WatchPrefs)) continue;
       const m = scoreMatch(job, w as unknown as WatchPrefs);
       if (!shouldAlert(m)) continue;
       const prev = best.get(w.user_id);

@@ -253,7 +253,7 @@ const cachedWatchJobRows = unstable_cache(
     const { jobs } = await fetchJobs({ markets, postedWithinDays: STALE_DAYS }, 1000, {});
     return jobs.map((j) => CARD_KEYS.map((key) => j[key] ?? null));
   },
-  ["watch-job-rows-v2"],
+  ["watch-job-rows-v3"],
   { revalidate: JOB_CACHE_SECONDS, tags: ["jobs"] },
 );
 

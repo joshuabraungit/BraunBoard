@@ -51,6 +51,7 @@ export async function saveOnboarding(formData: FormData) {
     sizes: formData.getAll("sizes"),
     sold_to: String(formData.get("sold_to") ?? "").slice(0, 160),
     industries: formData.getAll("industries"),
+    first_ae: formData.get("first_ae") === "1",
   });
   const stored: StoredWatch = { name: defaultWatchName(answers), answers, prefs: answersToPrefs(answers) };
 
@@ -99,6 +100,8 @@ export async function watchSearch(formData: FormData) {
     // The jobs page always passes the country it was showing ("NA", "US", "CA", "UK", "DE", "EU" or "all").
     countries: watchCountries(sp.get("country")),
     company_sizes: ((v) => (isSizeBucket(v) ? [v] : []))(sp.get("size")),
+    // "First AE job" pick: an AE watch that only takes jobs with that tag.
+    ...(sp.get("first") === "1" ? { first_ae_only: true, role_families: ["Account Executive" as const] } : {}),
   };
   const name = String(formData.get("name") ?? "").trim() || "My search";
   const db = await serverClient();

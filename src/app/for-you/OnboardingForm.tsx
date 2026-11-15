@@ -63,6 +63,7 @@ export function OnboardingForm({ initial, signedIn }: { initial?: OnboardingAnsw
   const [sizes, setSizes] = useState<SizeBucket[]>(initial?.sizes ?? []);
   const [soldTo, setSoldTo] = useState(initial?.sold_to ?? "");
   const [industries, setIndustries] = useState<Industry[]>(initial?.industries ?? []);
+  const [firstAe, setFirstAe] = useState<boolean>(initial?.first_ae ?? false);
   const [pending, setPending] = useState(false);
   const [reading, setReading] = useState(false);
   const [resumeError, setResumeError] = useState("");
@@ -117,10 +118,20 @@ export function OnboardingForm({ initial, signedIn }: { initial?: OnboardingAnsw
               {ROLE_CHOICES[r].label}
             </Chip>
           ))}
+          {/* Only for AE picks: SDRs moving up get just the AE jobs open to them. */}
+          {roles.some((r) => r === "ae" || r === "ent_ae" || r === "strat_ae") && (
+            <label className={`mt-1 flex w-full cursor-pointer select-none items-start gap-2.5 rounded-xl border px-3.5 py-2.5 text-sm ${firstAe ? "border-accent bg-accent-soft" : "border-line-strong bg-surface"}`}>
+              <input type="checkbox" name="first_ae" value="1" checked={firstAe} onChange={(e) => setFirstAe(e.target.checked)} className="mt-0.5" />
+              <span>
+                <span className="font-semibold">🚀 I&apos;m going for my first AE job</span>
+                <span className="block text-ink-2">Only show AE jobs open to 0 to 2 years of closing, or that count SDR time.</span>
+              </span>
+            </label>
+          )}
         </div>
       ),
       ok: roles.length > 0,
-      summary: roles.length ? roles.map((r) => ROLE_CHOICES[r].label).join(", ") : "",
+      summary: roles.length ? roles.map((r) => ROLE_CHOICES[r].label).join(", ") + (firstAe && roles.some((r) => r === "ae" || r === "ent_ae" || r === "strat_ae") ? " · first AE job" : "") : "",
     },
     {
       q: "Where do you want to work?",
