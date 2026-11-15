@@ -66,6 +66,28 @@ const ROLE_OPTIONS = [...ROLE_FAMILIES, PARTNERSHIPS_ROLE];
 const ROLE_LABELS: Record<string, string> = { [PARTNERSHIPS_ROLE]: "Partnerships & Channel" };
 const MOTION_LABELS: Record<string, string> = { ...HUNTER_LABELS, Channel: "Partnerships & Channel" };
 
+/** One-tap searches above the filters. The high-OTE pick uses this market's own pay presets ($250K, £125K, €160K). */
+function quickPicks(market: MarketChoice): { label: string; qs: string }[] {
+  const highOte = payPresets(market, "ote")[2];
+  const q = (o: Record<string, string>) => new URLSearchParams(o).toString();
+  return [
+    { label: "Remote AE", qs: q({ role: "Account Executive", remote: "Remote" }) },
+    { label: highOte.label, qs: q({ minOte: String(highOte.value) }) },
+    { label: "Startups", qs: q({ size: "startup" }) },
+    { label: "New Business", qs: q({ motion: "New Logo" }) },
+    { label: "SDR / BDR", qs: q({ role: "SDR/BDR" }) },
+    { label: "Enterprise AE", qs: q({ role: "Account Executive", segment: "Enterprise" }) },
+    { label: "Partnerships", qs: q({ role: PARTNERSHIPS_ROLE }) },
+    { label: "New this week", qs: q({ posted: "7" }) },
+  ];
+}
+
+/** Same filters, in any order. */
+function sameSearch(a: string, b: string) {
+  const norm = (s: string) => [...new URLSearchParams(s).entries()].map(([k, v]) => `${k}=${v}`).sort().join("&");
+  return norm(a) === norm(b);
+}
+
 const SELECT = "rounded-md border border-line bg-surface px-2 py-1.5 text-sm";
 
 const POSTED_OPTIONS: [string, string][] = [
@@ -158,7 +180,23 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
           </>
         )}
       </p>
-      <AutoSubmitForm className="mb-4 mt-4 space-y-2" action="/jobs">
+      {/* Quick picks: one tap to a common search. Each one is just a set of filters, so they mix with the rest. */}
+      <nav aria-label="Quick picks" className="-mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+        {quickPicks(market).map((p) => {
+          const on = sameSearch(qs, p.qs);
+          return (
+            <Link
+              key={p.label}
+              href={on ? "/jobs" : `/jobs?${p.qs}`}
+              aria-current={on ? "page" : undefined}
+              className={`inline-flex min-h-9 shrink-0 items-center whitespace-nowrap rounded-full border px-3.5 text-sm font-semibold ${on ? "border-ink bg-ink text-white" : "border-line-strong bg-surface hover:border-ink"}`}
+            >
+              {p.label}
+            </Link>
+          );
+        })}
+      </nav>
+      <AutoSubmitForm className="mb-4 mt-3 space-y-2" action="/jobs">
         <div className="flex gap-2">
           <input name="q" type="search" enterKeyHint="search" defaultValue={sp.q} placeholder="Keyword or company" aria-label="Keyword or company" className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm" />
           <button className="rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white">Search</button>
