@@ -27,6 +27,8 @@ const PAGE_SIZE = 60;
 // "Load more" shows pages 1 through N on one page. The database hands back at most 1,000 rows at once,
 // so it stops at 16 loads (960 jobs); past that, filters are the better tool.
 const MAX_LOADS = 16;
+// After this many jobs on the first page, a "Let the job find you" box nudges people to set up an alert.
+const NUDGE_AFTER = 12;
 
 function toFilters(sp: SP, market: MarketChoice): JobFilters {
   const pick = <T extends string>(v: string | undefined, allowed: readonly T[]) => (allowed.includes(v as T) ? (v as T) : undefined);
@@ -235,9 +237,35 @@ export default async function AllJobs({ searchParams }: { searchParams: Promise<
         empty=""
       />
       {page > 1 && <div id="more" className="scroll-mt-20" />}
-      <div className={page > 1 ? "mt-3" : ""}>
-        <JobGrid jobs={jobs.slice((page - 1) * PAGE_SIZE)} ctx={{ savedJobIds: state.savedJobIds, back: pageHref(page) }} empty={page > 1 ? "" : "No jobs match those filters."} />
-      </div>
+      {page === 1 && jobs.length > NUDGE_AFTER ? (
+        <>
+          <JobGrid jobs={jobs.slice(0, NUDGE_AFTER)} ctx={{ savedJobIds: state.savedJobIds, back: pageHref(page) }} empty="" />
+          <div className="my-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-5">
+            <div>
+              <p className="font-semibold">Not seeing it? Let the job find you.</p>
+              <p className="mt-0.5 text-sm text-ink-2">
+                {hasFilters ? "Save this search and I'll email you when a new one shows up." : "Tell me the sales job you'd take. I'll email you when it shows up."}
+              </p>
+            </div>
+            {hasFilters ? (
+              <form action={watchSearch}>
+                <input type="hidden" name="qs" value={watchQs} />
+                <input type="hidden" name="name" value={suggestedName} />
+                <button className="whitespace-nowrap rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90">Email me new ones →</button>
+              </form>
+            ) : (
+              <Link href="/for-you" className="whitespace-nowrap rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90">
+                Set up my watch →
+              </Link>
+            )}
+          </div>
+          <JobGrid jobs={jobs.slice(NUDGE_AFTER)} ctx={{ savedJobIds: state.savedJobIds, back: pageHref(page) }} empty="" />
+        </>
+      ) : (
+        <div className={page > 1 ? "mt-3" : ""}>
+          <JobGrid jobs={jobs.slice((page - 1) * PAGE_SIZE)} ctx={{ savedJobIds: state.savedJobIds, back: pageHref(page) }} empty={page > 1 ? "" : "No jobs match those filters."} />
+        </div>
+      )}
       {jobs.length < total && page < MAX_LOADS && (
         <div className="mt-8 flex flex-col items-center gap-1.5 text-sm">
           <Link href={`${pageHref(page + 1)}#more`} className="rounded-lg border border-line-strong bg-surface px-5 py-2.5 font-semibold hover:border-ink">

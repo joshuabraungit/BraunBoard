@@ -17,8 +17,9 @@ export default async function Alerts() {
     return (
       <div className="mx-auto max-w-xl py-10">
         <PageTabs tabs={SAVED_TABS} active="/alerts" />
-        <h1 className="text-2xl font-bold tracking-tight">Alert emails</h1>
-        <p className="mt-2 text-ink-2">Get an email when a job matching your watch shows up. Instant, daily, or off.</p>
+        <p className="text-sm text-ink-3">Alert emails</p>
+        <h1 className="text-2xl font-bold tracking-tight">Let the job find you.</h1>
+        <p className="mt-2 text-ink-2">Tell me the sales job you&apos;d take. I&apos;ll email you when it shows up. Instant, daily, or off.</p>
         <Link href="/login?next=/alerts" className="mt-6 inline-block rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white">Sign in →</Link>
       </div>
     );
@@ -27,11 +28,13 @@ export default async function Alerts() {
   return (
     <div className="mx-auto max-w-2xl">
       <PageTabs tabs={SAVED_TABS} active="/alerts" />
-      <h1 className="text-2xl font-bold tracking-tight">Alert emails</h1>
+      <p className="text-sm text-ink-3">Alert emails</p>
+      <h1 className="text-2xl font-bold tracking-tight">Let the job find you.</h1>
       <p className="mt-1 text-sm text-ink-2">Emails go to {user.email}. Watched companies are included in your daily digest.</p>
       {watches.length === 0 && (
         <p className="mt-8 rounded-xl border border-dashed border-line p-6 text-center text-sm text-ink-3">
-          No watches yet. <Link href="/for-you" className="underline">Set one up</Link>.
+          No watches yet. Tell me what you&apos;d take and I&apos;ll do the looking.{" "}
+          <Link href="/for-you" className="underline">Set one up</Link>.
         </p>
       )}
       <ul className="mt-6 space-y-3">
