@@ -13,6 +13,7 @@ import { ATTAINMENT_ROLES, attainmentLabel } from "@/lib/attainment";
 import { QuestionsPanel } from "@/components/Questions";
 import { AskJoshForm } from "@/components/AskJosh";
 import { CallJoshLine } from "@/components/CallJosh";
+import { ReachOut } from "@/components/ReachOut";
 import { getUser } from "@/lib/session";
 import { loadProductCompanies } from "@/lib/products";
 import { formatComp, formatLocation, money } from "@/lib/format";
@@ -248,6 +249,19 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
           </div>
         </dl>
       </section>
+
+      {/* Who owns the hire, a first note and a Proof page prompt for this job. Sign-in only. */}
+      <ReachOut
+        signedIn={!!user}
+        slug={job.slug}
+        title={job.title_raw}
+        company={job.company_name}
+        role={job.role_family}
+        companySize={job.company_size}
+        sells={product?.short ?? job.company_sells}
+        buyer={job.buyer_short ?? job.buyer}
+        url={job.apply_url}
+      />
 
       {/* "Where deals come from" in The job box already says this. */}
       <BraunReadPanel read={read} hide={["Pipeline"]} />
