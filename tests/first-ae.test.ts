@@ -16,3 +16,16 @@ describe("mightBeFirstAe (cheap first pass before the AI reads it)", () => {
     expect(mightBeFirstAe("Account Executive", "5+ years of enterprise closing experience.", "Account Executive")).toBe(false);
   });
 });
+
+import { quoteTooSenior } from "../src/lib/ingest/first-ae";
+describe("quoteTooSenior (a 'yes' backed by a 2+ years ask doesn't count)", () => {
+  it("rejects 2+ years of closing", () => {
+    expect(quoteTooSenior("2+ years of full-cycle, closing sales experience")).toBe(true);
+    expect(quoteTooSenior("At least 2 years’ experience in a full cycle, quota carrying sales role")).toBe(true);
+  });
+  it("keeps short asks and SDR-friendly lines", () => {
+    expect(quoteTooSenior("1+ years of experience in a closing sales role")).toBe(false);
+    expect(quoteTooSenior("1-2+ years of sales experience")).toBe(false);
+    expect(quoteTooSenior("If you've spent 2–3 years as an SDR, this role gives you room to grow")).toBe(false);
+  });
+});

@@ -26,6 +26,7 @@ Answer true only when the posting itself says so, in one of these ways:
 - The title says Associate/Junior/Entry-level AE and nothing in the posting asks for 3+ years of closing experience.
 
 Answer false when:
+- It asks for "2+ years" (or more) of closing, full-cycle or quota-carrying experience. "2+" means at least two years of closing, so it's not a first AE job.
 - It asks for 3 or more years of closing, full-cycle or quota-carrying experience anywhere (even if another line says 1+ years).
 - The only short experience ask is about something other than selling (an industry, a tool, a degree), and the posting doesn't say junior sellers are welcome.
 - It isn't really a closing sales role (PR or agency "account executives", clinical or medical device roles, retail, customer support).
@@ -57,6 +58,11 @@ async function ask(text: string, key: string): Promise<{ first_ae?: boolean; evi
 
 const squash = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
+/** "2+ years", "3+ yrs", "2 or more years"... of experience (not the top of a range like "1-2+ years"), unless the same words count SDR/BDR time. */
+const AT_LEAST_TWO = /(?<!\d\s*(-|–|to)\s*)\b([2-9]|1\d)\s*(\+|or more)\s*(years|yrs)|\b(at least|minimum( of)?)\s*([2-9]|two|three|four|five)\s*(years|yrs)/i;
+const SDR = /\b(sdr|bdr|sales development|business development rep)/i;
+export const quoteTooSenior = (quote: string) => AT_LEAST_TWO.test(quote) && !SDR.test(quote);
+
 /**
  * { first_ae, quote }. Skips the AI when the posting can't qualify (not an AE role, senior title, no hint).
  * A "yes" only counts when the quoted words are really in the posting. Throws on API errors.
@@ -71,6 +77,6 @@ export async function firstAe(
   const text = `Title: ${title}\n\nPosting:\n${description.slice(0, 14_000)}`;
   const r = await ask(text, key);
   const quote = r.evidence?.trim() || null;
-  if (r.first_ae !== true || !quote || !squash(text).includes(squash(quote))) return { first_ae: false, quote: null };
+  if (r.first_ae !== true || !quote || !squash(text).includes(squash(quote)) || quoteTooSenior(quote)) return { first_ae: false, quote: null };
   return { first_ae: true, quote: quote.slice(0, 400) };
 }
