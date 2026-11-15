@@ -12,6 +12,8 @@ interface Props {
   minutes: number;
   where: string;
   lastClaimed: string | null;
+  /** The sponsor gave a booking link, so people book the call themselves. */
+  canBook?: boolean;
 }
 
 function ago(iso: string) {
@@ -24,7 +26,7 @@ function ago(iso: string) {
 }
 
 /** The Fast Track box on a sponsored job page: a live counter, a claim form, then the code and the steps. */
-export function FastTrackBox({ id, company, total, left, minutes, where, lastClaimed }: Props) {
+export function FastTrackBox({ id, company, total, left, minutes, where, lastClaimed, canBook }: Props) {
   const [state, action, pending] = useActionState<ClaimResult | null, FormData>(claimFastTrack, null);
   const gone = left <= 0 || (state && !state.ok && state.gone);
 
@@ -48,9 +50,18 @@ export function FastTrackBox({ id, company, total, left, minutes, where, lastCla
             </a>
           </li>
           <li>{where}</li>
-          <li>
-            {company}&apos;s team will reach out to set up a {minutes}-minute screening call.
-          </li>
+          {state.bookUrl ? (
+            <li>
+              <a href={state.bookUrl} target="_blank" rel="nofollow noopener" className="font-semibold underline underline-offset-2">
+                Book your {minutes}-minute screening call ↗
+              </a>{" "}
+              right on {company}&apos;s calendar. Pick a time that works for you.
+            </li>
+          ) : (
+            <li>
+              {company}&apos;s team will reach out to set up a {minutes}-minute screening call.
+            </li>
+          )}
         </ol>
         <p className="mt-4 text-sm text-ink-2">I emailed you the code too, so you have it later. It&apos;s yours, so please don&apos;t share it.</p>
       </section>
@@ -83,7 +94,9 @@ export function FastTrackBox({ id, company, total, left, minutes, where, lastCla
       ) : (
         <>
           <p className="mt-3 text-[15px] text-ink-2">
-            Grab a code, put it on your application, and {company}&apos;s team will set up a call with you. No resume black hole. Once they&apos;re gone, they&apos;re gone.
+            {canBook
+              ? <>Grab a code, put it on your application, then book your call right on {company}&apos;s calendar. No resume black hole, no waiting to hear back. Once they&apos;re gone, they&apos;re gone.</>
+              : <>Grab a code, put it on your application, and {company}&apos;s team will set up a call with you. No resume black hole. Once they&apos;re gone, they&apos;re gone.</>}
           </p>
           <form action={action} className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
             <input type="hidden" name="id" value={id} />

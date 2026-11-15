@@ -213,9 +213,11 @@ export async function saveFastTrack(formData: FormData) {
   const minutes = minsRaw ? Math.round(Number(minsRaw)) : null;
   if (minutes != null && !(minutes >= 5 && minutes <= 120)) back(false, "Call length has to be 5 to 120 minutes.");
   const where = String(formData.get("fast_track_where") ?? "").trim().slice(0, 500) || null;
+  const booking = String(formData.get("fast_track_booking_url") ?? "").trim().slice(0, 1000) || null;
+  if (booking && !/^https?:\/\//i.test(booking)) back(false, "The booking link has to start with https://");
   const { error } = await adminClient()
     .from("sponsored_jobs")
-    .update({ fast_track_total: total, fast_track_url: url, fast_track_minutes: minutes, fast_track_where: where })
+    .update({ fast_track_total: total, fast_track_url: url, fast_track_minutes: minutes, fast_track_where: where, fast_track_booking_url: booking })
     .eq("id", id);
   if (error) back(false, error.message);
   if (total) {

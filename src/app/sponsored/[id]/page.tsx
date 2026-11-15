@@ -129,6 +129,7 @@ export default async function SponsoredJobPage({ params }: Props) {
           minutes={(s as FastTrackConfig).fast_track_minutes ?? 25}
           where={fastTrackWhere(s as FastTrackConfig)}
           lastClaimed={ft.lastClaimedAt}
+          canBook={!!(s as FastTrackConfig).fast_track_booking_url?.trim()}
         />
       )}
 

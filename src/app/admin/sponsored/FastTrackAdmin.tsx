@@ -45,6 +45,10 @@ export async function FastTrackAdmin({ id, cfg }: { id: string; cfg: FastTrackCo
           <span className="text-xs text-ink-2">Where the code goes on their application</span>
           <textarea name="fast_track_where" defaultValue={cfg.fast_track_where ?? ""} rows={3} maxLength={500} className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm" />
         </label>
+        <label className="block">
+          <span className="text-xs text-ink-2">Their booking link (Calendly, Google Calendar, HubSpot). Blank = their team reaches out to schedule, like before.</span>
+          <input name="fast_track_booking_url" defaultValue={cfg.fast_track_booking_url ?? ""} placeholder="https://calendly.com/..." className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm" />
+        </label>
         <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">Save Fast Track</button>
         <p className="text-xs text-ink-3">The box shows on the job page while the job is live. Claimed codes are never handed out twice.</p>
       </form>

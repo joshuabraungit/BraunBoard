@@ -3,9 +3,9 @@ import { revalidatePath } from "next/cache";
 import { getOrder } from "@/lib/sponsor";
 import { isRunning } from "@/lib/sponsor-form";
 import { isEmail, isUuid, subscribeOnSignIn } from "@/lib/picks-subscribe";
-import { claimCode, fastTrackOn, sendClaimNotice, sendCodeEmail, type FastTrackConfig } from "@/lib/fast-track";
+import { bookingLink, claimCode, fastTrackOn, sendClaimNotice, sendCodeEmail, type FastTrackConfig } from "@/lib/fast-track";
 
-export type ClaimResult = { ok: true; code: string } | { ok: false; error: string; gone?: boolean };
+export type ClaimResult = { ok: true; code: string; bookUrl: string | null } | { ok: false; error: string; gone?: boolean };
 
 export async function claimFastTrack(_prev: ClaimResult | null, fd: FormData): Promise<ClaimResult> {
   const id = String(fd.get("id") ?? "");
@@ -37,5 +37,5 @@ export async function claimFastTrack(_prev: ClaimResult | null, fd: FormData): P
   ]);
   revalidatePath(`/sponsored/${s.id}`);
   revalidatePath("/");
-  return { ok: true, code };
+  return { ok: true, code, bookUrl: bookingLink(s, name, email) };
 }

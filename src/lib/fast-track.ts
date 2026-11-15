@@ -11,6 +11,32 @@ export interface FastTrackConfig {
   fast_track_url?: string | null;
   fast_track_minutes?: number | null;
   fast_track_where?: string | null;
+  fast_track_booking_url?: string | null;
+}
+
+/**
+ * The sponsor's booking link with the person's name and email filled in, where the tool supports it
+ * (Calendly and HubSpot do). Any other tool gets the plain link. Null when there's no booking link.
+ */
+export function bookingLink(s: FastTrackConfig, name: string, email: string): string | null {
+  const raw = s.fast_track_booking_url?.trim();
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    const host = u.hostname.toLowerCase();
+    if (host.endsWith("calendly.com")) {
+      u.searchParams.set("name", name);
+      u.searchParams.set("email", email);
+    } else if (host.includes("hubspot") || u.pathname.startsWith("/meetings/")) {
+      const [first, ...rest] = name.split(/\s+/);
+      u.searchParams.set("firstName", first ?? "");
+      if (rest.length) u.searchParams.set("lastName", rest.join(" "));
+      u.searchParams.set("email", email);
+    }
+    return u.toString();
+  } catch {
+    return raw;
+  }
 }
 
 export interface FastTrackState {
@@ -77,6 +103,13 @@ export async function sendCodeEmail(s: SponsoredJobRow & FastTrackConfig, to: st
   const mins = s.fast_track_minutes ?? 25;
   const first = name.split(/\s+/)[0] || "there";
   const where = fastTrackWhere(s);
+  const book = bookingLink(s, name, to);
+  const step3 = book
+    ? `Book your ${mins}-minute screening call: ${book}`
+    : `${s.company}'s team will reach out to set up a ${mins}-minute screening call.`;
+  const step3Html = book
+    ? `<a href="${esc(book)}">Book your ${mins}-minute screening call</a> right on ${esc(s.company)}'s calendar`
+    : `${esc(s.company)}'s team will reach out to set up a ${mins}-minute screening call.`;
   const text = [
     `Hi ${first},`,
     ``,
@@ -84,7 +117,7 @@ export async function sendCodeEmail(s: SponsoredJobRow & FastTrackConfig, to: st
     ``,
     `1. Apply here: ${applyLink}`,
     `2. ${where}`,
-    `3. ${s.company}'s team will reach out to set up a ${mins}-minute screening call.`,
+    `3. ${step3}`,
     ``,
     `This code is yours. Please don't share it. There are only a few.`,
     ``,
@@ -98,7 +131,7 @@ export async function sendCodeEmail(s: SponsoredJobRow & FastTrackConfig, to: st
 <ol>
 <li><a href="${esc(applyLink)}">Apply here</a></li>
 <li>${esc(where)}</li>
-<li>${esc(s.company)}'s team will reach out to set up a ${mins}-minute screening call.</li>
+<li>${step3Html}</li>
 </ol>
 <p>This code is yours. Please don't share it. There are only a few.</p>
 <p>Good luck,<br>Josh</p>

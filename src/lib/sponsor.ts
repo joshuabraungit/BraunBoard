@@ -38,6 +38,8 @@ export interface SponsoredJobRow extends SponsorOrder, Partial<Omit<ReviewFields
   fast_track_url?: string | null;
   fast_track_minutes?: number | null;
   fast_track_where?: string | null;
+  /** Their own booking link, so Fast Track people book the screening call themselves. */
+  fast_track_booking_url?: string | null;
   review_token?: string;
   review_opened_at?: string | null;
   review_sent_at?: string | null;
