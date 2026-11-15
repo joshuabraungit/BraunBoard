@@ -69,6 +69,11 @@ jobs:
       - name: Send Braun's Picks (if due)
         if: always()
         run: npm run picks:send
+      - name: One-off email (if due)
+        if: always()
+        env:
+          MODE: scheduled
+        run: npx tsx scripts/oneoff-send.ts
       - name: Sponsor emails (5 days left, and thanks when a run ends)
         if: always()
         run: npx tsx scripts/sponsor-renewals.ts

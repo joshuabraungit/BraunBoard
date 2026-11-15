@@ -7,13 +7,17 @@ import { postalAddress } from "../src/lib/picks-email";
 import { adminEmails } from "../src/lib/admin-emails";
 import { optoutOneClick, optoutUrl } from "../src/lib/email-optout";
 import { fail, notice, requireEnv } from "./report";
-import * as email from "./oneoff/embold";
+import * as email from "./oneoff/reach-out";
 
-const CAMPAIGN = "embold-2026-11";
+const CAMPAIGN = email.campaign;
 const FROM = process.env.ONEOFF_FROM ?? "Josh Braun <picks@braunboard.com>";
 const REPLY_TO = process.env.PICKS_REPLY_TO ?? adminEmails()[0];
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+// [text](url) becomes a link; everything else is escaped.
+const LINK = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
+const inline = (s: string) => esc(s).replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (_m, t, u) => `<a href="${u}" style="color:#1f5c3a">${t}</a>`);
+const plain = (s: string) => s.replace(LINK, "$1 ($2)");
 
 // Tag the job link so clicks from this email show up as "Email" (not "Direct") in visit counts.
 function tagged(url: string) {
@@ -29,9 +33,9 @@ function render(unsubscribe: string) {
   const body = email.blocks
     .map((b) => {
       if (b === "[[LINK]]")
-        return `<p style="margin:22px 0"><a href="${jobUrl}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;font-weight:600;padding:12px 18px;border-radius:8px">See the full job &rarr;</a></p>`;
+        return `<p style="margin:22px 0"><a href="${jobUrl}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;font-weight:600;padding:12px 18px;border-radius:8px">${esc(email.button)} &rarr;</a></p>`;
       if (b.startsWith("## ")) return `<p style="margin:24px 0 6px;font-size:16px;font-weight:700;color:#111">${esc(b.slice(3))}</p>`;
-      return `<p style="margin:0 0 12px;font-size:16px;line-height:1.55;color:#222">${esc(b)}</p>`;
+      return `<p style="margin:0 0 12px;font-size:16px;line-height:1.55;color:#222">${inline(b)}</p>`;
     })
     .join("\n");
   const html = `<!doctype html><html><body style="margin:0;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;background:#faf8f4;padding:24px">
@@ -43,7 +47,7 @@ function render(unsubscribe: string) {
     ${address ? `<br>${esc(address)}` : ""}
   </td></tr></table></body></html>`;
   const text = [
-    ...email.blocks.map((b) => (b === "[[LINK]]" ? `See the full job: ${jobUrl}` : b.replace(/^## /, ""))).flatMap((l) => [l, ""]),
+    ...email.blocks.map((b) => (b === "[[LINK]]" ? `${email.button}: ${jobUrl}` : plain(b.replace(/^## /, "")))).flatMap((l) => [l, ""]),
     `Unsubscribe: ${unsubscribe}`,
     address,
   ].join("\n");
@@ -84,10 +88,25 @@ async function pageAll<T>(q: (from: number, to: number) => PromiseLike<{ data: T
 }
 
 async function main() {
+  // MODE=preview writes the email to a file to look at. Sends nothing.
+  if (process.env.MODE === "preview") {
+    const { html, text } = render("https://www.braunboard.com/unsubscribe-example");
+    const fs = await import("node:fs");
+    fs.writeFileSync(process.env.PREVIEW_OUT ?? "oneoff-preview.html", html);
+    return notice(`Subject: ${email.subject}\n\n${text}`);
+  }
   requireEnv("RESEND_API_KEY");
   if (!postalAddress()) fail(new Error("Needs a mailing address in the footer."));
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.braunboard.com";
-  const mode = process.env.MODE ?? "test";
+  let mode = process.env.MODE ?? "test";
+
+  // From the hourly runner: send to everyone once the email's time comes, and only for a day after.
+  if (mode === "scheduled") {
+    const at = Date.parse(email.sendAt);
+    const now = Date.now();
+    if (!Number.isFinite(at) || now < at || now > at + 86_400_000) return notice(`${CAMPAIGN}: not due.`);
+    mode = "all";
+  }
 
   if (mode === "test") {
     const to = (process.env.TEST_TO ?? "").trim().toLowerCase();
