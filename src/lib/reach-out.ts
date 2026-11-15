@@ -41,11 +41,12 @@ const article = (word: string) => (/^[A-Z]{2}/.test(word) ? (/^[AEFHILMNORSX]/.t
 
 export interface NoteJob {
   title: string;
+  company?: string;
   sells?: string | null;
   buyer?: string | null;
 }
 
-/** First note to the hiring manager. Observation, proof, the Proof page link, an easy out. */
+/** First note to the hiring manager: what you noticed, what you built and what's in it, the link. */
 export function firstNote(job: NoteJob): { subject: string; body: string } {
   const sells = job.sells ? midSentence(job.sells) : null;
   const buyer = job.buyer ? midSentence(job.buyer) : null;
@@ -53,14 +54,13 @@ export function firstNote(job: NoteJob): { subject: string; body: string } {
   if (sells && buyer) obs += ` to sell ${sells} to ${buyer}`;
   else if (sells) obs += ` to sell ${sells}`;
   else if (buyer) obs += ` selling to ${buyer}`;
-  obs += ".";
+  obs += ". I applied, and I also put together a plan for how I'd start.";
   const body = [
-    "Hi [first name],",
+    "Hey [first name],",
     obs,
-    "[One or two numbers that show you've done something like this. Like: \"Last year I closed 38 new accounts selling to clinic owners, 108% of plan.\"]",
-    "I put my thinking on how I'd approach the role on one page: [your Proof page link]",
-    "I applied through your site too. If it looks like a fit, I'd be glad to talk. If not, no worries.",
+    "It covers the five companies I'd reach out to first ([one of them] just [their reason to reach out now]), the email I'd send there, and what my first 90 days would look like.",
+    "Here it is: [your Proof page link]",
     "[Your name]",
   ].join("\n\n");
-  return { subject: `Your ${job.title} opening`, body };
+  return { subject: job.company ? `How I'd start at ${job.company}` : `Your ${job.title} opening`, body };
 }

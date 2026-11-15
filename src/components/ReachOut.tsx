@@ -44,7 +44,7 @@ export function ReachOut(p: Props) {
   }
 
   const managers = likelyManagers(p.role, p.companySize);
-  const note = firstNote({ title: p.title, sells: p.sells, buyer: p.buyer });
+  const note = firstNote({ title: p.title, company: p.company, sells: p.sells, buyer: p.buyer });
   const prompt = proofPromptFor({ title: p.title, company: p.company, url: p.url, sells: p.sells, buyer: p.buyer });
 
   return (

@@ -18,13 +18,16 @@ describe("reach out", () => {
   it("writes the first note from what the posting says", () => {
     const n = firstNote({ title: "Account Executive", sells: "Scheduling tools for clinics", buyer: "Clinic owners" });
     expect(n.subject).toBe("Your Account Executive opening");
-    expect(n.body).toContain("Saw you're hiring an Account Executive to sell scheduling tools for clinics to clinic owners.");
-    expect(n.body).toContain("[your Proof page link]");
+    expect(n.body).toContain("Saw you're hiring an Account Executive to sell scheduling tools for clinics to clinic owners. I applied");
+    expect(n.body).toContain("the five companies I'd reach out to first");
+    expect(n.body).toContain("Here it is: [your Proof page link]");
+    expect(n.body).not.toMatch(/no worries|not sure|hope you find/i);
+    expect(firstNote({ title: "AE", company: "Acme" }).subject).toBe("How I'd start at Acme");
     expect(n.body).not.toMatch(/\bbut\b/i);
   });
   it("still reads with nothing known", () => {
-    expect(firstNote({ title: "SDR" }).body).toContain("Saw you're hiring an SDR.");
-    expect(firstNote({ title: "Sales Manager" }).body).toContain("hiring a Sales Manager.");
+    expect(firstNote({ title: "SDR" }).body).toContain("Saw you're hiring an SDR. I applied");
+    expect(firstNote({ title: "Sales Manager" }).body).toContain("hiring a Sales Manager. I applied");
   });
   it("fills the job into the Proof page prompt", () => {
     const p = proofPromptFor({ title: "Account Executive", company: "Acme", url: "https://x.test/job", sells: "Scheduling tools", buyer: "Clinic owners" });
