@@ -1,7 +1,7 @@
 import { LightsKey } from "@/components/BraunRead";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { byHiringFastest, listCompanies, listJobs, listJobsForWatch } from "@/lib/data";
+import { byHiringFastest, listCompanies, listJobs, listJobsForWatch, listJobsWithTotal } from "@/lib/data";
 import { HiringRow } from "@/components/Hiring";
 import { PicksSignup } from "@/components/PicksSignup";
 import { FounderLetter } from "@/components/FounderLetter";
@@ -35,7 +35,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   const stateP = getUserState();
   const [newToday, highOte, remoteEnt, state, watch, companies, sponsors, productCountList, forYou] = await Promise.all([
     // Quiet days (weekends) can have nothing from the last 24 hours, so fall back to the past week.
-    listJobs({ postedWithinDays: 1, markets }, 6).then(async (today) => (today.length >= 3 ? { jobs: today, week: false } : { jobs: await listJobs({ postedWithinDays: 7, markets }, 6), week: true })),
+    // `added` counts distinct roles (one role in six cities counts once) for the "N added" line.
+    listJobsWithTotal({ postedWithinDays: 1, markets }, 6).then(async (today) => {
+      if (today.jobs.length >= 3) return { jobs: today.jobs, week: false, added: today.roles };
+      const week = await listJobsWithTotal({ postedWithinDays: 7, markets }, 6);
+      return { jobs: week.jobs, week: true, added: week.roles };
+    }),
     listJobs({ minOte: highOteMin, postedWithinDays: 90, markets }, 6),
     listJobs({ role: "Account Executive", segment: "Enterprise", remote: "Remote", postedWithinDays: 90, markets }, 6),
     stateP,
@@ -90,6 +95,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
       )}
 
       <Section title={newToday.week ? "Newest this week" : "New Today"} href={newToday.week ? "/jobs?posted=7" : "/new"}>
+        <p className="-mt-1 mb-3 text-sm text-ink-2">
+          {newToday.added > 0 && (
+            <span className="font-semibold text-ink">
+              {newToday.added.toLocaleString()} added {newToday.week ? "this week" : "since yesterday"}.{" "}
+            </span>
+          )}
+          If it&apos;s here, it&apos;s open. I check company careers pages daily so you&apos;re not applying to jobs that filled last month.
+        </p>
         <JobGrid jobs={newToday.jobs} ctx={ctx} empty="No new sales jobs this week yet." />
       </Section>
       {productCounts.size > 0 && (
