@@ -79,6 +79,20 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         </section>
       )}
 
+      {/* Why look here: what every job comes with, in one glance. */}
+      <nav aria-label="What every job comes with" className="mb-8 grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
+        {[
+          { href: "/products", title: "What you'd sell", line: "Every company explained in plain English." },
+          { href: "/salaries", title: "What it really pays", line: "Base, OTE, and what the posting leaves out." },
+          { href: "/kit", title: "What to ask", line: "The questions to ask before you say yes." },
+        ].map((x) => (
+          <Link key={x.href} href={x.href} className="rounded-xl border border-line bg-surface px-4 py-3 hover:border-ink">
+            <span className="block text-sm font-semibold">{x.title} →</span>
+            <span className="block text-sm text-ink-2">{x.line}</span>
+          </Link>
+        ))}
+      </nav>
+
       <LightsKey className="mb-4" />
       {forYou ? (
         <Section title={`For You · ${watch!.name}`} href="/for-you">
