@@ -95,6 +95,16 @@ export default async function KitPage({ searchParams }: { searchParams: Promise<
         <p className="mt-4 text-sm text-ink-2">You won&apos;t ask all 24. Start with the top five, then pick the few that fit you and the conversation.</p>
       </div>
 
+      <figure className="mt-6 rounded-2xl border-l-4 border-accent bg-surface px-5 py-4 sm:px-6">
+        <blockquote className="text-[15px] leading-relaxed text-ink">
+          &ldquo;I used the questions guide in 2 interviews last week. It told me what I needed to know about the role and how
+          they run their sales team. It also showed them I can tell a good sales role from a bad one. One question was
+          &lsquo;How many reps actually make their full OTE?&rsquo; Their answer helped solidify my interest in the role, and I
+          moved on to the next round.&rdquo;
+        </blockquote>
+        <figcaption className="mt-2 text-sm font-semibold text-ink-2">Josh, Account Executive</figcaption>
+      </figure>
+
       <div id="get-kit" className="mt-6 scroll-mt-24 rounded-2xl border border-line bg-surface p-5 sm:p-6">
         {unlocked ? (
           <>
