@@ -36,10 +36,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   const [newToday, highOte, remoteEnt, state, watch, companies, sponsors, productCountList, forYou] = await Promise.all([
     // Quiet days (weekends) can have nothing from the last 24 hours, so fall back to the past week.
     // `added` counts distinct roles (one role in six cities counts once) for the "N added" line.
+    // A small daily number makes the board look quiet, so under 20 the count switches to the week's.
     listJobsWithTotal({ postedWithinDays: 1, markets }, 6).then(async (today) => {
-      if (today.jobs.length >= 3) return { jobs: today.jobs, week: false, added: today.roles };
+      const showToday = today.jobs.length >= 3;
+      if (showToday && today.roles >= 20) return { jobs: today.jobs, week: false, added: today.roles, addedWeek: false };
       const week = await listJobsWithTotal({ postedWithinDays: 7, markets }, 6);
-      return { jobs: week.jobs, week: true, added: week.roles };
+      return { jobs: showToday ? today.jobs : week.jobs, week: !showToday, added: week.roles, addedWeek: true };
     }),
     listJobs({ minOte: highOteMin, postedWithinDays: 90, markets }, 6),
     listJobs({ role: "Account Executive", segment: "Enterprise", remote: "Remote", postedWithinDays: 90, markets }, 6),
@@ -98,7 +100,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         <p className="-mt-1 mb-3 text-sm text-ink-2">
           {newToday.added > 0 && (
             <span className="font-semibold text-ink">
-              {newToday.added.toLocaleString()} added {newToday.week ? "this week" : "since yesterday"}.{" "}
+              {newToday.added.toLocaleString()} added {newToday.addedWeek ? "this week" : "since yesterday"}.{" "}
             </span>
           )}
           If it&apos;s here, it&apos;s open. I check company careers pages daily so you&apos;re not applying to jobs that filled last month.
