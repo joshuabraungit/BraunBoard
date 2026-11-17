@@ -14,6 +14,7 @@ import { PRODUCT_CATEGORIES, homeCategoryCounts } from "@/lib/products";
 import { cookies } from "next/headers";
 import { INTRO_COOKIE, IntroBanner } from "@/components/IntroBanner";
 import { SponsoredCard } from "@/components/SponsoredCard";
+import { fastTrackState, type FastTrackConfig } from "@/lib/fast-track";
 import { listRunningSponsors } from "@/lib/sponsor";
 
 export const dynamic = "force-dynamic";
@@ -54,6 +55,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
       w ? rankForWatch(await listJobsForWatch(w.prefs.countries ?? ["US"], w.prefs.keywords), w.prefs, st.hiddenJobIds) : null,
     ),
   ]);
+  // Fast Track counts for the sponsor cards. A failed lookup just hides the line.
+  const sponsorFastTrack = await Promise.all(
+    sponsors.map((s) =>
+      fastTrackState(s as typeof s & FastTrackConfig)
+        .then((ft) => (ft ? { total: ft.total, left: ft.left, minutes: s.fast_track_minutes ?? 25 } : null))
+        .catch(() => null),
+    ),
+  );
   // The owl intro shows until it's closed. While it's up, it stands in for the old "set up a watch" box.
   const showIntro = (await cookies()).get(INTRO_COOKIE)?.value !== "hidden";
   const productCounts = new Map(productCountList);
@@ -74,7 +83,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
       {sponsors.length > 0 && (
         <section className="mb-10 space-y-3" aria-label="Sponsored jobs">
           {sponsors.map((s, i) => (
-            <SponsoredCard key={s.id} s={s} peek={i === 0} />
+            <SponsoredCard key={s.id} s={s} peek={i === 0} fastTrack={sponsorFastTrack[i]} />
           ))}
         </section>
       )}

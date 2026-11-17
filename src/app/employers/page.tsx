@@ -179,6 +179,7 @@ const CARD_PARTS = [
   ["Labeled Sponsored.", "Every time. Sellers know you paid to be here."],
   ["Pay up top.", "Base and OTE, before anything else."],
   ["What you'd sell, and who you'd sell to.", "One plain line each, so a seller gets it in a glance."],
+  ["Fast Track, if you offer it.", "How many guaranteed screening calls are left. When they're gone, the line goes too."],
   ["The start of your rewrite.", "\"See the job\" opens your own job page with the full ad and your Apply button."],
   ["The owl.", "He comes with the card. No extra charge."],
 ] as const;
@@ -246,9 +247,9 @@ export default function EmployersPage() {
       {/* The card itself */}
       <section className="mt-16">
         <H2>What sellers see</H2>
-        <p className="mt-2 text-[15px] text-ink-3">Embold Research&apos;s card, pinned to the top of the home page. Shared with their OK.</p>
+        <p className="mt-2 text-[15px] text-ink-3">Embold Research&apos;s card, pinned to the top of the home page, back when two Fast Track calls were left. Shared with their OK.</p>
         <div className="mt-2">
-          <SponsoredCard s={EXAMPLE_CARD} peek />
+          <SponsoredCard s={EXAMPLE_CARD} peek fastTrack={{ total: 5, left: 2, minutes: 25 }} />
         </div>
         <ol className="mt-6 space-y-3 text-[16px] leading-relaxed">
           {CARD_PARTS.map(([title, rest], i) => (

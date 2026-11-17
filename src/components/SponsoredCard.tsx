@@ -64,6 +64,27 @@ export function SellLines({ s }: { s: Pick<SponsoredJobRow, "product_short" | "b
   );
 }
 
+/** Fast Track on the card: how many guaranteed screening calls are left. Hidden once they're all claimed. */
+export function FastTrackLine({ ft }: { ft: { total: number; left: number; minutes: number } }) {
+  if (ft.total <= 0 || ft.left <= 0) return null;
+  return (
+    <div className="mt-3 rounded-lg border border-accent/25 bg-accent-soft px-3 py-2.5">
+      <p className="text-sm leading-snug text-ink">
+        <span className="font-bold text-accent">Fast Track:</span>{" "}
+        <span className="font-semibold">
+          {ft.left} of {ft.total}
+        </span>{" "}
+        guaranteed {ft.minutes}-minute screening calls left
+      </p>
+      <div className="mt-2 flex gap-1" aria-hidden="true">
+        {Array.from({ length: ft.total }, (_, i) => (
+          <span key={i} className={`h-1.5 flex-1 rounded-full ${i < ft.left ? "bg-accent" : "bg-line"}`} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /**
  * The sponsored owl: the editorial owl's cousin, hanging on to the top edge of the card. Gold-framed
  * sunglasses instead of green reading glasses, so a paid card never looks like the editor vouching for it.
@@ -136,7 +157,16 @@ function OwlSays() {
  * Paid placement at the top of the home page. Always labeled. No Braun Read: Josh doesn't grade jobs he's paid to show.
  * `peek` puts the owl on the card's top edge; the home page gives it to the first sponsor only.
  */
-export function SponsoredCard({ s, peek = false }: { s: SponsoredJobRow; peek?: boolean }) {
+export function SponsoredCard({
+  s,
+  peek = false,
+  fastTrack = null,
+}: {
+  s: SponsoredJobRow;
+  peek?: boolean;
+  /** Live Fast Track counts. Null when the sponsor has none. */
+  fastTrack?: { total: number; left: number; minutes: number } | null;
+}) {
   const video = s.video_path && videoApproved(reviewFields(s)) ? videoUrl(s.video_path) : null;
   return (
     <article
@@ -186,6 +216,7 @@ export function SponsoredCard({ s, peek = false }: { s: SponsoredJobRow; peek?: 
               </p>
             )}
             <SellLines s={s} />
+            {fastTrack && <FastTrackLine ft={fastTrack} />}
             {video && <VideoLightbox src={video} className="mt-3" />}
             <p className="mt-2 line-clamp-3 text-[15px] leading-relaxed text-ink-2">{adPlainText(s.description)}</p>
         </div>
