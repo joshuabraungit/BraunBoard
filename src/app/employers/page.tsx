@@ -5,7 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { formatPrice, sponsorPriceCents, SPONSOR_DAYS } from "@/lib/sponsor-form";
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/contact";
-import { AttainmentBadge } from "@/components/SponsoredCard";
+import { AttainmentBadge, SponsoredCard } from "@/components/SponsoredCard";
+import type { SponsoredJobRow } from "@/lib/sponsor";
 import { RewriteOwl } from "@/components/RewriteOwl";
 
 export const metadata: Metadata = {
@@ -151,6 +152,37 @@ const POST_COMMENTS = [
   },
 ];
 
+// Embold Research's real sponsored card (Nov 2026, shown with their OK), frozen here so the
+// example stays up after their run ends. "See the job" goes to their real job page.
+const EXAMPLE_CARD = {
+  id: "cc74e6c6-a268-47c5-9c30-7d2e2119c610",
+  status: "live",
+  company: "Embold Research",
+  job_title: "Director of Growth",
+  location: null,
+  remote_type: "Remote",
+  salary_min: 92000,
+  salary_max: 106000,
+  ote_min: 133900,
+  ote_max: 148900,
+  currency: "USD",
+  ote_attainment_pct: null,
+  first_sales_hire: false,
+  product_short: "Surveys that show what a whole community thinks",
+  buyer_short: "City governments, nonprofits, and public affairs teams",
+  logo_path: "/sponsor-logos/embold-mark.png",
+  video_path: null,
+  description: AFTER[0].lines[0],
+} as unknown as SponsoredJobRow;
+
+const CARD_PARTS = [
+  ["Labeled Sponsored.", "Every time. Sellers know you paid to be here."],
+  ["Pay up top.", "Base and OTE, before anything else."],
+  ["What you'd sell, and who you'd sell to.", "One plain line each, so a seller gets it in a glance."],
+  ["The start of your rewrite.", "\"See the job\" opens your own job page with the full ad and your Apply button."],
+  ["The owl.", "He comes with the card. No extra charge."],
+] as const;
+
 function H2({ children }: { children: React.ReactNode }) {
   return <h2 className="text-2xl font-bold tracking-tight">{children}</h2>;
 }
@@ -209,6 +241,25 @@ export default function EmployersPage() {
           ))}
         </ul>
         <p className="mt-5 text-[15px] text-ink-3">That&apos;s the whole package. Same price for every job.</p>
+      </section>
+
+      {/* The card itself */}
+      <section className="mt-16">
+        <H2>What sellers see</H2>
+        <p className="mt-2 text-[15px] text-ink-3">Embold Research&apos;s card, pinned to the top of the home page. Shared with their OK.</p>
+        <div className="mt-2">
+          <SponsoredCard s={EXAMPLE_CARD} peek />
+        </div>
+        <ol className="mt-6 space-y-3 text-[16px] leading-relaxed">
+          {CARD_PARTS.map(([title, rest], i) => (
+            <li key={title} className="flex gap-3">
+              <span className="mt-0.5 font-serif text-lg font-bold leading-none text-accent">{i + 1}</span>
+              <span>
+                <span className="font-semibold text-ink">{title}</span> <span className="text-ink-2">{rest}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
       </section>
 
       {/* Before and after */}
