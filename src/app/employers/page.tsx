@@ -179,7 +179,7 @@ const CARD_PARTS = [
   ["Labeled Sponsored.", "Every time. Sellers know you paid to be here."],
   ["Pay up top.", "Base and OTE, before anything else."],
   ["What you'd sell, and who you'd sell to.", "One plain line each, so a seller gets it in a glance."],
-  ["Fast Track, if you offer it.", "How many guaranteed screening calls are left. When they're gone, the line goes too."],
+  ["Fast Track (optional).", "An extra you can add if you want. It shows how many guaranteed screening calls are left. When they're gone, the line goes too."],
   ["The start of your rewrite.", "\"See the job\" opens your own job page with the full ad and your Apply button."],
   ["The owl.", "He comes with the card. No extra charge."],
 ] as const;
