@@ -19,7 +19,19 @@ export async function middleware(request: NextRequest) {
   }
 
   // Not signed in? Nothing to refresh. Skips a trip to Supabase on most page loads.
-  if (!hasAuthCookie(request.cookies.getAll())) return NextResponse.next();
+  if (!hasAuthCookie(request.cookies.getAll())) {
+    // Admin links in emails often open in a browser that isn't signed in (Gmail's
+    // in-app browser, say). Send those to sign-in and back, instead of a dead 404.
+    // Signed-in people who aren't admins still get the 404 from requireAdmin.
+    if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+      const to = request.nextUrl.clone();
+      to.pathname = "/login";
+      to.search = "";
+      to.searchParams.set("next", pathname + request.nextUrl.search);
+      return NextResponse.redirect(to);
+    }
+    return NextResponse.next();
+  }
 
   let response = NextResponse.next({ request });
   const supabase = createServerClient(url, key, {
