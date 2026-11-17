@@ -7,7 +7,7 @@ import { sendEmail } from "./alerts/email";
 import { formatPrice, liveWindow, MAX_LIVE_SPONSORS, payLine, SPONSOR_DAYS, type SponsorEdit, type SponsorOrder } from "./sponsor-form";
 import { getCheckoutSession, getInvoiceLinks, isSettled, refundPayment, type CheckoutSession, type Invoice } from "./stripe";
 import type { ResultsCounts } from "./sponsor-results";
-import { adHash, adReview, postHash, REVIEW_NOTE_MAX, reviewSummary, verdictLine, type AssetReview, type ReviewFields, type Verdict } from "./sponsor-review";
+import { adHash, adReview, carouselHash, carouselSlides, postHash, REVIEW_NOTE_MAX, reviewSummary, verdictLine, type AssetReview, type ReviewFields, type Verdict } from "./sponsor-review";
 
 export const LOGO_BUCKET = "sponsor-logos";
 export const VIDEO_BUCKET = "sponsor-videos";
@@ -71,7 +71,29 @@ export const reviewFields = (o: SponsoredJobRow): ReviewFields => ({
   video2_review: o.video2_review ?? null,
   video2_note: o.video2_note ?? null,
   video2_reviewed_url: o.video2_reviewed_url ?? null,
+  carousel_slides: o.carousel_slides ?? null,
+  carousel_pdf_url: o.carousel_pdf_url ?? null,
+  carousel_intro: o.carousel_intro ?? null,
+  carousel_review: o.carousel_review ?? null,
+  carousel_note: o.carousel_note ?? null,
+  carousel_reviewed_hash: o.carousel_reviewed_hash ?? null,
 });
+
+/** A LinkedIn carousel: slide image links (one per line), the PDF link, and a note to the client. Blank slides clears it. */
+export async function updateCarousel(id: string, slidesText: string, pdfUrl: string, intro: string) {
+  const isLink = (u: string) => /^https:\/\/\S+$/.test(u);
+  const slides = carouselSlides({ carousel_slides: slidesText });
+  if (slides.length > 20) throw new Error("A carousel can have up to 20 slides.");
+  if (slides.some((u) => !isLink(u))) throw new Error("Each slide has to be a full https:// link to an image, one per line.");
+  const pdf = slides.length ? pdfUrl.trim() || null : null;
+  if (pdf && !isLink(pdf)) throw new Error("Paste a full https:// link to the PDF.");
+  const note = slides.length ? intro.replace(/\r\n/g, "\n").trim().slice(0, 1000) || null : null;
+  const { error } = await adminClient()
+    .from("sponsored_jobs")
+    .update({ carousel_slides: slides.length ? slides.join("\n") : null, carousel_pdf_url: pdf, carousel_intro: note })
+    .eq("id", id);
+  if (error) throw error;
+}
 
 /** The bonus video's address (a full https link). Blank clears it. */
 export async function updateVideo2(id: string, url: string) {
@@ -562,6 +584,7 @@ export interface ReviewInput {
   post?: { verdict: Verdict; note: string; hash: string };
   post2?: { verdict: Verdict; note: string; hash: string };
   video2?: { verdict: Verdict; note: string; path: string };
+  carousel?: { verdict: Verdict; note: string; hash: string };
 }
 
 export class StaleReviewError extends Error {}
@@ -574,7 +597,7 @@ export class StaleReviewError extends Error {}
 export async function submitClientReview(token: string, input: ReviewInput): Promise<{ row: SponsoredJobRow; line: string }> {
   const o = await getOrderByReviewToken(token);
   if (!o) throw new Error("This review link isn't active anymore.");
-  if (!input.ad && !input.video && !input.post && !input.post2 && !input.video2) throw new Error("Nothing to send yet.");
+  if (!input.ad && !input.video && !input.post && !input.post2 && !input.video2 && !input.carousel) throw new Error("Nothing to send yet.");
   if (input.ad && input.ad.hash !== adHash(reviewFields(o))) throw new StaleReviewError("Josh just updated the job ad. Reload to see the latest version.");
   if (input.video && input.video.path !== o.video_path) throw new StaleReviewError("Josh just swapped in a new video. Reload to see it.");
   if (input.post && (!o.linkedin_post || input.post.hash !== postHash(o.linkedin_post)))
@@ -582,6 +605,8 @@ export async function submitClientReview(token: string, input: ReviewInput): Pro
   if (input.post2 && (!o.linkedin_post_2 || input.post2.hash !== postHash(o.linkedin_post_2)))
     throw new StaleReviewError("Josh just updated the second LinkedIn post. Reload to see the latest version.");
   if (input.video2 && input.video2.path !== o.video2_url) throw new StaleReviewError("Josh just swapped in a new version of the video. Reload to see it.");
+  if (input.carousel && (!carouselSlides(o).length || input.carousel.hash !== carouselHash(o)))
+    throw new StaleReviewError("Josh just updated the carousel. Reload to see the latest version.");
   const note = (s: string) => s.trim().slice(0, REVIEW_NOTE_MAX) || null;
 
   const now = new Date().toISOString();
@@ -595,11 +620,13 @@ export async function submitClientReview(token: string, input: ReviewInput): Pro
     Object.assign(update, { linkedin_review_2: input.post2.verdict, linkedin_note_2: input.post2.verdict === "down" ? note(input.post2.note) : null, linkedin_reviewed_hash_2: input.post2.hash });
   if (input.video2)
     Object.assign(update, { video2_review: input.video2.verdict, video2_note: input.video2.verdict === "down" ? note(input.video2.note) : null, video2_reviewed_url: input.video2.path });
+  if (input.carousel)
+    Object.assign(update, { carousel_review: input.carousel.verdict, carousel_note: input.carousel.verdict === "down" ? note(input.carousel.note) : null, carousel_reviewed_hash: input.carousel.hash });
 
   const { data, error } = await adminClient().from("sponsored_jobs").update(update).eq("id", o.id).select("*").single();
   if (error) throw error;
   const row = data as SponsoredJobRow;
-  const line = verdictLine([input.video?.verdict, input.ad?.verdict, input.post?.verdict, input.post2?.verdict, input.video2?.verdict].filter((v): v is Verdict => !!v));
+  const line = verdictLine([input.video?.verdict, input.ad?.verdict, input.post?.verdict, input.post2?.verdict, input.video2?.verdict, input.carousel?.verdict].filter((v): v is Verdict => !!v));
 
   const owner = adminEmails()[0];
   if (owner) {
@@ -624,7 +651,7 @@ const verdictText = (a: AssetReview | null, who: string) =>
 export function renderReviewNotice(o: SponsoredJobRow, input: ReviewInput, siteUrl: string) {
   const first = o.contact_name.trim().split(/\s+/)[0];
   const sum = reviewSummary(reviewFields(o));
-  const sent = [input.video?.verdict, input.ad?.verdict, input.post?.verdict, input.post2?.verdict, input.video2?.verdict].filter(Boolean) as Verdict[];
+  const sent = [input.video?.verdict, input.ad?.verdict, input.post?.verdict, input.post2?.verdict, input.video2?.verdict, input.carousel?.verdict].filter(Boolean) as Verdict[];
   const ups = sent.filter((v) => v === "up").length;
   const subject = sum.allApproved
     ? `${first} approved everything for ${o.company}`
@@ -637,6 +664,7 @@ export function renderReviewNotice(o: SponsoredJobRow, input: ReviewInput, siteU
     ...(sum.post ? [["LinkedIn post", verdictText(sum.post, first)!] as [string, string]] : []),
     ...(sum.post2 ? [["LinkedIn post 2", verdictText(sum.post2, first)!] as [string, string]] : []),
     ...(sum.video2 ? [["History video", verdictText(sum.video2, first)!] as [string, string]] : []),
+    ...(sum.carousel ? [["LinkedIn carousel", verdictText(sum.carousel, first)!] as [string, string]] : []),
   ];
   const next = sum.allApproved
     ? "Everything's approved. Mark it live in Admin when you're ready."

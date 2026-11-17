@@ -10,6 +10,7 @@ const schema = z.object({
   video: z.object({ verdict, note: z.string().max(REVIEW_NOTE_MAX), path: z.string().min(3).max(300) }).optional(),
   post: z.object({ verdict, note: z.string().max(REVIEW_NOTE_MAX), hash: z.string().min(8).max(64) }).optional(),
   video2: z.object({ verdict, note: z.string().max(REVIEW_NOTE_MAX), path: z.string().min(8).max(2000) }).optional(),
+  carousel: z.object({ verdict, note: z.string().max(REVIEW_NOTE_MAX), hash: z.string().min(8).max(64) }).optional(),
   post2: z.object({ verdict, note: z.string().max(REVIEW_NOTE_MAX), hash: z.string().min(8).max(64) }).optional(),
 });
 

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { adminClient } from "@/lib/supabase/admin";
-import { attachVideo, cancelAndRefund, createVideoUpload, getOrder, markLive, resendReceipt, reviewFields, updateLinkedInPost, updateLinkedInPost2, updateSponsorCopy, updateVideo2 } from "@/lib/sponsor";
+import { attachVideo, cancelAndRefund, createVideoUpload, getOrder, markLive, resendReceipt, reviewFields, updateLinkedInPost, updateCarousel, updateLinkedInPost2, updateSponsorCopy, updateVideo2 } from "@/lib/sponsor";
 import { adReview, postReview, post2Review } from "@/lib/sponsor-review";
 import { formatPrice, parseSponsorEdit } from "@/lib/sponsor-form";
 import { loadCodes } from "@/lib/fast-track";
@@ -198,6 +198,21 @@ export async function saveVideo2(formData: FormData) {
   }
   revalidatePath("/admin/sponsored");
   back(true, "Bonus video saved. It's on the review link now.");
+}
+
+/** The LinkedIn carousel (slide links + PDF). Goes on the review link for a thumbs up or down. */
+export async function saveCarousel(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  const slides = String(formData.get("carousel_slides") ?? "");
+  try {
+    await updateCarousel(id, slides, String(formData.get("carousel_pdf_url") ?? ""), String(formData.get("carousel_intro") ?? ""));
+  } catch (e) {
+    back(false, e instanceof Error ? e.message : "Couldn't save the carousel.");
+    return;
+  }
+  revalidatePath("/admin/sponsored");
+  back(true, slides.trim() ? "Carousel saved. It's on the review link now. Copy the link and send it over." : "Carousel cleared. It's off the review link.");
 }
 
 /** Turns a sponsor's Fast Track box on or off and sets its details. Blank number of codes = off. */

@@ -6,7 +6,7 @@ import { CopyButton } from "@/components/CopyButton";
 import { canRefund, orderLines, resultsLink, reviewFields, reviewLink, videoUrl, type SponsoredJobRow } from "@/lib/sponsor";
 import { REMOTE_TYPES, formatPrice, isRunning } from "@/lib/sponsor-form";
 import { reviewSummary, type AssetReview } from "@/lib/sponsor-review";
-import { cancelOrder, editCopy, goLive, removeVideo, saveLinkedInPost, saveLinkedInPost2, saveVideo2, sendReceiptAgain, setSponsoredStatus } from "./actions";
+import { cancelOrder, editCopy, goLive, removeVideo, saveLinkedInPost, saveCarousel, saveLinkedInPost2, saveVideo2, sendReceiptAgain, setSponsoredStatus } from "./actions";
 import { VideoUpload } from "./VideoUpload";
 import { FastTrackAdmin } from "./FastTrackAdmin";
 
@@ -149,6 +149,7 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                         {rev.post ? <ReviewRow label="LinkedIn post" a={rev.post} /> : <div className="flex gap-3"><span className="w-24 shrink-0 text-ink-3">LinkedIn post</span><span className="text-ink-3">None yet. Paste one below to add it to the review.</span></div>}
                         {rev.post2 && <ReviewRow label="Post 2" a={rev.post2} />}
                         {rev.video2 && <ReviewRow label="Bonus video" a={rev.video2} />}
+                        {rev.carousel && <ReviewRow label="Carousel" a={rev.carousel} />}
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <CopyButton text={link} label="Copy review link" className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90" />
@@ -215,6 +216,29 @@ export default async function AdminSponsored({ searchParams }: { searchParams: P
                           <input type="hidden" name="id" value={r.id} />
                           <input name="video2_url" defaultValue={r.video2_url ?? ""} placeholder="https:// link to the .mp4" className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1.5 text-sm" />
                           <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">Save video</button>
+                        </form>
+                      </details>
+                      <details className="border-t border-line pt-3">
+                        <summary className="cursor-pointer text-sm font-semibold">{r.carousel_slides ? "Edit LinkedIn carousel" : "Add a LinkedIn carousel"}</summary>
+                        <form action={saveCarousel} className="mt-2 space-y-2">
+                          <input type="hidden" name="id" value={r.id} />
+                          <textarea
+                            name="carousel_intro"
+                            defaultValue={r.carousel_intro ?? ""}
+                            rows={2}
+                            maxLength={1000}
+                            placeholder="Optional note to the client, shown above the slides."
+                            className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm"
+                          />
+                          <textarea
+                            name="carousel_slides"
+                            defaultValue={r.carousel_slides ?? ""}
+                            rows={6}
+                            placeholder="Slide image links, one per line, in order. Blank clears the carousel."
+                            className="w-full rounded-md border border-line bg-surface px-2 py-1.5 font-mono text-xs"
+                          />
+                          <input name="carousel_pdf_url" defaultValue={r.carousel_pdf_url ?? ""} placeholder="https:// link to the PDF" className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm" />
+                          <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">Save carousel</button>
                         </form>
                       </details>
                       <p className="text-xs text-ink-3">

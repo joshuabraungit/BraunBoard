@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import type { ReviewStatus, Verdict } from "@/lib/sponsor-review";
 import { sendReview } from "./actions";
 import Image from "next/image";
 import { ExplainerVideo } from "@/components/ExplainerVideo";
 
-type Key = "video" | "ad" | "post" | "post2" | "video2";
+type Key = "video" | "ad" | "post" | "post2" | "video2" | "carousel";
 interface Asset {
   status: ReviewStatus;
   note: string | null;
@@ -71,6 +71,61 @@ function LinkedInPost({ text }: { text: string }) {
   );
 }
 
+/** The carousel as it'll swipe on LinkedIn: one slide at a time, arrows on desktop, swipe on a phone. */
+function CarouselViewer({ slides, pdf }: { slides: string[]; pdf: string | null }) {
+  const track = useRef<HTMLDivElement>(null);
+  const [at, setAt] = useState(0);
+  const go = (i: number) => {
+    const el = track.current;
+    if (!el) return;
+    const n = Math.max(0, Math.min(slides.length - 1, i));
+    el.scrollTo({ left: n * el.clientWidth, behavior: "smooth" });
+  };
+  return (
+    <div className="space-y-3">
+      <div className="relative mx-auto max-w-md">
+        <div
+          ref={track}
+          onScroll={(e) => setAt(Math.round(e.currentTarget.scrollLeft / Math.max(1, e.currentTarget.clientWidth)))}
+          className="flex snap-x snap-mandatory overflow-x-auto rounded-xl border border-line bg-bg [scrollbar-width:none]"
+          tabIndex={0}
+          aria-label="Carousel slides. Swipe or use the arrows."
+        >
+          {slides.map((src, i) => (
+            <div key={src + i} className="w-full shrink-0 snap-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={src} alt={`Slide ${i + 1} of ${slides.length}`} loading={i < 2 ? "eager" : "lazy"} className="block aspect-[4/5] w-full object-contain" />
+            </div>
+          ))}
+        </div>
+        {at > 0 && (
+          <button type="button" onClick={() => go(at - 1)} aria-label="Previous slide" className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-lg font-bold shadow">
+            ‹
+          </button>
+        )}
+        {at < slides.length - 1 && (
+          <button type="button" onClick={() => go(at + 1)} aria-label="Next slide" className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-lg font-bold shadow">
+            ›
+          </button>
+        )}
+      </div>
+      <div className="flex items-center justify-center gap-3 text-sm text-ink-2">
+        <span>
+          Slide {at + 1} of {slides.length}
+        </span>
+        {pdf && (
+          <>
+            <span aria-hidden="true">·</span>
+            <a href={pdf} target="_blank" rel="noopener" className="font-medium text-accent underline underline-offset-2">
+              Open the PDF
+            </a>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function ReviewClient({
   token,
   firstName,
@@ -79,6 +134,7 @@ export function ReviewClient({
   post,
   post2 = null,
   video2 = null,
+  carousel = null,
   adCard,
   adBody,
 }: {
@@ -89,16 +145,17 @@ export function ReviewClient({
   post: ({ text: string; hash: string } & Asset) | null;
   post2?: ({ text: string; intro: string | null; hash: string } & Asset) | null;
   video2?: ({ src: string; path: string } & Asset) | null;
+  carousel?: ({ slides: string[]; pdf: string | null; intro: string | null; hash: string } & Asset) | null;
   adCard: ReactNode;
   adBody: ReactNode;
 }) {
-  const keys: Key[] = [...(video ? (["video"] as const) : []), "ad", ...(post ? (["post"] as const) : []), ...(post2 ? (["post2"] as const) : []), ...(video2 ? (["video2"] as const) : [])];
-  const asset = (k: Key): Asset => (k === "video" ? video! : k === "post" ? post! : k === "post2" ? post2! : k === "video2" ? video2! : ad);
-  const version = (k: Key) => (k === "video" ? video!.path : k === "post" ? post!.hash : k === "post2" ? post2!.hash : k === "video2" ? video2!.path : ad.hash);
+  const keys: Key[] = [...(video ? (["video"] as const) : []), "ad", ...(post ? (["post"] as const) : []), ...(post2 ? (["post2"] as const) : []), ...(video2 ? (["video2"] as const) : []), ...(carousel ? (["carousel"] as const) : [])];
+  const asset = (k: Key): Asset => (k === "video" ? video! : k === "post" ? post! : k === "post2" ? post2! : k === "video2" ? video2! : k === "carousel" ? carousel! : ad);
+  const version = (k: Key) => (k === "video" ? video!.path : k === "post" ? post!.hash : k === "post2" ? post2!.hash : k === "video2" ? video2!.path : k === "carousel" ? carousel!.hash : ad.hash);
   const storeKey = `bb-review:${token}`;
 
-  const [open, setOpen] = useState<Record<Key, boolean>>({ video: !!video && needsLook(video.status), ad: needsLook(ad.status), post: !!post && needsLook(post.status), post2: !!post2 && needsLook(post2.status), video2: !!video2 && needsLook(video2.status) });
-  const [drafts, setDrafts] = useState<Record<Key, Draft>>({ video: fresh(), ad: fresh(), post: fresh(), post2: fresh(), video2: fresh() });
+  const [open, setOpen] = useState<Record<Key, boolean>>({ video: !!video && needsLook(video.status), ad: needsLook(ad.status), post: !!post && needsLook(post.status), post2: !!post2 && needsLook(post2.status), video2: !!video2 && needsLook(video2.status), carousel: !!carousel && needsLook(carousel.status) });
+  const [drafts, setDrafts] = useState<Record<Key, Draft>>({ video: fresh(), ad: fresh(), post: fresh(), post2: fresh(), video2: fresh(), carousel: fresh() });
   const [sent, setSent] = useState<string | null>(null);
   const [err, setErr] = useState<{ msg: string; stale?: boolean } | null>(null);
   const [pending, start] = useTransition();
@@ -175,7 +232,25 @@ export function ReviewClient({
   const pct = Math.round((doneCount / keys.length) * 100);
 
   const cards: { k: Key; n: number; title: string; blurb: string; body: ReactNode }[] = keys.map((k, i) =>
-    k === "video2"
+    k === "carousel"
+      ? {
+          k,
+          n: i + 1,
+          title: "A LinkedIn carousel",
+          blurb: "A short swipe-through story I'd post on LinkedIn to send sellers your way. On the house.",
+          body: (
+            <div className="space-y-3">
+              {carousel!.intro && (
+                <div className="flex items-start gap-3 rounded-xl bg-accent-soft px-4 py-3">
+                  <Image src="/josh-braun.png" alt="" width={32} height={32} className="h-8 w-8 shrink-0 rounded-full" />
+                  <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{carousel!.intro}</p>
+                </div>
+              )}
+              <CarouselViewer slides={carousel!.slides} pdf={carousel!.pdf} />
+            </div>
+          ),
+        }
+      : k === "video2"
       ? {
           k,
           n: i + 1,
@@ -329,7 +404,7 @@ export function ReviewClient({
                   autoFocus
                   value={d.note}
                   onChange={(e) => set(k, { note: e.target.value })}
-                  placeholder={k === "video" ? "e.g. Can we end on our real logo?" : k === "video2" ? "e.g. Can we change what Josh says at the end?" : k === "post" || k === "post2" ? "e.g. Can we skip the line about other brands?" : "e.g. Our buyers are mostly counties, not cities."}
+                  placeholder={k === "video" ? "e.g. Can we end on our real logo?" : k === "video2" ? "e.g. Can we change what Josh says at the end?" : k === "carousel" ? "e.g. Can slide 5 use a smaller number?" : k === "post" || k === "post2" ? "e.g. Can we skip the line about other brands?" : "e.g. Our buyers are mostly counties, not cities."}
                   className="w-full resize-y rounded-lg border border-amber/30 bg-surface px-3 py-2.5 text-[15px] leading-relaxed"
                 />
                 <div className="flex flex-wrap justify-end gap-2">

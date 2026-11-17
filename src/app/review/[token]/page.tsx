@@ -7,7 +7,7 @@ import { sponsorWhere, SellLines } from "@/components/SponsoredCard";
 import { getOrderByReviewToken, logoUrl, markReviewOpened, reviewFields, videoUrl } from "@/lib/sponsor";
 import { adPlainText } from "@/lib/ad-text";
 import { payLine } from "@/lib/sponsor-form";
-import { adHash, adReview, postHash, postReview, post2Review, video2Review, videoReview } from "@/lib/sponsor-review";
+import { adHash, adReview, carouselHash, carouselReview, carouselSlides, postHash, postReview, post2Review, video2Review, videoReview } from "@/lib/sponsor-review";
 import { getUser } from "@/lib/session";
 import { isAdmin } from "@/lib/admin";
 import { ReviewClient } from "./ReviewClient";
@@ -36,6 +36,7 @@ export default async function ReviewPage({ params }: Props) {
   const post = postReview(f);
   const post2 = post2Review(f);
   const video2 = video2Review(f);
+  const carousel = carouselReview(f);
 
   const card = (
     <div className="rounded-xl border-[1.5px] border-amber/40 bg-surface p-4">
@@ -89,6 +90,11 @@ export default async function ReviewPage({ params }: Props) {
             : null
         }
         video2={o.video2_url && video2 ? { src: o.video2_url, path: o.video2_url, status: video2.status, note: video2.note } : null}
+        carousel={
+          carousel
+            ? { slides: carouselSlides(f), pdf: o.carousel_pdf_url ?? null, intro: o.carousel_intro ?? null, hash: carouselHash(f), status: carousel.status, note: carousel.note }
+            : null
+        }
         adCard={card}
         adBody={<AdText text={o.description} />}
       />

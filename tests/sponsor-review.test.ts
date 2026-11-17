@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { adPlainText, parseAdText, parseInline } from "../src/lib/ad-text";
-import { adHash, adReview, postHash, postReview, post2Review, video2Review, reviewSummary, verdictLine, videoApproved, videoReview, type ReviewFields } from "../src/lib/sponsor-review";
+import { adHash, adReview, carouselHash, carouselReview, postHash, postReview, post2Review, video2Review, reviewSummary, verdictLine, videoApproved, videoReview, type ReviewFields } from "../src/lib/sponsor-review";
 
 const base: ReviewFields = {
   job_title: "Director of Growth",
@@ -136,5 +136,25 @@ describe("Bonus video review", () => {
     expect(video2Review(up)?.status).toBe("up");
     expect(video2Review({ ...up, video2_url: url + "?v=2" })?.status).toBe("changed");
     expect(reviewSummary(w).video2?.status).toBe("waiting");
+  });
+});
+
+describe("Carousel review", () => {
+  const b: ReviewFields = {
+    job_title: "Director of Growth", description: "Ad", product_short: null,
+    video_path: null, video_review: null, video_note: null, video_reviewed_path: null,
+    ad_review: null, ad_note: null, ad_reviewed_hash: null,
+  };
+  const slides = "https://example.com/1.jpg\nhttps://example.com/2.jpg";
+  it("waits, approves, and asks again when a slide or the PDF changes", () => {
+    expect(carouselReview(b)).toBeNull();
+    const w = { ...b, carousel_slides: slides, carousel_pdf_url: "https://example.com/c.pdf" };
+    expect(carouselReview(w)?.status).toBe("waiting");
+    const up = { ...w, carousel_review: "up" as const, carousel_reviewed_hash: carouselHash(w) };
+    expect(carouselReview(up)?.status).toBe("up");
+    expect(carouselReview({ ...up, carousel_slides: slides + "\nhttps://example.com/3.jpg" })?.status).toBe("changed");
+    expect(carouselReview({ ...up, carousel_pdf_url: "https://example.com/c2.pdf" })?.status).toBe("changed");
+    expect(reviewSummary(w).carousel?.status).toBe("waiting");
+    expect(reviewSummary(w).allApproved).toBe(false);
   });
 });
