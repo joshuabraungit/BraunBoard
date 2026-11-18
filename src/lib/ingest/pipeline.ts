@@ -297,18 +297,27 @@ async function insertNewJob(
   // Same company + title + location already live under another source id? Compare descriptions.
   // Exact same title + city only needs to look like a repost (the daily check's bar), since
   // companies repost with a paragraph changed or pay added.
+  // The location key alone misses reposts whose location text changed: Stripe's "Seattle, WA,
+  // Remote-US" came back as "Chicago, IL, Seattle, WA" (key remote-us vs seattle-wa). So also
+  // compare against same-title jobs in the same city, which is how the daily check matches them.
   let duplicateOf: string | null = null;
-  const { data: twins } = await db
+  const cityOf = (city: unknown, raw: unknown) => (((city as string | null) ?? (raw as string | null) ?? "") as string).toLowerCase();
+  const myCity = cityOf(loc.city, job.location);
+  const { data: candidates } = await db
     .from("jobs")
-    .select("id, title_raw, description_raw")
-    .eq("dedupe_key", key)
+    .select("id, title_raw, description_raw, dedupe_key, city, location_raw")
+    .eq("company_id", company.id)
+    .eq("title_normalized", cls.title_normalized)
     .eq("is_active", true)
     .is("duplicate_of", null)
-    .limit(5);
-  for (const t of twins ?? []) {
+    .limit(50);
+  const twins = (candidates ?? []).filter(
+    (t) => t.dedupe_key === key || (myCity !== "" && sameTitle((t.title_raw as string) ?? "", job.title) && cityOf(t.city, t.location_raw) === myCity),
+  );
+  for (const t of twins) {
     const theirs = (t.description_raw as string) ?? "";
     const repost = sameTitle((t.title_raw as string) ?? "", job.title) && looksLikeRepost(theirs, job.description);
-    if (repost || descriptionSimilarity(theirs, job.description) >= DUPLICATE_THRESHOLD) {
+    if (repost || (t.dedupe_key === key && descriptionSimilarity(theirs, job.description) >= DUPLICATE_THRESHOLD)) {
       duplicateOf = t.id as string;
       break;
     }
