@@ -2,377 +2,129 @@ import Link from "next/link";
 import { adminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin";
 import { AdminNotice } from "@/components/AdminNotice";
-import { CopyButton } from "@/components/CopyButton";
-import { canRefund, orderLines, resultsLink, reviewFields, reviewLink, videoUrl, type SponsoredJobRow } from "@/lib/sponsor";
-import { REMOTE_TYPES, formatPrice, isRunning } from "@/lib/sponsor-form";
-import { reviewSummary, type AssetReview } from "@/lib/sponsor-review";
-import { cancelOrder, editCopy, goLive, removeVideo, saveLinkedInPost, saveCarousel, saveLinkedInPost2, saveVideo2, sendReceiptAgain, setSponsoredStatus } from "./actions";
-import { VideoUpload } from "./VideoUpload";
-import { FastTrackAdmin } from "./FastTrackAdmin";
+import { reviewFields, type SponsoredJobRow } from "@/lib/sponsor";
+import { reviewSummary } from "@/lib/sponsor-review";
+import { Badge, STAGE_BADGE, day, nextStep, shortDay, stage, type Stage } from "./shared";
 
-const REVIEW_BADGE: Record<AssetReview["status"], [string, string]> = {
-  waiting: ["Waiting on client", "bg-bg text-ink-2 ring-1 ring-line"],
-  changed: ["Changed since their review", "bg-bg text-ink-2 ring-1 ring-line"],
-  up: ["Approved", "bg-accent-soft text-accent"],
-  down: ["Changes requested", "bg-amber-soft text-amber"],
-};
+const GROUPS: { title: string; stages: Stage[]; empty?: string }[] = [
+  {
+    title: "Needs you",
+    stages: ["approve", "ended"],
+    empty: "Nothing waiting on you.",
+  },
+  { title: "Live now", stages: ["running"] },
+  { title: "Scheduled", stages: ["scheduled"] },
+];
 
-function ReviewRow({ label, a }: { label: string; a: AssetReview }) {
-  const [text, cls] = REVIEW_BADGE[a.status];
+function Row({ r, now }: { r: SponsoredJobRow; now: Date }) {
+  const st = stage(r, now);
+  const [label, cls] = STAGE_BADGE[st];
+  const step = nextStep(r, reviewSummary(reviewFields(r)), now);
   return (
-    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-      <span className="w-24 shrink-0 text-ink-3">{label}</span>
-      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>{text}</span>
-      {a.note && (a.status === "down" || a.status === "changed") && <span className="min-w-0 flex-1 text-ink-2">&ldquo;{a.note}&rdquo;</span>}
-    </div>
+    <li>
+      <Link href={`/admin/sponsored/${r.id}`} className="block rounded-xl border border-line bg-surface px-4 py-3 hover:border-line-strong">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <Badge text={label} cls={cls} />
+          {r.renewal_of && <Badge text="Renewal" cls="bg-accent-soft text-accent" />}
+          <span className="min-w-0 flex-1 truncate font-semibold">
+            {r.company} <span className="font-normal text-ink-2">· {r.job_title}</span>
+          </span>
+          <span className="text-sm text-ink-3">{r.live_at && r.ends_at ? `${shortDay(r.live_at)} to ${shortDay(r.ends_at)}` : `Ordered ${day(r.paid_at ?? r.created_at)}`}</span>
+        </div>
+        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm">
+          <span className={step.tone === "act" ? "font-semibold text-ink" : "text-ink-2"}>{step.text}</span>
+          {r.live_at && (
+            <span className="text-ink-3">
+              {r.views.toLocaleString()} views · {r.apply_clicks.toLocaleString()} apply clicks
+            </span>
+          )}
+        </div>
+      </Link>
+    </li>
   );
 }
-
-const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" });
-
-type Stage = "pending" | "approve" | "scheduled" | "running" | "ended" | "done" | "canceled";
-function stage(r: SponsoredJobRow, now = new Date()): Stage {
-  if (r.status === "paid") return "approve";
-  if (r.status === "live") return isRunning(r, now) ? "running" : r.live_at && new Date(r.live_at) > now ? "scheduled" : "ended";
-  return r.status as Stage;
-}
-const BADGE: Record<Stage, [string, string]> = {
-  pending: ["Unfinished checkout", "bg-bg text-ink-3 ring-1 ring-line"],
-  approve: ["Paid · needs your OK", "bg-amber-soft text-amber"],
-  scheduled: ["Scheduled", "bg-bg text-ink-2 ring-1 ring-line"],
-  running: ["Live now", "bg-accent-soft text-accent"],
-  ended: ["Ended", "bg-bg text-ink-2 ring-1 ring-line"],
-  done: ["Done", "bg-bg text-ink-2 ring-1 ring-line"],
-  canceled: ["Canceled", "bg-red-soft text-red"],
-};
 
 export default async function AdminSponsored({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string; all?: string }> }) {
   await requireAdmin();
   const sp = await searchParams;
-  let q = adminClient().from("sponsored_jobs").select("*").order("created_at", { ascending: false }).limit(200);
-  if (!sp.all) q = q.neq("status", "pending");
-  const { data, error } = await q;
+  const { data, error } = await adminClient().from("sponsored_jobs").select("*").order("created_at", { ascending: false }).limit(200);
   if (error) return <p className="text-red">Couldn&apos;t load sponsored jobs: {error.message}</p>;
-  const rows = (data ?? []) as SponsoredJobRow[];
+  const all = (data ?? []) as SponsoredJobRow[];
   const now = new Date();
-  const runningCount = rows.filter((r) => stage(r, now) === "running").length;
+  const rows = all.filter((r) => r.status !== "pending");
+  const pending = all.filter((r) => r.status === "pending");
+  const running = rows.filter((r) => stage(r, now) === "running");
+  const past = rows.filter((r) => ["done", "canceled"].includes(stage(r, now)));
 
   return (
     <>
-      <h1 className="mb-1 text-2xl font-bold tracking-tight">Sponsored jobs</h1>
-      <p className="mb-4 text-sm text-ink-2">
-        {runningCount} of 2 home page spots in use.{" "}
-        <a href={sp.all ? "/admin/sponsored" : "/admin/sponsored?all=1"} className="font-semibold text-ink underline underline-offset-2">
-          {sp.all ? "Hide unfinished checkouts" : "Show unfinished checkouts too"}
-        </a>
-      </p>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight">Sponsored jobs</h1>
       <AdminNotice msg={sp.msg} err={sp.err} />
-      {!rows.length && <p className="text-sm text-ink-3">No orders yet.</p>}
-      <ul className="space-y-2">
-        {rows.map((r) => {
-          const st = stage(r, now);
-          const [label, cls] = BADGE[st];
-          const reviewable = r.status === "paid" || r.status === "live";
-          const rev = reviewSummary(reviewFields(r));
-          const link = reviewLink(r);
-          const results = r.live_at && (r.status === "live" || r.status === "done") ? resultsLink(r) : null;
-          const vid = videoUrl(r.video_path);
-          return (
-            <li key={r.id} className="rounded-xl border border-line bg-surface">
-              <details open={st === "approve"}>
-                <summary className="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-sm">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>{label}</span>
-                  <span className="min-w-0 flex-1 truncate font-semibold">
-                    {r.renewal_of && <span className="mr-1.5 rounded bg-accent-soft px-1.5 py-0.5 text-xs font-semibold text-accent">Renewal</span>}
-                    {r.job_title} · {r.company}
-                  </span>
-                  {st === "approve" && (
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${rev.allApproved ? "bg-accent-soft text-accent" : rev.changesRequested ? "bg-amber-soft text-amber" : "bg-bg text-ink-2 ring-1 ring-line"}`}
-                    >
-                      {rev.allApproved ? "Client approved ✓" : rev.changesRequested ? "Client wants changes" : r.review_opened_at ? "Client opened the link" : "Client hasn't reviewed"}
-                    </span>
-                  )}
-                  {r.live_at && r.ends_at ? (
-                    <span className="text-ink-3">
-                      {day(r.live_at)} to {day(r.ends_at)}
-                    </span>
-                  ) : (
-                    <span className="text-ink-3">Ordered {day(r.paid_at ?? r.created_at)}</span>
-                  )}
-                  {r.live_at && (
-                    <span className="text-ink-2">
-                      {r.views.toLocaleString()} views · {r.apply_clicks.toLocaleString()} apply clicks
-                    </span>
-                  )}
-                </summary>
-                <div className="border-t border-line px-4 py-3 text-sm">
-                  <table>
-                    <tbody>
-                      {orderLines(r).map(([k, v]) => (
-                        <tr key={k}>
-                          <td className="py-0.5 pr-4 align-top text-ink-3">{k}</td>
-                          <td className="break-all py-0.5">
-                            {v.startsWith("http") ? (
-                              <a href={v} target="_blank" rel="noopener" className="underline">
-                                {v}
-                              </a>
-                            ) : (
-                              v
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <p className="mt-3 whitespace-pre-wrap text-ink-2">{r.description}</p>
-                  {results && (
-                    <section className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-line px-3 py-3">
-                      <h2 className="mr-auto text-sm font-semibold">Results page</h2>
-                      <CopyButton text={results} label="Copy results link" className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90" />
-                      <a href={results} target="_blank" rel="noopener" className="rounded-md border border-line-strong bg-surface px-3 py-1.5 text-sm font-semibold">
-                        See it ↗
-                      </a>
-                    </section>
-                  )}
-                  {reviewable && link && (
-                    <section className="mt-4 space-y-3 rounded-lg border border-line px-3 py-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h2 className="text-sm font-semibold">Client review</h2>
-                        <span className="text-xs text-ink-3">
-                          {r.review_sent_at ? `${r.contact_name.split(" ")[0]} sent their thumbs ${day(r.review_sent_at)}` : r.review_opened_at ? `Opened ${day(r.review_opened_at)}, not sent yet` : "Link not opened yet"}
-                        </span>
-                      </div>
-                      <div className="space-y-1.5">
-                        {rev.video ? <ReviewRow label="Video" a={rev.video} /> : <div className="flex gap-3"><span className="w-24 shrink-0 text-ink-3">Video</span><span className="text-ink-3">None yet. Upload one to add it to the review.</span></div>}
-                        <ReviewRow label="Job ad" a={rev.ad} />
-                        {rev.post ? <ReviewRow label="LinkedIn post" a={rev.post} /> : <div className="flex gap-3"><span className="w-24 shrink-0 text-ink-3">LinkedIn post</span><span className="text-ink-3">None yet. Paste one below to add it to the review.</span></div>}
-                        {rev.post2 && <ReviewRow label="Post 2" a={rev.post2} />}
-                        {rev.video2 && <ReviewRow label="Bonus video" a={rev.video2} />}
-                        {rev.carousel && <ReviewRow label="Carousel" a={rev.carousel} />}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <CopyButton text={link} label="Copy review link" className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90" />
-                        <a href={link} target="_blank" rel="noopener" className="rounded-md border border-line-strong bg-surface px-3 py-1.5 text-sm font-semibold">
-                          See what {r.contact_name.split(" ")[0]} sees ↗
-                        </a>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
-                        <VideoUpload id={r.id} hasVideo={!!r.video_path} />
-                        {vid && (
-                          <>
-                            <a href={vid} target="_blank" rel="noopener" className="text-sm underline">Watch current video</a>
-                            <form action={removeVideo}>
-                              <input type="hidden" name="id" value={r.id} />
-                              <button className="text-sm text-red underline">Remove</button>
-                            </form>
-                          </>
-                        )}
-                      </div>
-                      <details className="border-t border-line pt-3" open={!r.linkedin_post}>
-                        <summary className="cursor-pointer text-sm font-semibold">{r.linkedin_post ? "Edit LinkedIn post" : "Add LinkedIn post"}</summary>
-                        <form action={saveLinkedInPost} className="mt-2 space-y-2">
-                          <input type="hidden" name="id" value={r.id} />
-                          <textarea
-                            name="linkedin_post"
-                            defaultValue={r.linkedin_post ?? ""}
-                            rows={10}
-                            maxLength={5000}
-                            placeholder="Paste the post exactly as it'll go on LinkedIn, link included."
-                            className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm"
-                          />
-                          <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">Save post</button>
-                          <p className="text-xs text-ink-3">Shows on the review link for a thumbs up or down. Change the words and it goes back up for another look. It doesn&apos;t hold up Mark live.</p>
-                        </form>
-                      </details>
-                      {r.linkedin_post && (
-                        <details className="border-t border-line pt-3" open={false}>
-                          <summary className="cursor-pointer text-sm font-semibold">{r.linkedin_post_2 ? "Edit second LinkedIn post" : "Add a second LinkedIn post"}</summary>
-                          <form action={saveLinkedInPost2} className="mt-2 space-y-2">
-                            <input type="hidden" name="id" value={r.id} />
-                            <label className="block text-xs font-semibold text-ink-2">Note to {r.contact_name.split(" ")[0]} (shows above the post, optional)</label>
-                            <textarea
-                              name="linkedin_post_2_intro"
-                              defaultValue={r.linkedin_post_2_intro ?? ""}
-                              rows={2}
-                              maxLength={1000}
-                              className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm"
-                            />
-                            <textarea
-                              name="linkedin_post_2"
-                              defaultValue={r.linkedin_post_2 ?? ""}
-                              rows={10}
-                              maxLength={5000}
-                              placeholder="Paste the second post exactly as it'll go on LinkedIn."
-                              className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm"
-                            />
-                            <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">Save second post</button>
-                          </form>
-                        </details>
-                      )}
-                      <details className="border-t border-line pt-3">
-                        <summary className="cursor-pointer text-sm font-semibold">{r.video2_url ? "Edit bonus video" : "Add a bonus video"}</summary>
-                        <form action={saveVideo2} className="mt-2 flex flex-wrap gap-2">
-                          <input type="hidden" name="id" value={r.id} />
-                          <input name="video2_url" defaultValue={r.video2_url ?? ""} placeholder="https:// link to the .mp4" className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1.5 text-sm" />
-                          <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">Save video</button>
-                        </form>
-                      </details>
-                      <details className="border-t border-line pt-3">
-                        <summary className="cursor-pointer text-sm font-semibold">{r.carousel_slides ? "Edit LinkedIn carousel" : "Add a LinkedIn carousel"}</summary>
-                        <form action={saveCarousel} className="mt-2 space-y-2">
-                          <input type="hidden" name="id" value={r.id} />
-                          <textarea
-                            name="carousel_intro"
-                            defaultValue={r.carousel_intro ?? ""}
-                            rows={2}
-                            maxLength={1000}
-                            placeholder="Optional note to the client, shown above the slides."
-                            className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm"
-                          />
-                          <textarea
-                            name="carousel_slides"
-                            defaultValue={r.carousel_slides ?? ""}
-                            rows={6}
-                            placeholder="Slide image links, one per line, in order. Blank clears the carousel."
-                            className="w-full rounded-md border border-line bg-surface px-2 py-1.5 font-mono text-xs"
-                          />
-                          <input name="carousel_pdf_url" defaultValue={r.carousel_pdf_url ?? ""} placeholder="https:// link to the PDF" className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm" />
-                          <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">Save carousel</button>
-                        </form>
-                      </details>
-                      <p className="text-xs text-ink-3">
-                        The video shows on the job page once she approves it. Edit the copy or swap the video and the review link asks them to look again. Going live is still your button.
-                      </p>
-                    </section>
-                  )}
-                  {(r.status === "paid" || r.status === "live") && <FastTrackAdmin id={r.id} cfg={r} />}
-                  {r.status !== "canceled" && r.status !== "pending" && (
-                    <details className="mt-3 rounded-lg border border-line px-3 py-2">
-                      <summary className="cursor-pointer text-sm font-semibold">Edit copy</summary>
-                      <form action={editCopy} className="mt-3 space-y-3">
-                        <input type="hidden" name="id" value={r.id} />
-                        {(
-                          [
-                            ["job_title", "Job title", r.job_title, 140, 1],
-                            ["job_url", "Link to apply", r.job_url, 2000, 1],
-                            ["description", "Description (the card shows about 3 lines). Formatting: ## Heading, - bullet, 1. numbered, **bold**", r.description, 10000, 8],
-                            ["product_short", "What you'd sell: headline (4 to 8 words)", r.product_short ?? "", 80, 1],
-                            ["product_story", "What you'd sell: story (2 to 4 sentences, under 60 words)", r.product_story ?? "", 500, 3],
-                            ["buyer_short", "Who you'd sell to (plain English, e.g. City governments and nonprofits)", r.buyer_short ?? "", 100, 1],
-                            ["ote_attainment_pct", "% of ramped reps who hit OTE last year (blank = not shared)", r.ote_attainment_pct?.toString() ?? "", 4, 1],
-                          ] as const
-                        ).map(([name, label, value, max, rows]) => (
-                          <label key={name} className="block">
-                            <span className="text-xs text-ink-2">{label}</span>
-                            {rows > 1 ? (
-                              <textarea name={name} defaultValue={value} rows={rows} maxLength={max} className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm" />
-                            ) : (
-                              <input name={name} defaultValue={value} maxLength={max} className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm" />
-                            )}
-                          </label>
-                        ))}
-                        <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
-                          <label className="block">
-                            <span className="text-xs text-ink-2">Remote or in office? (read from their description)</span>
-                            <select name="remote_type" defaultValue={r.remote_type} className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm">
-                              {REMOTE_TYPES.map((t) => (
-                                <option key={t}>{t}</option>
-                              ))}
-                            </select>
-                          </label>
-                          <label className="block">
-                            <span className="text-xs text-ink-2">Location (read from their description; blank = none)</span>
-                            <input name="location" defaultValue={r.location ?? ""} maxLength={120} className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm" />
-                          </label>
-                        </div>
-                        <label className="flex items-center gap-2 text-sm">
-                          <input type="checkbox" name="first_sales_hire" defaultChecked={!!r.first_sales_hire} className="h-4 w-4" />
-                          <span>First sales hire (shows &ldquo;Ground floor: first sales hire&rdquo; when there&apos;s no OTE %)</span>
-                        </label>
-                        <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">Save copy</button>
-                        <p className="text-xs text-ink-3">Updates the home page card and job page right away. Pay and dates stay as the buyer sent them.</p>
-                      </form>
-                    </details>
-                  )}
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    {["paid", "live", "done"].includes(r.status) && (
-                      <Link href={`/sponsored/${r.id}`} target="_blank" className="rounded-md border border-line-strong bg-surface px-3 py-1.5 text-sm font-semibold">
-                        {st === "running" ? "View job page ↗" : "Preview job page ↗"}
-                      </Link>
-                    )}
-                    {st === "approve" && rev.ad.status !== "up" && (
-                      <button type="button" disabled className="cursor-not-allowed rounded-md bg-line px-3 py-1.5 text-sm font-semibold text-ink-3">
-                        Mark live
-                      </button>
-                    )}
-                    {st === "approve" && rev.ad.status === "up" && (
-                      <form action={goLive}>
-                        <input type="hidden" name="id" value={r.id} />
-                        <button className="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">
-                          {r.start_date && r.start_date > now.toISOString().slice(0, 10) ? `Approve for ${r.start_date}` : "Mark live"}
-                        </button>
-                      </form>
-                    )}
-                    {(st === "running" || st === "ended" || st === "scheduled") && (
-                      <form action={setSponsoredStatus}>
-                        <input type="hidden" name="id" value={r.id} />
-                        <input type="hidden" name="status" value="done" />
-                        <button className="rounded-md border border-line-strong bg-surface px-3 py-1.5 text-sm font-semibold">
-                          {st === "ended" ? "Mark done" : "Take down now"}
-                        </button>
-                      </form>
-                    )}
-                    {["paid", "live", "done"].includes(r.status) && (
-                      <form action={sendReceiptAgain}>
-                        <input type="hidden" name="id" value={r.id} />
-                        <button className="rounded-md border border-line-strong bg-surface px-3 py-1.5 text-sm">Resend receipt</button>
-                      </form>
-                    )}
-                  </div>
-                  {canRefund(r, now) && (
-                    <details className="mt-3 rounded-lg border border-red/20 bg-red-soft/40 px-3 py-2">
-                      <summary className="cursor-pointer text-sm font-semibold text-red">Cancel and refund…</summary>
-                      <form action={cancelOrder} className="mt-2 space-y-2">
-                        <input type="hidden" name="id" value={r.id} />
-                        <label className="block text-xs text-ink-2" htmlFor={`reason-${r.id}`}>
-                          Reason (optional). It goes in the email to {r.contact_name}, right after &ldquo;I can&apos;t run this one on Braun Board.&rdquo;
-                        </label>
-                        <textarea
-                          id={`reason-${r.id}`}
-                          name="reason"
-                          rows={2}
-                          maxLength={500}
-                          placeholder="Sponsored jobs have to be sales roles with base pay listed."
-                          className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm"
-                        />
-                        <button className="rounded-md bg-red px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">
-                          {r.amount_cents > 0 ? `Refund ${formatPrice(r.amount_cents)} and cancel` : "Cancel (nothing to refund)"}
-                        </button>
-                        <p className="text-xs text-ink-3">Refunds in Stripe right away and can&apos;t be undone.</p>
-                      </form>
-                    </details>
-                  )}
-                  {r.status === "canceled" && r.refunded_at && (
-                    <p className="mt-3 text-xs text-ink-2">
-                      {r.stripe_refund_id ? `Refunded ${formatPrice(r.amount_cents)}` : "Canceled"} on {day(r.refunded_at)}.{r.cancel_reason ? ` Reason: ${r.cancel_reason}` : ""}
-                    </p>
-                  )}
-                  {st === "approve" && rev.ad.status !== "up" && (
-                    <p className="mt-2 text-xs text-amber">Mark live unlocks once {r.contact_name.split(" ")[0]} approves the job ad on the review link.</p>
-                  )}
-                  {st === "approve" && rev.ad.status === "up" && rev.video && rev.video.status !== "up" && (
-                    <p className="mt-2 text-xs text-ink-2">The video isn&apos;t approved yet. The ad can go live without it, and the video shows up on the job page once it&apos;s approved.</p>
-                  )}
-                  {st === "approve" && runningCount >= 2 && (
-                    <p className="mt-2 text-xs text-amber">Both home page spots are taken. If you approve it now, it starts automatically when a spot opens, and gets its full 30 days from then.</p>
-                  )}
+
+      <section className="mb-8">
+        <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-3">Home page spots</h2>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {[0, 1].map((i) => {
+            const r = running[i];
+            return r ? (
+              <Link key={i} href={`/admin/sponsored/${r.id}`} className="rounded-xl border border-accent/30 bg-accent-soft px-4 py-3 hover:border-accent">
+                <div className="text-xs font-semibold text-accent">
+                  Spot {i + 1} · live until {shortDay(r.ends_at!)}
                 </div>
-              </details>
-            </li>
-          );
-        })}
-      </ul>
+                <div className="truncate font-semibold">{r.company}</div>
+              </Link>
+            ) : (
+              <div key={i} className="rounded-xl border border-dashed border-line-strong px-4 py-3">
+                <div className="text-xs font-semibold text-ink-3">Spot {i + 1}</div>
+                <div className="text-ink-3">Open</div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {GROUPS.map((g) => {
+        const list = rows.filter((r) => g.stages.includes(stage(r, now)));
+        if (!list.length && !g.empty) return null;
+        return (
+          <section key={g.title} className="mb-8">
+            <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-3">
+              {g.title} {list.length > 0 && <span className="text-ink-2">· {list.length}</span>}
+            </h2>
+            {list.length ? (
+              <ul className="space-y-2">
+                {list.map((r) => (
+                  <Row key={r.id} r={r} now={now} />
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-ink-3">{g.empty}</p>
+            )}
+          </section>
+        );
+      })}
+
+      {past.length > 0 && (
+        <details className="mb-6">
+          <summary className="mb-2 cursor-pointer text-xs font-bold uppercase tracking-wide text-ink-3">Past · {past.length}</summary>
+          <ul className="space-y-2">
+            {past.map((r) => (
+              <Row key={r.id} r={r} now={now} />
+            ))}
+          </ul>
+        </details>
+      )}
+
+      {pending.length > 0 && (
+        <details open={!!sp.all}>
+          <summary className="mb-2 cursor-pointer text-xs font-bold uppercase tracking-wide text-ink-3">Unfinished checkouts · {pending.length}</summary>
+          <ul className="space-y-2">
+            {pending.map((r) => (
+              <Row key={r.id} r={r} now={now} />
+            ))}
+          </ul>
+        </details>
+      )}
     </>
   );
 }

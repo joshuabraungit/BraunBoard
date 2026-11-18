@@ -10,11 +10,14 @@ import { loadCodes } from "@/lib/fast-track";
 
 // Canceling goes through cancelOrder so it always refunds.
 const STATUSES = ["done"] as const;
-const back = (ok: boolean, msg: string) => redirect(`/admin/sponsored?${ok ? "msg" : "err"}=${encodeURIComponent(msg)}`);
+// Every action posts an id, so it lands back on that sponsor's own page.
+const back = (id: string, ok: boolean, msg: string) =>
+  redirect(`/admin/sponsored${id ? `/${encodeURIComponent(id)}` : ""}?${ok ? "msg" : "err"}=${encodeURIComponent(msg)}`);
+const idOf = (formData: FormData) => String(formData.get("id") ?? "");
 
 export async function goLive(formData: FormData) {
   await requireAdmin();
-  const id = String(formData.get("id"));
+  const id = idOf(formData);
   let msg: string;
   try {
     const row = await markLive(id);
@@ -24,61 +27,63 @@ export async function goLive(formData: FormData) {
         ? `${row.job_title} is approved. It goes live ${starts.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" })}. ${row.contact_name} got an email.`
         : `${row.job_title} is live on the home page. ${row.contact_name} got an email with the link.`;
   } catch (e) {
-    back(false, e instanceof Error ? e.message : "Couldn't mark it live.");
+    back(id, false, e instanceof Error ? e.message : "Couldn't mark it live.");
     return;
   }
-  revalidatePath("/admin/sponsored");
+  revalidatePath("/admin/sponsored", "layout");
   revalidatePath("/");
   revalidateTag("sponsors");
-  back(true, msg);
+  back(id, true, msg);
 }
 
 export async function setSponsoredStatus(formData: FormData) {
   await requireAdmin();
-  const id = String(formData.get("id"));
+  const id = idOf(formData);
   const status = String(formData.get("status"));
-  if (!(STATUSES as readonly string[]).includes(status)) back(false, "Unknown status");
+  if (!(STATUSES as readonly string[]).includes(status)) back(id, false, "Unknown status");
   const { error } = await adminClient().from("sponsored_jobs").update({ status }).eq("id", id);
-  revalidatePath("/admin/sponsored");
+  revalidatePath("/admin/sponsored", "layout");
   revalidatePath("/");
   revalidateTag("sponsors");
-  back(!error, error ? error.message : `Marked ${status}.`);
+  back(id, !error, error ? error.message : `Marked ${status}.`);
 }
 
 export async function sendReceiptAgain(formData: FormData) {
   await requireAdmin();
+  const id = idOf(formData);
   let msg: string;
   try {
-    const r = await resendReceipt(String(formData.get("id")));
+    const r = await resendReceipt(id);
     msg = `Receipt sent to ${r.to}${r.invoice ? ", with the invoice link." : ". No invoice link was available, so it asks them to reply for one."}`;
   } catch (e) {
-    back(false, e instanceof Error ? e.message : "Couldn't send the receipt.");
+    back(id, false, e instanceof Error ? e.message : "Couldn't send the receipt.");
     return;
   }
-  back(true, msg);
+  back(id, true, msg);
 }
 
 export async function cancelOrder(formData: FormData) {
   await requireAdmin();
+  const id = idOf(formData);
   let msg: string;
   try {
-    const r = await cancelAndRefund(String(formData.get("id")), String(formData.get("reason") ?? ""));
+    const r = await cancelAndRefund(id, String(formData.get("reason") ?? ""));
     msg = r.refunded > 0 ? `Canceled and refunded ${formatPrice(r.refunded)}. ${r.to} got an email.` : `Canceled. Nothing was charged. ${r.to} got an email.`;
   } catch (e) {
-    back(false, e instanceof Error ? e.message : "Couldn't cancel. Nothing was refunded.");
+    back(id, false, e instanceof Error ? e.message : "Couldn't cancel. Nothing was refunded.");
     return;
   }
   revalidatePath("/");
   revalidateTag("sponsors");
-  back(true, msg);
+  back(id, true, msg);
 }
 
 export async function editCopy(formData: FormData) {
   await requireAdmin();
-  const id = String(formData.get("id"));
+  const id = idOf(formData);
   const parsed = parseSponsorEdit(formData);
   if (!parsed.ok) {
-    back(false, `Not saved. ${parsed.error}`);
+    back(id, false, `Not saved. ${parsed.error}`);
     return;
   }
   let reReview = false;
@@ -90,13 +95,13 @@ export async function editCopy(formData: FormData) {
     const was = before ? adReview(reviewFields(before)).status : "waiting";
     reReview = (was === "up" || was === "down") && !!after && adReview(reviewFields(after)).status === "changed";
   } catch (e) {
-    back(false, e instanceof Error ? e.message : "Couldn't save.");
+    back(id, false, e instanceof Error ? e.message : "Couldn't save.");
     return;
   }
   revalidatePath("/");
   revalidateTag("sponsors");
   revalidatePath(`/sponsored/${id}`);
-  back(true, `Saved. ${parsed.edit.job_title} is updated everywhere it shows.${reReview ? " The client's review link now shows the new version for her OK." : ""}`);
+  back(id, true, `Saved. ${parsed.edit.job_title} is updated everywhere it shows.${reReview ? " The client's review link now shows the new version for her OK." : ""}`);
 }
 
 /** Admin video upload, step 1. Returns where the browser should send the file. */
@@ -117,28 +122,28 @@ export async function finishVideoUpload(id: string, path: string): Promise<{ ok:
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Couldn't save the video." };
   }
-  revalidatePath("/admin/sponsored");
+  revalidatePath("/admin/sponsored", "layout");
   revalidatePath(`/sponsored/${id}`);
   return { ok: true };
 }
 
 export async function removeVideo(formData: FormData) {
   await requireAdmin();
-  const id = String(formData.get("id"));
+  const id = idOf(formData);
   try {
     await attachVideo(id, null);
   } catch (e) {
-    back(false, e instanceof Error ? e.message : "Couldn't remove the video.");
+    back(id, false, e instanceof Error ? e.message : "Couldn't remove the video.");
     return;
   }
   revalidatePath(`/sponsored/${id}`);
-  back(true, "Video removed.");
+  back(id, true, "Video removed.");
 }
 
 /** Josh pastes the LinkedIn post. It goes on the client's review link for a thumbs up or down. */
 export async function saveLinkedInPost(formData: FormData) {
   await requireAdmin();
-  const id = String(formData.get("id"));
+  const id = idOf(formData);
   const text = String(formData.get("linkedin_post") ?? "");
   let msg: string;
   try {
@@ -154,17 +159,17 @@ export async function saveLinkedInPost(formData: FormData) {
         ? `Post saved. ${first}'s review link shows the new version for another look.`
         : `Post saved. It's on ${first}'s review link now. Copy the link and send it over.`;
   } catch (e) {
-    back(false, e instanceof Error ? e.message : "Couldn't save the post.");
+    back(id, false, e instanceof Error ? e.message : "Couldn't save the post.");
     return;
   }
-  revalidatePath("/admin/sponsored");
-  back(true, msg);
+  revalidatePath("/admin/sponsored", "layout");
+  back(id, true, msg);
 }
 
 /** A second LinkedIn post for the same job, with a note to the client shown above it. */
 export async function saveLinkedInPost2(formData: FormData) {
   await requireAdmin();
-  const id = String(formData.get("id"));
+  const id = idOf(formData);
   let msg: string;
   try {
     const before = await getOrder(id);
@@ -179,72 +184,72 @@ export async function saveLinkedInPost2(formData: FormData) {
         ? `Second post saved. ${first}'s review link shows the new version for another look.`
         : `Second post saved. It's on ${first}'s review link now. Copy the link and send it over.`;
   } catch (e) {
-    back(false, e instanceof Error ? e.message : "Couldn't save the second post.");
+    back(id, false, e instanceof Error ? e.message : "Couldn't save the second post.");
     return;
   }
-  revalidatePath("/admin/sponsored");
-  back(true, msg);
+  revalidatePath("/admin/sponsored", "layout");
+  back(id, true, msg);
 }
 
 /** The bonus video link (e.g. a history episode). Goes on the review link for a thumbs up or down. */
 export async function saveVideo2(formData: FormData) {
   await requireAdmin();
-  const id = String(formData.get("id"));
+  const id = idOf(formData);
   try {
     await updateVideo2(id, String(formData.get("video2_url") ?? ""));
   } catch (e) {
-    back(false, e instanceof Error ? e.message : "Couldn't save the video link.");
+    back(id, false, e instanceof Error ? e.message : "Couldn't save the video link.");
     return;
   }
-  revalidatePath("/admin/sponsored");
-  back(true, "Bonus video saved. It's on the review link now.");
+  revalidatePath("/admin/sponsored", "layout");
+  back(id, true, "Bonus video saved. It's on the review link now.");
 }
 
 /** The LinkedIn carousel (slide links + PDF). Goes on the review link for a thumbs up or down. */
 export async function saveCarousel(formData: FormData) {
   await requireAdmin();
-  const id = String(formData.get("id"));
+  const id = idOf(formData);
   const slides = String(formData.get("carousel_slides") ?? "");
   try {
     await updateCarousel(id, slides, String(formData.get("carousel_pdf_url") ?? ""), String(formData.get("carousel_intro") ?? ""));
   } catch (e) {
-    back(false, e instanceof Error ? e.message : "Couldn't save the carousel.");
+    back(id, false, e instanceof Error ? e.message : "Couldn't save the carousel.");
     return;
   }
-  revalidatePath("/admin/sponsored");
-  back(true, slides.trim() ? "Carousel saved. It's on the review link now. Copy the link and send it over." : "Carousel cleared. It's off the review link.");
+  revalidatePath("/admin/sponsored", "layout");
+  back(id, true, slides.trim() ? "Carousel saved. It's on the review link now. Copy the link and send it over." : "Carousel cleared. It's off the review link.");
 }
 
 /** Turns a sponsor's Fast Track box on or off and sets its details. Blank number of codes = off. */
 export async function saveFastTrack(formData: FormData) {
   await requireAdmin();
-  const id = String(formData.get("id"));
+  const id = idOf(formData);
   const totalRaw = String(formData.get("fast_track_total") ?? "").trim();
   const total = totalRaw ? Math.round(Number(totalRaw)) : null;
-  if (total != null && !(total >= 1 && total <= 50)) back(false, "Number of codes has to be 1 to 50 (or blank to turn it off).");
+  if (total != null && !(total >= 1 && total <= 50)) back(id, false, "Number of codes has to be 1 to 50 (or blank to turn it off).");
   const url = String(formData.get("fast_track_url") ?? "").trim() || null;
-  if (url && !/^https?:\/\//i.test(url)) back(false, "The application form link has to start with https://");
+  if (url && !/^https?:\/\//i.test(url)) back(id, false, "The application form link has to start with https://");
   const minsRaw = String(formData.get("fast_track_minutes") ?? "").trim();
   const minutes = minsRaw ? Math.round(Number(minsRaw)) : null;
-  if (minutes != null && !(minutes >= 5 && minutes <= 120)) back(false, "Call length has to be 5 to 120 minutes.");
+  if (minutes != null && !(minutes >= 5 && minutes <= 120)) back(id, false, "Call length has to be 5 to 120 minutes.");
   const where = String(formData.get("fast_track_where") ?? "").trim().slice(0, 500) || null;
   const booking = String(formData.get("fast_track_booking_url") ?? "").trim().slice(0, 1000) || null;
-  if (booking && !/^https?:\/\//i.test(booking)) back(false, "The booking link has to start with https://");
+  if (booking && !/^https?:\/\//i.test(booking)) back(id, false, "The booking link has to start with https://");
   const { error } = await adminClient()
     .from("sponsored_jobs")
     .update({ fast_track_total: total, fast_track_url: url, fast_track_minutes: minutes, fast_track_where: where, fast_track_booking_url: booking })
     .eq("id", id);
-  if (error) back(false, error.message);
+  if (error) back(id, false, error.message);
   if (total) {
     try {
       await loadCodes(id, total);
     } catch (e) {
-      back(false, e instanceof Error ? e.message : "Couldn't load the codes.");
+      back(id, false, e instanceof Error ? e.message : "Couldn't load the codes.");
     }
   }
-  revalidatePath("/admin/sponsored");
+  revalidatePath("/admin/sponsored", "layout");
   revalidatePath(`/sponsored/${id}`);
   revalidatePath("/");
   revalidateTag("sponsors");
-  back(true, total ? `Fast Track is on with ${total} codes.` : "Fast Track is off.");
+  back(id, true, total ? `Fast Track is on with ${total} codes.` : "Fast Track is off.");
 }

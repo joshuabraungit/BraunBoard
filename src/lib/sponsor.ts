@@ -316,10 +316,10 @@ export function renderOwnerNotice(o: SponsoredJobRow, siteUrl: string, invoice: 
     .join("");
   const html = wrap(subject, `<table style="font-size:14px">${rows}</table>
     <p style="font-size:14px;color:#555;margin-top:12px"><b>Description</b><br>${esc(o.description).replace(/\n/g, "<br>")}</p>
-    <p style="margin-top:16px"><a href="${siteUrl}/admin/sponsored" style="color:#111;font-weight:600">Open in Admin →</a>${
+    <p style="margin-top:16px"><a href="${siteUrl}/admin/sponsored/${o.id}" style="color:#111;font-weight:600">Open in Admin →</a>${
       invoice?.hosted_invoice_url ? ` &nbsp;·&nbsp; <a href="${esc(invoice.hosted_invoice_url)}" style="color:#111">Invoice${invoice.number ? ` ${esc(invoice.number)}` : ""}</a>` : ""
     }</p>`);
-  const text = `${subject}\n\n${orderLines(o).map(([k, v]) => `${k}: ${v}`).join("\n")}\n\nDescription:\n${o.description}\n\n${siteUrl}/admin/sponsored${invoice?.hosted_invoice_url ? `\nInvoice: ${invoice.hosted_invoice_url}` : ""}`;
+  const text = `${subject}\n\n${orderLines(o).map(([k, v]) => `${k}: ${v}`).join("\n")}\n\nDescription:\n${o.description}\n\n${siteUrl}/admin/sponsored/${o.id}${invoice?.hosted_invoice_url ? `\nInvoice: ${invoice.hosted_invoice_url}` : ""}`;
   return { subject, html, text };
 }
 
@@ -679,9 +679,9 @@ export function renderReviewNotice(o: SponsoredJobRow, input: ReviewInput, siteU
       .map(([k, v]) => `<tr><td style="padding:4px 14px 4px 0;color:#888;vertical-align:top">${k}</td><td style="padding:4px 0">${esc(v)}</td></tr>`)
       .join("")}</table>
     ${next ? `<p style="font-size:15px;line-height:1.5;color:#222;margin:0 0 14px">${esc(next)}</p>` : ""}
-    <p style="margin-top:16px"><a href="${siteUrl}/admin/sponsored" style="color:#111;font-weight:600">Open in Admin →</a></p>`,
+    <p style="margin-top:16px"><a href="${siteUrl}/admin/sponsored/${o.id}" style="color:#111;font-weight:600">Open in Admin →</a></p>`,
   );
-  const text = [subject, rows.map(([k, v]) => `${k}: ${v}`).join("\n"), next, `${siteUrl}/admin/sponsored`].filter(Boolean).join("\n\n");
+  const text = [subject, rows.map(([k, v]) => `${k}: ${v}`).join("\n"), next, `${siteUrl}/admin/sponsored/${o.id}`].filter(Boolean).join("\n\n");
   return { subject, html, text };
 }
 
