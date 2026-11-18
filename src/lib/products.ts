@@ -50,7 +50,6 @@ export interface ProductJob {
 export const ROLE_GROUPS = {
   sdr: { label: "SDR", families: ["SDR/BDR"] },
   ae: { label: "AE & AM", families: ["Account Executive", "Account Manager", "Customer Expansion"] },
-  se: { label: "Sales Engineer", families: ["Sales Engineer"] },
   lead: { label: "Leadership", families: ["Sales Manager", "Sales Director", "VP Sales", "CRO"] },
 } as const;
 export type RoleGroup = keyof typeof ROLE_GROUPS;

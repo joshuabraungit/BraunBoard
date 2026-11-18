@@ -8,7 +8,7 @@ import { DEALBREAKER_LABELS, DEALBREAKERS } from "@/lib/match";
 import { INDUSTRIES, INDUSTRY_KEYS, type Industry } from "@/lib/industries";
 import Link from "next/link";
 import { SIZE_BUCKETS, SIZE_LABELS, type SizeBucket } from "@/lib/ingest/size";
-import { COUNTRY_CHOICES, MOTION_CHOICES, payCurrencyFor, ROLE_CHOICES, WORK_CHOICES, type OnboardingAnswers, type RoleChoice } from "@/lib/watch-prefs";
+import { COUNTRY_CHOICES, MOTION_CHOICES, OFFERED_ROLE_CHOICES, payCurrencyFor, ROLE_CHOICES, WORK_CHOICES, type OnboardingAnswers, type RoleChoice } from "@/lib/watch-prefs";
 
 const PRESETS = {
   usd: { base: [100, 125, 150, 175, 200], ote: [150, 200, 250, 300, 400] },
@@ -113,7 +113,7 @@ export function OnboardingForm({ initial, signedIn }: { initial?: OnboardingAnsw
       hint: "Pick any you'd take.",
       body: (
         <div className="flex flex-wrap gap-2">
-          {(Object.keys(ROLE_CHOICES) as RoleChoice[]).map((r) => (
+          {OFFERED_ROLE_CHOICES.map((r) => (
             <Chip key={r} name="roles" value={r} type="checkbox" checked={roles.includes(r)} onChange={(on) => setRoles(on ? [...roles, r] : roles.filter((x) => x !== r))}>
               {ROLE_CHOICES[r].label}
             </Chip>

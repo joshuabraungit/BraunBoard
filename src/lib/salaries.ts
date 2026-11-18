@@ -41,7 +41,6 @@ export interface SalaryPage {
 const ROLE_SLUGS: Partial<Record<RoleFamily, { slug: string; short: string; plural: string }>> = {
   "Account Executive": { slug: "account-executive", short: "AE", plural: "AEs" },
   "SDR/BDR": { slug: "sdr-bdr", short: "SDR", plural: "SDRs and BDRs" },
-  "Sales Engineer": { slug: "sales-engineer", short: "SE", plural: "Sales Engineers" },
   "Account Manager": { slug: "account-manager", short: "AM", plural: "Account Managers" },
   "Sales Manager": { slug: "sales-manager", short: "Sales Manager", plural: "Sales Managers" },
   "Sales Director": { slug: "sales-director", short: "Sales Director", plural: "Sales Directors" },

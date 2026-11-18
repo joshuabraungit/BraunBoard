@@ -22,6 +22,8 @@ export const ROLE_CHOICES = {
   leader: { label: "Sales Leader", families: ["Sales Manager", "Sales Director", "VP Sales", "CRO"], segment: null },
 } as const satisfies Record<string, { label: string; families: RoleFamily[]; segment: SalesSegment | null }>;
 export type RoleChoice = keyof typeof ROLE_CHOICES;
+/** The choices we still offer. "se" stays parseable so older saved answers keep working, but SE roles are off the board (Nov 2026). */
+export const OFFERED_ROLE_CHOICES = (Object.keys(ROLE_CHOICES) as RoleChoice[]).filter((r) => r !== "se");
 
 export const WORK_CHOICES = { remote: "Remote", hybrid: "Hybrid", office: "Office", any: "Any" } as const;
 export const COUNTRY_CHOICES = { US: "United States", CA: "Canada", both: "US or Canada", UK: "United Kingdom", DE: "Germany", EU: "Elsewhere in Europe (remote)" } as const;

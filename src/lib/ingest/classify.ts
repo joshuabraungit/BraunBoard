@@ -33,6 +33,10 @@ const EXCLUDE = [
   /\b(analyst|data scientist|software engineer|developer|designer|product manager|counsel|attorney|paralegal)\b/i,
   /\b(intern|internship|apprentice)\b/i,
   /\btechnical account manager\b/i,
+  // Sales / solutions engineers, solutions consultants, presales and the people who run those teams.
+  // They support the sale; they don't carry the quota. Josh took them off the board (Nov 2026).
+  // A sales leader who also runs presales ("VP Sales & Pre-Sales") still sells, so that one stays.
+  /^(?!.*\bsales (?:&|and) pre-?sales\b).*(\b(sales|solutions?|value) engineer(s|ing)?\b|\bsolutions? (consultant|consulting|architect)s?\b|\bpre-?sales\b)/i,
   // Engineers who don't sell: anything "engineer(ing)" that isn't a sales / solutions / presales / value engineer
   /\bengineering (manager|director|lead)\b/i,
   /\b(software|data|backend|back-end|frontend|front-end|full[- ]stack|platform|infrastructure|site reliability|ml|machine learning|security|qa|test|devops|mobile|ios|android|staff|principal) engineer/i, // post-sales technical support, not a selling role

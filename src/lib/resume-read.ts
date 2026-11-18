@@ -4,7 +4,7 @@
 import { firstJsonObject } from "./ingest/buyer";
 import { SIZE_BUCKETS, type SizeBucket } from "./ingest/size";
 import { INDUSTRIES, INDUSTRY_KEYS, isIndustry } from "./industries";
-import { COUNTRY_CHOICES, MOTION_CHOICES, ROLE_CHOICES, WORK_CHOICES, type OnboardingAnswers, type RoleChoice } from "./watch-prefs";
+import { COUNTRY_CHOICES, MOTION_CHOICES, OFFERED_ROLE_CHOICES, ROLE_CHOICES, WORK_CHOICES, type OnboardingAnswers, type RoleChoice } from "./watch-prefs";
 
 export const RESUME_MAX_BYTES = 4 * 1024 * 1024; // Vercel caps a request at about 4.5MB
 
@@ -18,8 +18,8 @@ const SYSTEM = `You read a salesperson's résumé and suggest answers for a sale
 If something isn't clear from the résumé, use null. Never guess.
 
 Return ONLY JSON with these keys:
-- "roles": the roles this person would most likely take next, from this list only: ${Object.keys(ROLE_CHOICES).join(", ")}.
-  (${Object.entries(ROLE_CHOICES).map(([k, v]) => `${k} = ${v.label}`).join("; ")}.) Base it on their most recent role and level.
+- "roles": the roles this person would most likely take next, from this list only: ${OFFERED_ROLE_CHOICES.join(", ")}.
+  (${OFFERED_ROLE_CHOICES.map((k) => `${k} = ${ROLE_CHOICES[k].label}`).join("; ")}.) Base it on their most recent role and level.
   A step up is fine (an SDR with a year or more might also take "ae"). One to three choices.
 - "country": where they're based, one of ${Object.keys(COUNTRY_CHOICES).filter((c) => c !== "both").join(", ")}, or null. Use EU for someone based in Europe outside the UK, Ireland, Germany, Austria and Switzerland.
 - "location": their city or state/province as written on the résumé (max 40 chars), or null.

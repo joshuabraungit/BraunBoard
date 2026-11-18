@@ -30,8 +30,6 @@ describe("classifyTitle: included roles (spec section 3)", () => {
     ["Account Executive, Mid-Market", "Account Executive"],
     ["Account Manager", "Account Manager"],
     ["Expansion Account Executive", "Customer Expansion"],
-    ["Solutions Engineer", "Sales Engineer"],
-    ["Senior Sales Engineer", "Sales Engineer"],
     ["Sales Manager, West", "Sales Manager"],
     ["Manager, Sales Development", "Sales Manager"],
     ["Director of Sales", "Sales Director"],
@@ -182,8 +180,8 @@ describe("classifyTitle: titles we used to miss", () => {
 });
 
 describe("classifyTitle: kept despite the new exclusions", () => {
-  it.each(["Partner Solutions Engineer, Ecosystem", "Sales Engineer (Customer Success)"])("%s -> Sales Engineer", (t) => {
-    expect(classifyTitle(t)?.role_family).toBe("Sales Engineer");
+  it.each(["Partner Solutions Engineer, Ecosystem", "Sales Engineer (Customer Success)"])("%s is off the board (SE roles removed Nov 2026)", (t) => {
+    expect(classifyTitle(t)).toBeNull();
   });
 });
 
@@ -207,8 +205,21 @@ describe("more exclusions + VP variants (seen in real data)", () => {
   it.each(["Engineering Manager, Growth Expansion", "Senior Software Engineer, Sales Tools", "Staff Engineer, Revenue Platform"])("%s -> excluded", (t) => {
     expect(classifyTitle(t)).toBeNull();
   });
-  it.each(["Solutions Engineer", "Senior Legal Solutions Engineer", "Sales Engineer 2 (Customer Success)", "Value Engineer"])("%s still included", (t) => {
-    expect(classifyTitle(t)?.role_family).toBe("Sales Engineer");
+  it.each([
+    "Solutions Engineer",
+    "Senior Legal Solutions Engineer",
+    "Sales Engineer 2 (Customer Success)",
+    "Value Engineer",
+    "Technical Solutions Engineer",
+    "Solutions Consultant",
+    "Presales Consultant",
+    "Director, Solutions Engineering",
+    "Manager, Sales Engineering",
+  ])("%s is off the board (SE roles removed Nov 2026)", (t) => {
+    expect(classifyTitle(t)).toBeNull();
+  });
+  it("VP Sales & Pre-Sales still sells, so it stays", () => {
+    expect(classifyTitle("VP Sales & Pre-Sales (UK & Europe)")?.role_family).toBe("VP Sales");
   });
   it("RVP is VP Sales", () => {
     expect(classifyTitle("RVP, Enterprise Sales - Northeast")?.role_family).toBe("VP Sales");
