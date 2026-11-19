@@ -7,8 +7,8 @@ import { formatPrice, isRunning, sponsorPriceCents } from "@/lib/sponsor-form";
 import { renewUrl } from "@/lib/sponsor-renew";
 import { ResultsStats, RunMeter, SourcesTable } from "@/components/SponsorResults";
 import { RewriteOwl } from "@/components/RewriteOwl";
-import { fastTrackState, type FastTrackConfig } from "@/lib/fast-track";
-import { sendResults } from "./actions";
+import { fastTrackClaims, fastTrackState, type FastTrackClaim, type FastTrackConfig } from "@/lib/fast-track";
+import { markFastTrackClaim, sendResults } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -34,11 +34,12 @@ export default async function ResultsPage({ params, searchParams }: Props) {
   const o = await getOrderByResultsToken(token);
   if (!o) notFound();
 
-  const [counts, renewal, ft, nl] = await Promise.all([
+  const [counts, renewal, ft, nl, claims] = await Promise.all([
     getResultsCounts(o.id),
     paidRenewalOf(o.id),
     fastTrackState(o as typeof o & FastTrackConfig).catch(() => null),
     newsletterProgress(o.report_newsletter_campaign),
+    fastTrackClaims(o.id),
   ]);
   const rows = sourceRows(counts);
   const first = o.contact_name.trim().split(/\s+/)[0];
@@ -113,7 +114,7 @@ export default async function ResultsPage({ params, searchParams }: Props) {
       </div>
 
       {ft && ftClaimed > 0 && (
-        <section className="rounded-2xl border-2 border-accent bg-accent-soft p-5">
+        <section id="fast-track" className="scroll-mt-20 rounded-2xl border-2 border-accent bg-accent-soft p-5">
           <p className="text-xs font-bold uppercase tracking-wide text-accent">Fast Track</p>
           <p className="mt-1 text-lg font-bold leading-snug">
             {ftClaimed} {ftClaimed === 1 ? "person is" : "people are"} getting a guaranteed {ftMinutes}-minute screening call with you.
@@ -122,6 +123,18 @@ export default async function ResultsPage({ params, searchParams }: Props) {
             Look for codes BB-FT1 to BB-FT{ft.total} on applications.
             {ftClaimed >= ft.total ? ` All ${ft.total} are claimed.` : ` ${ft.left} still open.`}
           </p>
+          {claims.length > 0 && (
+            <>
+              <p className="mt-2 text-[15px] leading-relaxed text-ink-2">
+                Here&apos;s who has each code. Some people forget to put it on their application, so this helps you match them up. Tick the boxes as you go and I&apos;ll see it too.
+              </p>
+              <ul className="mt-4 divide-y divide-line rounded-xl border border-line bg-surface">
+                {claims.map((c) => (
+                  <ClaimRow key={c.code} c={c} token={token} />
+                ))}
+              </ul>
+            </>
+          )}
         </section>
       )}
 
@@ -230,5 +243,56 @@ export default async function ResultsPage({ params, searchParams }: Props) {
         .
       </p>
     </div>
+  );
+}
+
+const claimDay = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" });
+
+function ClaimRow({ c, token }: { c: FastTrackClaim; token: string }) {
+  return (
+    <li className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div className="min-w-0">
+        <p className="font-semibold">
+          <span className="mr-2 rounded bg-accent-soft px-1.5 py-0.5 font-mono text-xs text-accent">{c.code}</span>
+          {c.name ?? "No name given"}
+        </p>
+        <p className="mt-0.5 truncate text-sm text-ink-2">
+          {c.email && (
+            <a href={`mailto:${c.email}`} className="underline underline-offset-2">
+              {c.email}
+            </a>
+          )}
+          {c.email && " · "}Claimed {claimDay(c.claimed_at)}
+        </p>
+      </div>
+      <div className="flex shrink-0 gap-2">
+        <ClaimTick token={token} code={c.code} field="applied" label="Applied" on={!!c.applied_at} />
+        <ClaimTick token={token} code={c.code} field="screened" label="Call done" on={!!c.screened_at} />
+      </div>
+    </li>
+  );
+}
+
+function ClaimTick({ token, code, field, label, on }: { token: string; code: string; field: "applied" | "screened"; label: string; on: boolean }) {
+  return (
+    <form action={markFastTrackClaim}>
+      <input type="hidden" name="token" value={token} />
+      <input type="hidden" name="code" value={code} />
+      <input type="hidden" name="field" value={field} />
+      <input type="hidden" name="on" value={on ? "0" : "1"} />
+      <button
+        type="submit"
+        aria-pressed={on}
+        className={
+          on
+            ? "rounded-lg border border-accent bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90"
+            : "rounded-lg border border-line-strong bg-bg px-3 py-1.5 text-sm font-semibold text-ink-2 hover:border-accent"
+        }
+      >
+        {on ? "✓ " : "☐ "}
+        {label}
+      </button>
+    </form>
   );
 }

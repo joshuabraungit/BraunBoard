@@ -93,6 +93,42 @@ export async function claimedCodes(sponsorId: string) {
   return (data ?? []) as { code: string; name: string | null; email: string | null; claimed_at: string | null }[];
 }
 
+export interface FastTrackClaim {
+  code: string;
+  name: string | null;
+  email: string | null;
+  claimed_at: string;
+  applied_at: string | null;
+  screened_at: string | null;
+}
+
+/** Everyone who claimed one of this sponsor's codes, in code order, for the sponsor's results page. */
+export async function fastTrackClaims(sponsorId: string): Promise<FastTrackClaim[]> {
+  const { data, error } = await adminClient()
+    .from("fast_track_codes")
+    .select("code, name, email, claimed_at, applied_at, screened_at")
+    .eq("sponsor_id", sponsorId)
+    .not("claimed_at", "is", null)
+    .order("id");
+  if (error) {
+    console.error("[fast-track] claims load failed", error.message);
+    return [];
+  }
+  return (data ?? []) as FastTrackClaim[];
+}
+
+/** The sponsor ticks (or unticks) "applied" or "screening call done" for one claimed code. */
+export async function markFastTrack(sponsorId: string, code: string, field: "applied" | "screened", on: boolean) {
+  const col = field === "applied" ? "applied_at" : "screened_at";
+  const { error } = await adminClient()
+    .from("fast_track_codes")
+    .update({ [col]: on ? new Date().toISOString() : null })
+    .eq("sponsor_id", sponsorId)
+    .eq("code", code)
+    .not("claimed_at", "is", null);
+  if (error) throw error;
+}
+
 export const fastTrackWhere = (s: FastTrackConfig) =>
   s.fast_track_where?.trim() || "Put your code somewhere on your application where they'll see it.";
 
