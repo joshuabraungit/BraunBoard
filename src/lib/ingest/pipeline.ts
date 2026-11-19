@@ -206,7 +206,9 @@ export function locate(job: RawJob): ParsedLocation {
     return { ...loc, city: place.city, state: place.state, country: "UK", markets: ["UK"], is_us: false };
   }
   // And Germany: "Enterprise AE, DACH" listed under "New York; Munich" is a Germany role.
+  // A UK office stays, though: DACH is often sold from London, so "London / Remote in Germany" is both.
   if (titleNamesGermanyOnly(job.title) && loc.markets.includes("DE") && !(loc.markets.length === 1 && loc.markets[0] === "DE")) {
+    if (loc.markets.includes("UK")) return { ...loc, markets: ["UK", "DE"], is_us: false };
     return { ...loc, city: germanyPlaceFrom(job.title, job.location).city, state: null, country: "DE", markets: ["DE"], is_us: false };
   }
   return loc;

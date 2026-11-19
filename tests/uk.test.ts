@@ -94,6 +94,12 @@ describe("UK regressions", () => {
   it("doesn't use a nation as the city", () => {
     expect(parseLocation("England, United Kingdom", { country: "United Kingdom", city: "England" })).toMatchObject({ city: null, markets: ["UK"] });
   });
+  it("keeps the UK on a DACH role that can be based in London", () => {
+    const job = { title: "Account Manager, Existing Customers (DACH)", location: "London, UK / Remote in Germany", description: "", source_provider: "ashby" } as RawJob;
+    expect(locate(job)).toMatchObject({ markets: ["UK", "DE"], city: "London" });
+    const us = { title: "Enterprise AE, DACH", location: "New York, NY; Munich, Germany", description: "", source_provider: "ashby" } as RawJob;
+    expect(locate(us).markets).toEqual(["DE"]);
+  });
   it("still moves a remote job titled for the UK", () => {
     const job = { title: "Account Executive, UK", location: "Remote", description: "", source_provider: "ashby" } as RawJob;
     expect(locate(job).markets).toEqual(["UK"]);
