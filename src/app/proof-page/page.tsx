@@ -148,6 +148,10 @@ export default async function ProofPage() {
         Your page needs an email to ride along with.{" "}
         <Link href="/outreach" className="font-semibold text-ink underline underline-offset-2">See the cold emails</Link>.
       </p>
+      <p className="mt-3 text-[15px] text-ink-2">
+        Got the interview?{" "}
+        <Link href="/thank-you-note" className="font-semibold text-ink underline underline-offset-2">Here&apos;s what to send after</Link>.
+      </p>
       <div className="mt-6">
         <PicksSignupFromUrl back="/proof-page" source="proof-page" compact />
       </div>
