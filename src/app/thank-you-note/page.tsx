@@ -20,7 +20,7 @@ const WHY: [string, string][] = [
   ["It quotes him", "Hearing your own words back is proof someone listened. Most of us rarely get that."],
   [
     "It matches his honesty",
-    "Tom admitted something human. Dana admitted she\u2019s done it too. Now it feels like two people talking, not a candidate and a gatekeeper.",
+    "Tom admitted something human. Dana admitted she\u2019s had them too. Now it feels like two people talking, not a candidate and a gatekeeper.",
   ],
   ["It makes him smile", "Deleting the usual note out loud breaks the fourth wall. People remember how you made them feel."],
   ["It couldn't go to anyone else", "That's the whole trick. Swap in another name and the note stops making sense."],
@@ -72,7 +72,7 @@ export default function ThankYouNotePage() {
             She asked: <span className="font-semibold text-ink">&ldquo;What did you learn from your worst quarter?&rdquo;</span>
           </p>
           <p>
-            Tom laughed and said: <span className="font-semibold text-ink">&ldquo;That I was forecasting with my heart.&rdquo;</span>
+            Tom laughed and said: <span className="font-semibold text-ink">&ldquo;That I had happy ears. I heard what I wanted to hear.&rdquo;</span>
           </p>
           <p>That night, Dana sent this:</p>
         </div>
@@ -84,10 +84,10 @@ export default function ThankYouNotePage() {
             that one a few hundred times, so I deleted it.
           </p>
           <p className="mt-3">
-            Here&apos;s what I actually want to say. &ldquo;Forecasting with my heart&rdquo; is the most honest thing I&apos;ve heard in an
-            interview. I&apos;ve done it. I&apos;m guessing plenty of reps have and never say so.
+            Here&apos;s what I actually want to say. &ldquo;Happy ears&rdquo; is the most honest thing I&apos;ve heard in an interview.
+            I&apos;ve had them too. A prospect says &ldquo;this looks great&rdquo; and I&apos;m already spending the commission.
           </p>
-          <p className="mt-3">Thanks for going first.</p>
+          <p className="mt-3">Thanks for the conversation, and for going first.</p>
           <p className="mt-3">Dana</p>
         </div>
         <p className="mt-4 text-[15px] text-ink-2">Is it a little weird? Yeah. Will Tom remember Dana? Also yeah.</p>
