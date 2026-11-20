@@ -20,9 +20,9 @@ const WHY: [string, string][] = [
   ["It quotes him", "Hearing your own words back is proof someone listened. Most of us rarely get that."],
   [
     "It matches his honesty",
-    "Tom admitted something human. Dana admitted something too. Now it feels like two people talking, not a candidate and a gatekeeper.",
+    "Tom admitted something human. Dana admitted she\u2019s done it too. Now it feels like two people talking, not a candidate and a gatekeeper.",
   ],
-  ["It makes him smile", "The P.S. winks at how stiff these notes usually are. People remember how you made them feel."],
+  ["It makes him smile", "Deleting the usual note out loud breaks the fourth wall. People remember how you made them feel."],
   ["It couldn't go to anyone else", "That's the whole trick. Swap in another name and the note stops making sense."],
 ];
 
@@ -79,12 +79,16 @@ export default function ThankYouNotePage() {
 
         <div className="mt-4 rounded-2xl border border-line bg-surface p-6 text-[15px] leading-relaxed">
           <p>Hi Tom,</p>
-          <p className="mt-3">I&apos;m supposed to keep this short and professional. Let&apos;s see how long that lasts.</p>
-          <p className="mt-3">&ldquo;Forecasting with my heart.&rdquo; I wrote it on a sticky note and stuck it on my monitor.</p>
-          <p className="mt-3">I&apos;ve done the same thing. A deal felt great, so I called it. It was not great.</p>
-          <p className="mt-3">Thanks for being that honest in an interview. It made it easy to be honest back.</p>
+          <p className="mt-3">
+            I had a normal thank-you note ready. &ldquo;Thank you for your time. I&apos;m excited about the opportunity.&rdquo; You&apos;ve read
+            that one a few hundred times, so I deleted it.
+          </p>
+          <p className="mt-3">
+            Here&apos;s what I actually want to say. &ldquo;Forecasting with my heart&rdquo; is the most honest thing I&apos;ve heard in an
+            interview. I&apos;ve done it. I&apos;m guessing plenty of reps have and never say so.
+          </p>
+          <p className="mt-3">Thanks for going first.</p>
           <p className="mt-3">Dana</p>
-          <p className="mt-3 text-ink-2">P.S. Lasted about two lines.</p>
         </div>
         <p className="mt-4 text-[15px] text-ink-2">Is it a little weird? Yeah. Will Tom remember Dana? Also yeah.</p>
       </section>
